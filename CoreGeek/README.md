@@ -1,6 +1,6 @@
 # CoreGeek 参赛 Agent
 
-当前版本0.3.5：接入自进化任务prompt、v2协议、执行历史和回合预算，见[任务模块接入](docs/TASK_INTEGRATION.md)。继承0.3.4策略：保留既有布局与升级顺序，新增工人避险、批量购券和第三天起专人夜修，默认备5包、低于30%修墙。详见[工人策略](docs/WORKER_SAFETY.md)与[建筑维护](docs/MAINTENANCE.md)。
+当前版本0.3.6：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后两翼六墙升2级。基地不升级。全部达标后双工人墙内维修，白天轮流批量买包，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。原任务模块、U形阵型与避险逻辑保留。
 
 此目录可作为参赛程序目录提交。沿用示例的 `main3.py`、`src/agent/protocol.py`、`grid.py`、`brain.py`；HTTP 处理与跨回合协作放在 `app`。新增代码无第三方运行依赖。
 
@@ -71,9 +71,9 @@ python main3.py 8080 --config config.local.json
 
 ```powershell
 python run_tests.py
-python tools/smoke_server.py --output ../reports/http-smoke-v0.3.5.json
-python tools/replay.py ../request.txt --output ../reports/sample-response-v0.3.5.json
-python tools/validate.py --cases 20 --output ../reports/validation-v0.3.5.json
+python tools/smoke_server.py --output ../reports/http-smoke-v0.3.6.json
+python tools/replay.py ../request.txt --output ../reports/sample-response-v0.3.6.json
+python tools/validate.py --cases 20 --output ../reports/validation-v0.3.6.json
 ```
 
 回放输入支持单个 JSON、JSON 数组、每行一份观测的 JSONL。单个队伍按回合递增；同回合相同内容返回缓存，不同内容拒绝，以免状态被重复推进。
@@ -132,7 +132,7 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | 同上 | `near/near_zone` | 通用相邻交互检查 |
 | [src/agent/grid.py](src/agent/grid.py) | `Routes(turn, role, reserved=None, danger=None, allowed=None)` | BFS或风险优先Dijkstra；保存步数、累计风险和第一步，allowed限制巡护区域 |
 | [src/agent/worker_safety.py](src/agent/worker_safety.py) | `robot_danger(turn)` | 机器人射程及警戒缓冲的风险图，供工人寻路与矿点筛选 |
-| [src/agent/wall_guard.py](src/agent/wall_guard.py) | `WallGuard(strategy)`、`daytime/nighttime` | 固定维修工、批量备包、黄昏返岗和墙内阈值维修 |
+| [src/agent/wall_guard.py](src/agent/wall_guard.py) | `WallGuard(strategy)`、`daytime/nighttime` | 单人夜修/完成后双人全天维修，均衡备包、轮流采购与墙内阈值维修 |
 | 同上 | `Routes.nearest(goals)/step(goals)` | 最近可达站位/到该站位的第一步 |
 | 同上 | `adjacent_cells(turn, targets)` | 建筑或矿点周围的候选交互格 |
 | 同上 | `next_step(turn, moving, goal)` | 单个精确目的地的旧兼容接口 |
@@ -179,3 +179,5 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 新增参数`repair_start_day=3`、`repair_stock=5`、`repair_threshold_percent=30`见[参数说明](docs/WORKER_SAFETY.md)。
 
 任务模块新增`app/service/task_prompt.py`（用户提供的纯提示生成器）与`task_context.py`（回复校验、证据裁剪、诊断和预算）。`temp/`是资料入口，不参与运行/打包。详细函数参数及Postman联调见[任务文档](docs/TASK_INTEGRATION.md)。
+
+升级目标集中于[src/agent/upgrade_policy.py](src/agent/upgrade_policy.py)，由`wall_group/wall_target_level/upgrade_candidates/purchase_needs/upgrades_complete`计算；具体参数见[维护开发文档](docs/MAINTENANCE.md#6-关键模块函数与参数)。

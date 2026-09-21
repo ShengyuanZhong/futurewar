@@ -82,14 +82,17 @@ class MaintenanceTests(unittest.TestCase):
                     raw['teamOur']['goldNum'] += command['num'] * before.vendor_prices[command['name']]
                 else:
                     self.fail(f'unexpected maintenance action: {command}')
-            if raw['teamOur']['roles'][0]['level'] == 3: break
+            if setup(raw)[0].upgrades_complete(): break
         else:
             self.fail('maintenance courier never completed upgrades')
-        self.assertEqual(purchases, ['WeaponUpgradeVoucher1'] * 3 + ['WallUpgradeVoucher1'] * 12
-                         + ['WeaponUpgradeVoucher2'] * 3 + ['WallUpgradeVoucher2'] * 12
-                         + ['StationUpgradeVoucher1', 'StationUpgradeVoucher2'])
-        for values in wall_uses.values():
-            self.assertEqual(values, [9] * 6 + [8] * 2 + [7] * 2 + [6] * 2)
+        self.assertEqual(purchases, ['WeaponUpgradeVoucher1', 'WeaponUpgradeVoucher2']
+                         + ['WallUpgradeVoucher1'] * 2 + ['WallUpgradeVoucher2'] * 2
+                         + ['WeaponUpgradeVoucher1']
+                         + ['WallUpgradeVoucher1'] * 4 + ['WallUpgradeVoucher2'] * 4
+                         + ['WeaponUpgradeVoucher2', 'WeaponUpgradeVoucher1', 'WeaponUpgradeVoucher2']
+                         + ['WallUpgradeVoucher1'] * 6)
+        self.assertEqual(wall_uses[1], [9] * 6 + [8] * 2 + [7] * 2 + [6] * 2)
+        self.assertEqual(wall_uses[2], [9] * 6)
 
     def purchase(self, raw):
         raw['teamOur']['roles'][2]['pos'] = {'x': 3, 'y': 7}
@@ -114,12 +117,12 @@ class MaintenanceTests(unittest.TestCase):
         self.assertFalse(strategy.consume(strategy.turn.workers()[0]))
         self.assertEqual(plan.commands, {})
 
-    def test_upgrade_stages_and_station_last(self):
+    def test_upgrade_stages_and_station_excluded(self):
         for weapons, walls, expected in ((1, 1, 'WeaponUpgradeVoucher1'),
-                                         (2, 1, 'WallUpgradeVoucher1'),
+                                         (2, 1, 'WeaponUpgradeVoucher2'),
                                          (2, 2, 'WeaponUpgradeVoucher2'),
                                          (3, 2, 'WallUpgradeVoucher2'),
-                                         (3, 3, 'StationUpgradeVoucher1')):
+                                         (3, 3, None)):
             with self.subTest(weapons=weapons, walls=walls):
                 self.assertEqual(self.purchase(fortified(weapon_level=weapons, wall_level=walls)), expected)
 
@@ -128,18 +131,18 @@ class MaintenanceTests(unittest.TestCase):
 
     def test_wall_columns_advance_only_after_observed_upgrade(self):
         for mirrored in (False, True):
-            raw = fortified(mirrored=mirrored, weapon_level=2)
+            raw = fortified(mirrored=mirrored, weapon_level=3)
             raw['teamOur']['roles'][2].update(pos=point(7, 8, mirrored).dump(), backpack=['WallUpgradeVoucher1'])
             for role in raw['teamOur']['roles']:
                 if role['roleType'] == 'wall' and role['pos']['x'] == point(9, 7, mirrored).x:
-                    role.update(level=2, health=1500)
+                    role.update(level=3, health=2000)
             strategy, plan = setup(raw)
             strategy.consume(strategy.turn.workers()[0])
             self.assertEqual(plan.commands['501']['targetPos'][0]['x'], point(8, 9, mirrored).x)
             self.assertEqual(plan.commands['501']['action'], 'use')
 
     def test_no_stage_advance_on_unconfirmed_use_and_full_heal_observation(self):
-        raw = fortified(weapon_level=2)
+        raw = fortified(weapon_level=3)
         for role in raw['teamOur']['roles']:
             if role['roleType'] == 'wall': role.update(level=2, health=1500)
         last = next(r for r in raw['teamOur']['roles'] if r['roleType'] == 'wall' and r['pos'] == {'x': 9, 'y': 7})
@@ -162,7 +165,7 @@ class MaintenanceTests(unittest.TestCase):
         last.update(level=2, health=1500)
         raw['teamOur']['roles'][2]['backpack'] = []
         raw['roundNo'] += 1
-        self.assertEqual(self.purchase(raw), 'WeaponUpgradeVoucher2')
+        self.assertEqual(self.purchase(raw), 'WallUpgradeVoucher2')
 
     def test_rebuilt_level_one_wall_reenters_upgrade_order_before_station(self):
         raw = fortified(weapon_level=3, wall_level=3)
@@ -183,7 +186,7 @@ class MaintenanceTests(unittest.TestCase):
 
     def test_wall_use_front_before_nearer_rear_for_both_sides(self):
         for mirrored in (False, True):
-            raw = fortified(mirrored=mirrored, weapon_level=2)
+            raw = fortified(mirrored=mirrored, weapon_level=3)
             raw['teamOur']['roles'][2].update(pos=point(6, 8, mirrored).dump(), backpack=['WallUpgradeVoucher1'])
             strategy, plan = setup(raw)
             self.assertTrue(strategy.consume(strategy.turn.workers()[0]))
@@ -196,7 +199,7 @@ class MaintenanceTests(unittest.TestCase):
             self.assertEqual(command['targetPos'][0]['x'], point(9, 7, mirrored).x)
 
     def test_upgrade_precedes_fixer_and_inventory_order(self):
-        raw = fortified(weapon_level=2)
+        raw = fortified(weapon_level=3)
         raw['teamOur']['roles'][2].update(pos={'x': 8, 'y': 7}, backpack=['WallFixer', 'WallUpgradeVoucher1'])
         for role in raw['teamOur']['roles']:
             if role['roleType'] == 'wall' and role['pos'] == {'x': 9, 'y': 7}: role['health'] = 50
@@ -208,6 +211,8 @@ class MaintenanceTests(unittest.TestCase):
     def test_owned_vouchers_and_same_turn_buys_do_not_overbuy(self):
         raw = fortified()
         raw['teamOur']['roles'][3]['backpack'] = ['WeaponUpgradeVoucher1'] * 3
+        self.assertEqual(self.purchase(raw), 'WeaponUpgradeVoucher2')
+        raw['teamOur']['roles'][3]['backpack'].append('WeaponUpgradeVoucher2')
         self.assertIsNone(self.purchase(raw))
         raw['teamOur']['roles'][3]['backpack'] = []
         for role in raw['teamOur']['roles']:
@@ -245,7 +250,7 @@ class MaintenanceTests(unittest.TestCase):
         self.assertFalse(any(c['action'] in ('build', 'sell') for c in plan.commands.values()))
 
     def test_two_workers_do_not_upgrade_same_wall(self):
-        raw = fortified(weapon_level=2)
+        raw = fortified(weapon_level=3)
         raw['teamOur']['roles'][2].update(pos={'x': 8, 'y': 7}, backpack=['WallUpgradeVoucher1'])
         raw['teamOur']['roles'][3].update(pos={'x': 8, 'y': 6}, backpack=['WallUpgradeVoucher1'])
         strategy, plan = setup(raw)

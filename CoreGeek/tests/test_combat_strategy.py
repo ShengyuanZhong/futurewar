@@ -93,14 +93,14 @@ class CombatStrategyTests(unittest.TestCase):
         self.assertEqual(plan.commands["501"], {"action": "sell", "name": "stone", "num": 1})
 
     def test_upgrades_are_purchased_then_used_on_observed_inventory(self):
-        # Base upgrades are deliberately deferred until day two or later.
+        # Use a weapon voucher; base upgrades are disabled by the current strategy.
         raw = request(131)
         raw["teamOur"]["goldNum"] = 100
-        raw["teamOur"]["roles"] = [unit(503, "station", 10, 24), unit(504, "worker", 12, 23)]
+        raw["teamOur"]["roles"] = [unit(503, "station", 10, 24), unit(504, "worker", 12, 23), unit(601, "rocket", 11, 22)]
         plan = self.execute(raw, Settings(enable_news=False, allow_base_surroundings=False))
         self.assertEqual(plan.commands["504"]["action"], "buy")
-        raw["teamOur"]["roles"][1]["backpack"] = ["StationUpgradeVoucher1"]
-        self.assertEqual(self.execute(raw, Settings(enable_news=False, allow_base_surroundings=False)).commands["504"], {"action": "use", "name": "StationUpgradeVoucher1", "targetPos": [{"x": 10, "y": 24}]})
+        raw["teamOur"]["roles"][1]["backpack"] = ["WeaponUpgradeVoucher1"]
+        self.assertEqual(self.execute(raw, Settings(enable_news=False, allow_base_surroundings=False)).commands["504"], {"action": "use", "name": "WeaponUpgradeVoucher1", "targetPos": [{"x": 11, "y": 22}]})
 
     def test_second_task_cell_and_dusk_task_admission(self):
         raw = request()

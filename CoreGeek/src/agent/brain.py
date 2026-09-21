@@ -7,6 +7,7 @@ from .construction import select_defense_layout
 from .grid import Routes, adjacent_cells
 from .worker_safety import robot_danger
 from .wall_guard import WallGuard
+from . import upgrade_policy
 from .protocol import (MINERALS, PIONEER, TOWER_TYPES, Pos, Turn, Unit,
                        attack_command, build_command, collect_command, distance, move_command)
 
@@ -81,11 +82,14 @@ class Strategy:
                     continue
                 self.move_to_control(role)
             elif not self.turn.is_day:
-                if role.unit_id == self.guard.worker_id:
+                if self.guard.is_guard(role):
                     self.guard.nighttime(role)
                 else:
                     self.night_worker(role)
             else:
+                if self.guard.full_time:
+                    self.guard.final_daytime(role)
+                    continue
                 if self.evade_worker(role):
                     continue
                 if not self.clear_build_cell(role) and not self.opening_worker(role):
@@ -295,7 +299,7 @@ class Strategy:
             b.kind != "rocket" if b.kind in TOWER_TYPES else False,
             b.health / self.building_max_health(b), self.cost(role, self.turn.footprint(b)), b.unit_id))]
         # An upgrade also heals the wall; only consider a carried fixer afterwards.
-        if "WallFixer" in role.backpack and role.unit_id != self.guard.worker_id:
+        if "WallFixer" in role.backpack and not self.guard.is_guard(role):
             repairs = [w for w in self.turn.walls() if w.health < self.building_max_health(w)]
             choices.extend(("WallFixer", w) for w in sorted(repairs, key=lambda w: (
                 self.wall_depth(w), w.health / self.building_max_health(w), self.cost(role, [w.pos]), w.unit_id)))
@@ -310,7 +314,11 @@ class Strategy:
         return False
 
     def worker(self, role: Unit) -> None:
-        if self.rebuild_wall(role) or self.consume(role) or self.build_weapon(role):
+        if self.rebuild_wall(role):
+            return
+        if self.plan.near_zone(role, "weaponShop") and self.buy_upgrade(role):
+            return
+        if self.consume(role) or self.build_weapon(role):
             return
         if self.sell(role, keep_stone=bool(self.missing_walls())) or self.buy_upgrade(role):
             return
@@ -344,24 +352,10 @@ class Strategy:
 
     def upgrade_candidates(self) -> list[Unit]:
         """First unfinished observed tier; never advance on a submitted use alone."""
-        weapons = self.turn.weapons()
-        walls = self.turn.walls()
-        station = self.turn.station()
-        if self.settings.build_cells(self.turn, "rocket") and len(weapons) < 3:
-            return []
-        for level in (1, 2):
-            pending = [w for w in weapons if w.level == level]
-            if pending:
-                return pending
-            if self.turn.day >= 2:
-                if self.missing_walls():
-                    return []
-                pending = [w for w in walls if w.level == level]
-                if pending:
-                    return pending
-        if self.turn.day >= 2 and station and station.level < 3:
-            return [station]
-        return []
+        return upgrade_policy.upgrade_candidates(self)
+
+    def upgrades_complete(self) -> bool:
+        return upgrade_policy.upgrades_complete(self)
 
     def wall_keeps_exit(self, role: Unit, target: Pos) -> bool:
         # Do not close a reachable route to a vendor/task point with this wall.
@@ -420,11 +414,13 @@ class Strategy:
                 planned[command["name"]] += command.get("num", 1)
             elif command["action"] == "use":
                 planned[command["name"]] -= 1
-        pending = self.upgrade_candidates()
-        if not pending or not shops:
+        needs = upgrade_policy.purchase_needs(self)
+        if not needs or not shops:
             return False
-        name = self.upgrade_name(pending[0])
-        demand = sum(b.unit_id not in self.plan.upgrade_targets for b in pending)
+        needed = [(name, count) for name, count in needs if count > planned[name]]
+        if not needed:
+            return False
+        name, demand = needed[0]
         if name not in self.turn.shop_prices:
             return False
         price = self.turn.shop_prices[name]
@@ -489,6 +485,8 @@ class Strategy:
         return False
 
     def treasure(self, role: Unit) -> bool:
+        if self.upgrades_complete():
+            return False  # All remaining spending belongs to repair kits.
         clue = self.memory.treasure
         if not clue or self.memory.treasure_done:
             return False

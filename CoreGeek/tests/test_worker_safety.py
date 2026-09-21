@@ -69,22 +69,28 @@ class WorkerSafetyTests(unittest.TestCase):
         self.assertEqual(plan.rejections, [])
 
     def test_bulk_purchase_limited_by_demand_budget_and_capacity(self):
-        for gold, bag, expected in ((1000, [], 3), (250, [], 2), (1000, ['stone'] * 99, 1)):
-            raw = fortified()
+        for gold, bag, expected in ((1000, [], 4), (65, [], 3), (1000, ['stone'] * 99, 1)):
+            raw = fortified(weapon_level=3)
+            for wall in raw['teamOur']['roles']:
+                if wall['roleType']=='wall' and wall['pos'] in ({'x':9,'y':7},{'x':9,'y':6}):
+                    wall.update(level=3,health=2000)
             raw['teamOur']['goldNum'] = gold
             raw['teamOur']['roles'][2].update(pos={'x': 3, 'y': 7}, backpack=bag)
             s, plan = strategy(raw)
             s.buy_upgrade(s.turn.workers()[0])
-            self.assertEqual(plan.commands['501'], {'action': 'buy', 'name': 'WeaponUpgradeVoucher1', 'num': expected})
-            self.assertEqual(plan.gold, gold - expected * 100)
+            self.assertEqual(plan.commands['501'], {'action': 'buy', 'name': 'WallUpgradeVoucher1', 'num': expected})
+            self.assertEqual(plan.gold, gold - expected * 20)
 
     def test_bulk_wall_purchase_subtracts_team_inventory_and_prevents_double_buy(self):
-        raw = fortified(weapon_level=2)
+        raw = fortified(weapon_level=3)
+        for wall in raw['teamOur']['roles']:
+            if wall['roleType']=='wall' and wall['pos'] in ({'x':9,'y':7},{'x':9,'y':6}):
+                wall.update(level=3,health=2000)
         raw['teamOur']['roles'][2].update(pos={'x': 3, 'y': 7}, backpack=['WallUpgradeVoucher1'] * 2)
         raw['teamOur']['roles'][3].update(pos={'x': 3, 'y': 6}, backpack=['WallUpgradeVoucher1'])
         s, plan = strategy(raw)
         for worker in s.turn.workers(): s.buy_upgrade(worker)
-        self.assertEqual(plan.commands['501']['num'], 9)
+        self.assertEqual(plan.commands['501']['num'], 1)
         self.assertNotIn('504', plan.commands)
 
     def test_guard_buys_five_fixers_from_day_three(self):
@@ -235,13 +241,16 @@ class WorkerSafetyTests(unittest.TestCase):
             self.assertEqual(plan.rejections, [])
 
     def test_upgrade_batch_reserves_guard_supply_budget(self):
-        raw = fortified(261)
-        raw['teamOur']['goldNum'] = 300
+        raw = fortified(261, weapon_level=3)
+        raw['teamOur']['goldNum'] = 100
+        for wall in raw['teamOur']['roles']:
+            if wall['roleType']=='wall' and wall['pos'] in ({'x':9,'y':7},{'x':9,'y':6}):
+                wall.update(level=3,health=2000)
         raw['teamOur']['roles'][3]['pos'] = {'x': 3, 'y': 7}
         s, plan = strategy(raw)
         s.buy_upgrade(s.turn.workers()[1])
         self.assertEqual(plan.commands['504']['num'], 2)
-        self.assertEqual(plan.gold, 100)
+        self.assertEqual(plan.gold, 60)
 
     def test_repair_feedback_cache_failure_retry_and_daytime_restock(self):
         raw = fortified(331)

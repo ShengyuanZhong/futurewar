@@ -38,6 +38,7 @@ class GameMemory:
     defense_layout: DefenseLayout | None = None
     opening_complete: bool = False
     repair_worker_id: int | None = None
+    repair_supplier_id: int | None = None
 
     def observe(self, turn) -> None:
         if self.day != turn.day:
