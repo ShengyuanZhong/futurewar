@@ -1,0 +1,87 @@
+{
+  "created_utc": "2026-09-21T02:38:34.087050+00:00",
+  "python": "3.10.6",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "rules_baseline": "local v1.0 2026-09-09; upstream commit recorded in DEVELOPMENT_RULES.md",
+  "tests": {
+    "run": 123,
+    "failures": 0,
+    "errors": 0
+  },
+  "synthetic_input_stress": {
+    "seeds": [
+      17,
+      20260917
+    ],
+    "teams": [
+      "challenger",
+      "defender"
+    ],
+    "cases": 80,
+    "pressure": "0..150 robots on night observations; no simulated match outcomes",
+    "failures": [],
+    "loadout_cases": {
+      "three_rockets": 40,
+      "mixed_compatibility": 40
+    },
+    "median_ms": 20.918,
+    "max_ms": 817.908
+  },
+  "source_hashes": {
+    "CoreGeek/app/__init__.py": "ac90658d59e0bdb5068ff620f3b2b1cbc9339df0b59a33264cd4dc2326b6a9ff",
+    "CoreGeek/app/config.py": "7b6e7f06e8f42adfc29c3a7f82630602a177c1dd15ca4099769f1c8bdc80128c",
+    "CoreGeek/app/server.py": "a08b22d2e90b0b2e4af8183d53f6ad4e946b853a6b14df276e34dc6cefdd491d",
+    "CoreGeek/app/service/__init__.py": "3703fd280555c674cdc2ffc883472ff4b8696d9a8919b0bcb69c2507445ad5a3",
+    "CoreGeek/app/service/llm_service.py": "25a6b151ddde9ea3eb93e70e11495912a006d5e0f991ef56ae394ad731763b6f",
+    "CoreGeek/app/service/memory.py": "9c16a78e5e141812e7c2d1e75250cdadde2eaa8c91a0ba6f08bc056487093ac4",
+    "CoreGeek/app/service/task_service.py": "f42ccf24f991f07d818e29c1c2fbb1fefebc206466e0be89d20049bc349e33e3",
+    "CoreGeek/app/service/turn_service.py": "e5beb58591b901748a77a8d381b0bbc8a20ad6ca3cd36786728fe31430edba4b",
+    "CoreGeek/main3.py": "977ebaacf991af1927ab75cb88698a1eca7c494d153851c5650cbcef67cbec80",
+    "CoreGeek/run_tests.py": "df960cddccd5a7ec3012b873aaf6580e36cb2c9124259322ed45e5a04329d60a",
+    "CoreGeek/src/agent/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "CoreGeek/src/agent/actions.py": "b610c460e1ca95eaf43c253063a3cdfd8282f83f477dac0b92e76057a75a77e7",
+    "CoreGeek/src/agent/brain.py": "dbfe96d06c1cd24695b2195bd1efab667d3471aa268b47c257b4f86668d7abfc",
+    "CoreGeek/src/agent/combat.py": "ea0fd2f563ea5f813ff552424bd9a5c81ddb999a37708b565e494286f382273e",
+    "CoreGeek/src/agent/construction.py": "6ab5dea018cb4c614b2d0c74b149725a795ec8ae892558d686f6b457bfd98429",
+    "CoreGeek/src/agent/grid.py": "cc75769c16eb1a6b71c179f2f3fe14a3da58be7fbd4230d1be4415940e958fe8",
+    "CoreGeek/src/agent/protocol.py": "e8a9d92be515839b7695097af632b71211a18a0c0d9f42ebcbdba41f1a5a252d",
+    "CoreGeek/src/agent/server.py": "70220a5075dbf80cbcbd639f41d454a7066b72074428cf9e7a64672d731c87e4",
+    "CoreGeek/src/agent/wall_guard.py": "8ae4eface4dddd38af664b7a975d869155ba183919622c51b0ef02063c662db4",
+    "CoreGeek/src/agent/worker_safety.py": "4ceac44dfaa0e323a3c3a55e06f657443512b672c4124efdf0d3aed983b3446e",
+    "CoreGeek/tests/__init__.py": "ec8b04e9f07ccb8027aafd7f0cad4d82af8a5d42a5ced9887397234e22e5636f",
+    "CoreGeek/tests/fixtures.py": "6f72021ced1795fd70987ef73f71f20131d0b519e048efe8268e964e0f766cde",
+    "CoreGeek/tests/test_actions.py": "1bf03dc64c9c6ddfe503f8d8b6ebc764c9d91b40fb0ebfd73a0439f219006e25",
+    "CoreGeek/tests/test_combat_strategy.py": "b6e49b4ae3e9bbc82663bbdea5200460687e4c84561198f76bdd5b1ababb8226",
+    "CoreGeek/tests/test_default_opening.py": "ebc273af493be89de103d57cb32a62783a72a12e9467ab70c4842ccf234075aa",
+    "CoreGeek/tests/test_http_config.py": "bc906d10beba252089d87e0ebf79cc484548fbe3d1212759baf72005158def38",
+    "CoreGeek/tests/test_maintenance.py": "ca5d57be5a09aa8e655f81cf8cc721c6d8117698d18d9cc0c5bb16731e015670",
+    "CoreGeek/tests/test_opening_defense.py": "ce57810428ae8af491d0508bcdfb18770808d0a0a10394915cfe9a4c78463e66",
+    "CoreGeek/tests/test_protocol.py": "8face6ac1cf67dc4640a711874c3ab0687c6d3735cc37f7b403fa2ccdb419ef9",
+    "CoreGeek/tests/test_services.py": "5c1e734e176c6916efe6faf5385be78e918aeec9ee303e51bd9bb6c2eeb5bad4",
+    "CoreGeek/tests/test_u_layout.py": "b2a258a13bcc220d60e1e9b645c5e33c5739a5e7cee38bb41ec31618ddab723d",
+    "CoreGeek/tests/test_worker_safety.py": "3d6e148994642a565eb3f57730c6ecc150fe10841b2f1f626006fd637c159b67",
+    "CoreGeek/tools/replay.py": "7a75d81b744d97de6255a9f7bcc451ab1c964de8e8fd7f6f1ba54d89f221f5d9",
+    "CoreGeek/tools/smoke_server.py": "706ac25d78d5c2663243ff5e55a69788c5aa42cdeb1d957e0fd0509d3f6cf435",
+    "CoreGeek/tools/validate.py": "5b4661cefbb11f4d8b0e7144569f86dc9471bb1ddd4a0e9bbc5fa2953ee660f2",
+    "CoreGeek/pyproject.toml": "fe4066333638e973524a674d28dc7f163072a4ae5445cd839446396a295a1fd5",
+    "CoreGeek/config.example.json": "2441f8776972772d1b622248f6e5c28d149054dac4e995edf9436ed69d6074b6",
+    "CoreGeek/run.sh": "5b5e487f21d92617336e0872702156ac9ed52d27f6dff89186f35cdcfc66af6e",
+    "run.sh": "30370a40ad49d9853f25a0374deb64e88677b9e8a04795a588d752353309a63d"
+  },
+  "baseline_hashes": {
+    "DEVELOPMENT_RULES.md": "77cf9f2dfe12e8bbd95c7f0e482f842c812d8b4d7fc3045fd0e1cdbdfcedf38b",
+    "任务书.md": "c548e2c66b85a71d52c60f23929b5af38caae1fc9908f8f2e5ddd0c457893d3e",
+    "接口文档.md": "931a65d09f881b30644225ca8d6b1bfbc7b2bea7b4f6ce50d1f70cf858cb144d",
+    "request.txt": "5fc36943ce3d7bbca678b6342cd4a6c092d91ae8032e3107e8e840ba8cc88d82",
+    "response.txt": "5daf8278d7f097417b50082165a28dc4ce03163323730dc160ee4f7a534ed8d0"
+  },
+  "construction_policy": "user-authorized base-surroundings fallback enabled by default; explicit verified layouts take precedence; not official geography",
+  "unverified": [
+    "D01 official construction coordinates",
+    "D07 trajectory cell-boundary ties and round conventions",
+    "full matches and held-out maps",
+    "official LLM/sandbox/judger integration",
+    "Linux bash entry on target runtime"
+  ],
+  "scope": "protocol and rule regression plus synthetic observation stress; not official certification or win rate"
+}

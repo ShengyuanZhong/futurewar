@@ -1,0 +1,13 @@
+{
+  "layouts": {},
+  "allow_base_surroundings": true,
+  "loadout": ["rocket", "rocket", "rocket"],
+  "sell_batch": 12,
+  "return_margin": 4,
+  "repair_start_day": 3,
+  "repair_stock": 5,
+  "repair_threshold_percent": 30,
+  "enable_tasks": true,
+  "enable_news": true,
+  "max_body_bytes": 2097152
+}

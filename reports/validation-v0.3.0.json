@@ -1,0 +1,80 @@
+{
+  "created_utc": "2026-09-18T02:42:31.546706+00:00",
+  "python": "3.10.6",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "rules_baseline": "local v1.0 2026-09-09; upstream commit recorded in DEVELOPMENT_RULES.md",
+  "tests": {
+    "run": 75,
+    "failures": 0,
+    "errors": 0
+  },
+  "synthetic_input_stress": {
+    "seeds": [
+      17,
+      20260917
+    ],
+    "teams": [
+      "challenger",
+      "defender"
+    ],
+    "cases": 80,
+    "pressure": "0..150 robots on night observations; no simulated match outcomes",
+    "failures": [],
+    "loadout_cases": {
+      "three_rockets": 40,
+      "mixed_compatibility": 40
+    },
+    "median_ms": 20.173,
+    "max_ms": 800.583
+  },
+  "source_hashes": {
+    "CoreGeek/app/__init__.py": "ac90658d59e0bdb5068ff620f3b2b1cbc9339df0b59a33264cd4dc2326b6a9ff",
+    "CoreGeek/app/config.py": "6329bd441f12e410c4fe3cecb83ec8ccd05492dedef8fc5ce71000fd982a3798",
+    "CoreGeek/app/server.py": "c6dfdb026e8c48610339d9f42963529ab161bcbd1adbd8fad85de2b953323795",
+    "CoreGeek/app/service/__init__.py": "3703fd280555c674cdc2ffc883472ff4b8696d9a8919b0bcb69c2507445ad5a3",
+    "CoreGeek/app/service/llm_service.py": "25a6b151ddde9ea3eb93e70e11495912a006d5e0f991ef56ae394ad731763b6f",
+    "CoreGeek/app/service/memory.py": "2c3e8b8cab0a6fe5dfcf64208a621fcfb1d1ea6851f7c88d66ecfbc9fbede663",
+    "CoreGeek/app/service/task_service.py": "f42ccf24f991f07d818e29c1c2fbb1fefebc206466e0be89d20049bc349e33e3",
+    "CoreGeek/app/service/turn_service.py": "2ab62fd77a93205c3ceb78d53263ceaf12b3223541e2983526205a6629971e44",
+    "CoreGeek/main3.py": "977ebaacf991af1927ab75cb88698a1eca7c494d153851c5650cbcef67cbec80",
+    "CoreGeek/run_tests.py": "df960cddccd5a7ec3012b873aaf6580e36cb2c9124259322ed45e5a04329d60a",
+    "CoreGeek/src/agent/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "CoreGeek/src/agent/actions.py": "b610c460e1ca95eaf43c253063a3cdfd8282f83f477dac0b92e76057a75a77e7",
+    "CoreGeek/src/agent/brain.py": "44a76bd87315ccb3d80f5fa2653a80d2b4edd820374a856edc983cd69d43881e",
+    "CoreGeek/src/agent/combat.py": "ea0fd2f563ea5f813ff552424bd9a5c81ddb999a37708b565e494286f382273e",
+    "CoreGeek/src/agent/construction.py": "8264ff16f7428627a8afda196b63485fde6a969deda8274367c763d959e56ecf",
+    "CoreGeek/src/agent/grid.py": "fcca69bcbb30eb07f0c1718b91fd1882ea3ca3900b190a856786d1e99d064465",
+    "CoreGeek/src/agent/protocol.py": "e8a9d92be515839b7695097af632b71211a18a0c0d9f42ebcbdba41f1a5a252d",
+    "CoreGeek/src/agent/server.py": "70220a5075dbf80cbcbd639f41d454a7066b72074428cf9e7a64672d731c87e4",
+    "CoreGeek/tests/__init__.py": "ec8b04e9f07ccb8027aafd7f0cad4d82af8a5d42a5ced9887397234e22e5636f",
+    "CoreGeek/tests/fixtures.py": "6f72021ced1795fd70987ef73f71f20131d0b519e048efe8268e964e0f766cde",
+    "CoreGeek/tests/test_actions.py": "bf6d14b130bc727f45b00c1ab5613475670ec6e4d120b95d7c014c32da105af1",
+    "CoreGeek/tests/test_combat_strategy.py": "04d326b5d8da21c7ccc1a03bc5c406f7359a41955ec22218b8f5c922b5bc7063",
+    "CoreGeek/tests/test_http_config.py": "162e677ea6146398cb738454411ed7d7e93e729451123ccf5411542fea4529a9",
+    "CoreGeek/tests/test_opening_defense.py": "06bec4d0f21eed54828368eec4f979cd6f8d8d13238b0fb7178a6d727667ac56",
+    "CoreGeek/tests/test_protocol.py": "8face6ac1cf67dc4640a711874c3ab0687c6d3735cc37f7b403fa2ccdb419ef9",
+    "CoreGeek/tests/test_services.py": "5c1e734e176c6916efe6faf5385be78e918aeec9ee303e51bd9bb6c2eeb5bad4",
+    "CoreGeek/tools/replay.py": "7a75d81b744d97de6255a9f7bcc451ab1c964de8e8fd7f6f1ba54d89f221f5d9",
+    "CoreGeek/tools/smoke_server.py": "3b2645d815e0d515a077b2f31db40b57e21dad7e94358a6213cdfff9ab16499e",
+    "CoreGeek/tools/validate.py": "74cb819ab0e442f566d5dbc0987fecb7f6a2cd5846fbf5117133aa2c138c116d",
+    "CoreGeek/pyproject.toml": "5e19c132ba71c850ae31aad531120eec1940a75af4d7725cf06de7bb60fac95d",
+    "CoreGeek/config.example.json": "f1c8d6e1ef8eb5f68fbd72c27c36f2ea5fec3ffe9f44bb0e231a4a9f2e645a43",
+    "CoreGeek/run.sh": "5b5e487f21d92617336e0872702156ac9ed52d27f6dff89186f35cdcfc66af6e",
+    "run.sh": "30370a40ad49d9853f25a0374deb64e88677b9e8a04795a588d752353309a63d"
+  },
+  "baseline_hashes": {
+    "DEVELOPMENT_RULES.md": "77cf9f2dfe12e8bbd95c7f0e482f842c812d8b4d7fc3045fd0e1cdbdfcedf38b",
+    "任务书.md": "c548e2c66b85a71d52c60f23929b5af38caae1fc9908f8f2e5ddd0c457893d3e",
+    "接口文档.md": "931a65d09f881b30644225ca8d6b1bfbc7b2bea7b4f6ce50d1f70cf858cb144d",
+    "request.txt": "5fc36943ce3d7bbca678b6342cd4a6c092d91ae8032e3107e8e840ba8cc88d82",
+    "response.txt": "5daf8278d7f097417b50082165a28dc4ce03163323730dc160ee4f7a534ed8d0"
+  },
+  "unverified": [
+    "D01 official construction coordinates",
+    "D07 trajectory cell-boundary ties and round conventions",
+    "full matches and held-out maps",
+    "official LLM/sandbox/judger integration",
+    "Linux bash entry on target runtime"
+  ],
+  "scope": "protocol and rule regression plus synthetic observation stress; not official certification or win rate"
+}
