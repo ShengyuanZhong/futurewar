@@ -1,0 +1,11 @@
+{
+  "status": 200,
+  "elapsed_ms": 45.967,
+  "actions": 3,
+  "entry": "python CoreGeek/main3.py <port>",
+  "request": "unmodified request.txt",
+  "bind_verified_from_startup_log": true,
+  "bash_executed": false,
+  "construction_warning": false,
+  "base_surroundings_enabled": true
+}

@@ -1,6 +1,6 @@
 # CoreGeek 参赛 Agent
 
-当前版本0.3.4：保留既有布局与升级顺序，新增工人避险、批量购券和第三天起专人夜修，默认备5包、低于30%修墙。详见[工人策略](docs/WORKER_SAFETY.md)与[建筑维护](docs/MAINTENANCE.md)。
+当前版本0.3.5：接入自进化任务prompt、v2协议、执行历史和回合预算，见[任务模块接入](docs/TASK_INTEGRATION.md)。继承0.3.4策略：保留既有布局与升级顺序，新增工人避险、批量购券和第三天起专人夜修，默认备5包、低于30%修墙。详见[工人策略](docs/WORKER_SAFETY.md)与[建筑维护](docs/MAINTENANCE.md)。
 
 此目录可作为参赛程序目录提交。沿用示例的 `main3.py`、`src/agent/protocol.py`、`grid.py`、`brain.py`；HTTP 处理与跨回合协作放在 `app`。新增代码无第三方运行依赖。
 
@@ -71,9 +71,9 @@ python main3.py 8080 --config config.local.json
 
 ```powershell
 python run_tests.py
-python tools/smoke_server.py --output ../reports/http-smoke-v0.3.4.json
-python tools/replay.py ../request.txt --output ../reports/sample-response-v0.3.4.json
-python tools/validate.py --cases 20 --output ../reports/validation-v0.3.4.json
+python tools/smoke_server.py --output ../reports/http-smoke-v0.3.5.json
+python tools/replay.py ../request.txt --output ../reports/sample-response-v0.3.5.json
+python tools/validate.py --cases 20 --output ../reports/validation-v0.3.5.json
 ```
 
 回放输入支持单个 JSON、JSON 数组、每行一份观测的 JSONL。单个队伍按回合递增；同回合相同内容返回缓存，不同内容拒绝，以免状态被重复推进。
@@ -177,3 +177,5 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 会话级功能新增字段时，检查`GameMemory.observe/record`以及日重置、首轮重置、重复请求测试。新增策略优先从`Strategy`调用`plan.add`；已返回True或被加入`plan.used`的角色，不应继续安排另一个动作。
 
 新增参数`repair_start_day=3`、`repair_stock=5`、`repair_threshold_percent=30`见[参数说明](docs/WORKER_SAFETY.md)。
+
+任务模块新增`app/service/task_prompt.py`（用户提供的纯提示生成器）与`task_context.py`（回复校验、证据裁剪、诊断和预算）。`temp/`是资料入口，不参与运行/打包。详细函数参数及Postman联调见[任务文档](docs/TASK_INTEGRATION.md)。

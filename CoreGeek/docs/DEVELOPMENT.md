@@ -1,6 +1,6 @@
 # 开发与维护文档
 
-更新日期：2026-09-21，版本0.3.4。此次在0.3.3上增加工人避险、批量购买、第三天专职夜修，属于策略优化，涉及R02/R03/R05/R06。详见[工人策略](WORKER_SAFETY.md)。基准快照、升级顺序、关键函数和参数见[维护策略](MAINTENANCE.md)。官方规则文件及两个示例均未修改。
+更新日期：2026-09-21，版本0.3.5。本轮接入用户任务生成器，新增v2适配、实际命令上下文和预算，涉及R01/R07；详见[任务模块开发文档](TASK_INTEGRATION.md)。保留0.3.4的工人避险、批量购买、第三天专职夜修，属于策略优化，涉及R02/R03/R05/R06。详见[工人策略](WORKER_SAFETY.md)。基准快照、升级顺序、关键函数和参数见[维护策略](MAINTENANCE.md)。官方规则文件及两个示例均未修改。
 
 ## 1. 设计目标与边界
 
@@ -23,6 +23,8 @@ CoreGeek/
 │       ├── turn_service.py       # 一次回合事务、缓存、状态隔离
 │       ├── memory.py             # 新闻、任务、额度与行为反馈记忆
 │       ├── llm_service.py        # prompt、结构化回复解析与校验
+│       ├── task_prompt.py       # 用户提供的prompt生成器
+│       ├── task_context.py      # 协议适配、证据、诊断与预算
 │       └── task_service.py       # 活跃任务、沙盒与答案协作
 ├── src/agent/
 │   ├── protocol.py               # 官方 DTO、常量、坐标与结果解析
@@ -128,7 +130,7 @@ flowchart LR
 
 ### 任务与新闻
 
-修改prompt在`llm_service.py`；任务推进在`task_service.py`；新闻、额度、失败献祭缓存放在`memory.py`。`TaskService.active`新增默认False的`defense_due`参数：需要回防时停止任务输出并释放开拓者。离开任务范围可能导致任务结束，仍由官方下一轮`phaseTask`反映，不自行改写题目状态。没有武器/防守责任时，活跃任务可以继续保持站位。
+用户prompt生成器在`task_prompt.py`，项目附加约束在`llm_service.py`；协议规范化、上下文和预算在`task_context.py`；任务推进在`task_service.py`；新闻、额度、失败献祭缓存放在`memory.py`。`TaskService.active`新增默认False的`defense_due`参数：需要回防时停止任务输出并释放开拓者。离开任务范围可能导致任务结束，仍由官方下一轮`phaseTask`反映，不自行改写题目状态。没有武器/防守责任时，活跃任务可以继续保持站位。
 
 `skill` 内容最多保存最近8条，每条4000字符，是待验证的解题方法。没有通过率字段时，不擅自将其标记为成功经验。任务完成、超时、最高通过率奖励均由判题器决定。
 
@@ -139,7 +141,7 @@ flowchart LR
 1. 在变更说明中注明工程/策略/规则修复，以及 R 编号；不改任务书和接口原文迁就代码。
 2. 规则修复先在 `tests` 添加可手算反例，确认能捕获问题，再修改 `protocol/actions/grid` 等共享模块。
 3. 新角色策略通过 `Strategy` 调用 `ActionPlan`；新跨回合信息加到 `GameMemory`，确保拷贝提交、重复请求和换边测试覆盖。
-4. 新 LLM 返回字段必须在 `LLMService` 显式校验；不要执行任意返回的 Python，也不要把 LLM 给出的整份角色动作直接合入响应。
+4. 新 LLM 返回字段必须在 `LLMService`/`task_context.normalize_reply` 显式校验；不要执行任意返回的 Python，也不要把 LLM 给出的整份角色动作直接合入响应。
 5. 修改后运行`python run_tests.py`。涉及入口/协议时再跑`tools/smoke_server.py --output ../reports/http-smoke-版本.json`；更新验证报告运行`tools/validate.py --cases 20 --output ../reports/validation-版本.json`，保留旧报告。
 6. 在真实平台获得回放后，另存请求序列、平台版本与结算结果。输入可以直接交给 `tools/replay.py`，但离线回放不会模拟命令结果。
 

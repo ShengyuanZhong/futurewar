@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any
 from agent.construction import DefenseLayout
+from .task_context import DEFAULT_TIMEOUT, observe_task, task_timeout
 
 
 def treasure_signature(clue: dict) -> tuple:
@@ -22,6 +23,13 @@ class GameMemory:
     mine_closures: list[dict[str, Any]] = field(default_factory=list)
     task_description: str = ""
     task_started: int = 0
+    task_timeout_rounds: int = DEFAULT_TIMEOUT
+    task_accept_round: int = 0
+    task_accept_timeout: int = DEFAULT_TIMEOUT
+    task_context: list[str] = field(default_factory=list)
+    task_execution: dict[str, Any] | None = None
+    task_last_command: str = ""
+    task_last_command_failed: bool = False
     task_history: list[dict[str, Any]] = field(default_factory=list)
     skills: list[str] = field(default_factory=list)
     failed_mines: dict[str, int] = field(default_factory=dict)
@@ -43,8 +51,7 @@ class GameMemory:
             if self.task_description:
                 self.task_history.append({"event": "task_ended", "round": turn.round_no,
                                           "errors": turn.errors, "note": "结束不代表全部通过；分数与奖励由判题器决定"})
-            self.task_description = turn.phase_task
-            self.task_started = turn.round_no if turn.phase_task else 0
+        observe_task(turn, self)
         if turn.phase_task and (turn.command_result.raw or turn.errors):
             self.task_history.append({"round": turn.round_no, "commandStatus": turn.command_result.status,
                                       "exitCode": turn.command_result.exit_code,
@@ -71,5 +78,8 @@ class GameMemory:
         self.last_round = turn.round_no
         self.last_commands = plan.commands
         self.summon_attempts = plan.summon_used
+        if any(c["action"] == "acceptTask" for c in plan.commands.values()):
+            self.task_accept_round = turn.round_no
+            self.task_accept_timeout = task_timeout(turn)
         if any(c["action"] == "summonTreasure" for c in plan.commands.values()):
             self.treasure_attempt_round = turn.round_no

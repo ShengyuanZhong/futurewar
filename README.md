@@ -2,7 +2,7 @@
 
 基于本目录《未来战争》v1.0 任务书、接口文档和 `DEVELOPMENT_RULES.md` 实现的参赛 HTTP Agent。保留 CoreGeek 的 `main3.py → src/agent` 基础结构，新增 `CoreGeek/app` 应用层。运行仅依赖 Python 标准库，Python 3.10 及以上。
 
-当前程序版本为 `0.3.4`，声明位置是 [CoreGeek/pyproject.toml](CoreGeek/pyproject.toml)。在0.3.3上增加工人机器人避险、升级券批量购买，以及第三天起一工人备5个修复包并夜间墙内值守、墙血低于30%时维修。保留原升级顺序：第一天只升级火箭，第二天起火箭2级→墙2级→火箭3级→墙3级→基地，墙按迎敌方向由前到后升级。U形布局与P站位保持。优先使用初始75金币建三座火箭，再攒石建墙；夜间开拓者轮换操炮，普通工人避险采矿，第三天起专人修墙。本文说明当前代码实际行为；协议、策略和工程参数分别标注，方便后续定位修改位置。
+当前程序版本为 `0.3.5`，声明位置是 [CoreGeek/pyproject.toml](CoreGeek/pyproject.toml)。本版接入用户提供的自进化任务模块，新增v2协议适配、跨回合执行证据、错误诊断和剩余回合预算；详见[任务接入文档](CoreGeek/docs/TASK_INTEGRATION.md)。保留0.3.4策略：工人机器人避险、升级券批量购买，以及第三天起一工人备5个修复包并夜间墙内值守、墙血低于30%时维修。保留原升级顺序：第一天只升级火箭，第二天起火箭2级→墙2级→火箭3级→墙3级→基地，墙按迎敌方向由前到后升级。U形布局与P站位保持。优先使用初始75金币建三座火箭，再攒石建墙；夜间开拓者轮换操炮，普通工人避险采矿，第三天起专人修墙。本文说明当前代码实际行为；协议、策略和工程参数分别标注，方便后续定位修改位置。
 
 ## 阅读导航
 
@@ -49,7 +49,8 @@ bash run.sh 8080
 | [规则覆盖与差异登记](CoreGeek/docs/RULE_COVERAGE.md) | R01–R08、D01–D08、仍待确认的行为 |
 | [开局防御策略](CoreGeek/docs/OPENING_DEFENSE.md) | 三火箭布局、攒石建墙、单人轮换、测试与升级步骤 |
 | [实现现状](DEMO.md) | 本轮完成范围与未完成的外部验证 |
-| [v0.3.4验证报告](reports/VALIDATION-v0.3.4.md) | 当前源码测试证据、哈希、验证边界；旧报告独立保留 |
+| [任务模块接入](CoreGeek/docs/TASK_INTEGRATION.md) | 用户提示词、协议转换、证据历史、诊断、预算和Postman逐轮调试 |
+| [v0.3.5验证报告](reports/VALIDATION-v0.3.5.md) | 当前源码测试证据、哈希、验证边界；旧报告独立保留 |
 | [开发规则](DEVELOPMENT_RULES.md) | 本地开发约束与官方规则索引，原文保留 |
 | [任务书](任务书.md) / [接口文档](接口文档.md) | 原始比赛规则与接口定义，原文保留 |
 
@@ -57,9 +58,9 @@ bash run.sh 8080
 
 ```powershell
 python CoreGeek/run_tests.py
-python CoreGeek/tools/smoke_server.py --output reports/http-smoke-v0.3.4.json
-python CoreGeek/tools/replay.py request.txt --output reports/sample-response-v0.3.4.json
-python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v0.3.4.json
+python CoreGeek/tools/smoke_server.py --output reports/http-smoke-v0.3.5.json
+python CoreGeek/tools/replay.py request.txt --output reports/sample-response-v0.3.5.json
+python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v0.3.5.json
 ```
 
 `replay.py` 只计算响应，不执行响应中的沙盒命令或 LLM 请求。验证脚本生成的压力结果是合成观测检查，不是比赛模拟、官方难度或胜率。
@@ -81,10 +82,10 @@ futurewar/
 ├── .gitignore                        # 忽略缓存、构建中间文件和本地配置
 ├── reports/
 │   ├── VALIDATION.md                 # 人类可读的历史验证报告
-│   ├── VALIDATION-v0.3.4.md          # 避险、批量采购与夜间修墙验证报告
-│   ├── validation-v0.3.4.json        # 本版测试、压力、环境与源码哈希
-│   ├── http-smoke-v0.3.4.json        # 本版真实进程HTTP验证
-│   ├── sample-response-v0.3.4.json   # 本版对原样例的响应
+│   ├── VALIDATION-v0.3.5.md          # 任务模块接入验证报告
+│   ├── validation-v0.3.5.json        # 本版测试、压力、环境与源码哈希
+│   ├── http-smoke-v0.3.5.json        # 本版真实进程HTTP验证
+│   ├── sample-response-v0.3.5.json   # 本版对原样例的响应
 │   ├── validation.json               # 测试/压力结果、环境、源码和规则文件SHA256
 │   ├── http-smoke.json               # 实际启动进程后的HTTP检查结果
 │   └── sample-response.json          # 原请求样例生成的离线响应
@@ -105,6 +106,8 @@ futurewar/
     │       ├── turn_service.py       # 整个回合的编排、缓存、锁和事务式状态提交
     │       ├── memory.py             # 额度、新闻、任务、失败反馈和开局布局记忆
     │       ├── llm_service.py        # 构造prompt、消费LLM回复、校验新闻推理结果
+    │       ├── task_prompt.py        # 用户提供的自进化prompt生成器
+    │       ├── task_context.py       # 协议适配、证据历史、诊断与预算
     │       └── task_service.py       # 活跃任务期间的答案/沙盒命令处理
     ├── src/
     │   └── agent/
@@ -150,7 +153,7 @@ futurewar/
         ├── coregeek_futurewar-0.3.1-py3-none-any.whl  # 历史默认建造版本
         ├── coregeek_futurewar-0.3.2-py3-none-any.whl  # 用户认可的基准版本
         ├── coregeek_futurewar-0.3.3-py3-none-any.whl  # 历史维护策略版本
-        └── coregeek_futurewar-0.3.4-py3-none-any.whl  # 当前可选构建产物
+        └── coregeek_futurewar-0.3.5-py3-none-any.whl  # 当前可选构建产物
 ```
 
 `config.local.json` 是可选文件，初始不会自动创建。`dist/` 由打包生成；`__pycache__/`、`build/`、`*.egg-info/` 是运行或构建缓存，不属于业务架构。
@@ -341,7 +344,7 @@ PYTHON=/usr/bin/python3 bash CoreGeek/run.sh 8080
 | 连接读写超时 | 4.0秒 | `Handler.setup` | socket操作超时，不等于官方完整请求时限 |
 | 会话缓存上限 | 16个 | `TurnService.decide` | 成功处理后按使用顺序淘汰旧会话 |
 | 待解析LLM回复 | 256KiB | `parse_object` | 过长视为无有效结构化回复 |
-| 沙盒命令 / 提交答案大小 | 32KiB / 128KiB | `TaskService.active` | 本地接受上限，按UTF-8编码字节计 |
+| 沙盒命令 / 提交答案大小 | 32KiB / 128KiB | `task_context.normalize_reply` | 本地接受上限，按UTF-8编码字节计 |
 | 方法提示 | 最近8条，每条4000字符 | `TaskService.active` | 控制跨任务提示体积；仍属待验证经验 |
 | 任务历史窗口 | `observe`时保留最近12条 | `GameMemory.observe` | 本轮提交还可能在窗口之后追加一条 |
 | 失败矿点退避 | 3轮 | `GameMemory.observe` | 暂避对应坐标，不断言该矿种永久停产 |
@@ -486,7 +489,9 @@ empty_response() -> dict
 | 矿区 | `mine_closures`、`failed_mines` | 新闻推理的停矿窗口、单个失败矿点的短期退避 |
 | 开局防线 | `defense_layout`、`opening_complete` | 复用选定炮位/共同站位；观测确认三炮及配置墙已建好后标记完成，换日保留、新局重置 |
 | 夜间维修工 | `repair_worker_id` | 稳定记录工人ID；死亡/消失时接替，新局重置 |
-| 任务 | `task_description`、`task_started`、`task_history`、`skills` | 活跃任务原文、首次观察回合、反馈历史、待验证方法 |
+| 任务 | `task_description`、`task_started`、`task_history`、`skills` | 活跃任务、开始轮估计、元信息、待验证方法 |
+| 任务证据 | `task_context`、`task_execution`、`task_last_command`、`task_last_command_failed` | 有限长度命令/结果历史、下一轮反馈关联、失败重试约束 |
+| 任务预算 | `task_accept_round`、`task_accept_timeout`、`task_timeout_rounds` | 接任务时捕获的轮次、时长及当前预算 |
 | 上轮动作 | `last_commands`、`last_round` | 把下一轮反馈与本轮输出关联起来 |
 
 | 函数 | 参数 | 返回与副作用 |
@@ -495,7 +500,7 @@ empty_response() -> dict
 | `record(turn, plan)` | 当前观测和已完成动作计划 | 返回`None`；写入上轮命令、召唤尝试数、宝藏尝试回合 |
 | `treasure_signature(clue)` | 已具备坐标、items、时间窗口的宝藏字典 | 返回可哈希元组；物品排序后保留重复数量，用于失败方案去重 |
 
-`task_started`记录首次观察到当前任务原文的回合，不是判题器返回的精确接取回合，不能用它自行代替官方计分。`skills`是解题建议，当前不包含“已判题通过”的可信标记。所有记忆保存在进程内，没有数据库或磁盘自动恢复。
+`task_started`在接任务后紧接下一轮出现题目时使用本服务发出acceptTask的轮次，否则使用首次观测轮次估计。时长从接取点timeoutRounds捕获，缺失按15轮估计，不能替代官方计分/超时结算。`skills`是解题建议，当前不包含“已判题通过”的可信标记。所有记忆保存在进程内，没有数据库或磁盘自动恢复。
 
 ### LLM协作：LLMService
 
@@ -505,7 +510,7 @@ empty_response() -> dict
 |---|---|---|---|
 | `parse_object(text)` | LLM文本字符串 | JSON字典；无效为`{}` | 支持完整代码围栏；只解析数据，不执行内容 |
 | `digest(value)` | 可JSON序列化对象 | SHA256十六进制字符串 | 排序字典key后计算，用于请求和新闻去重 |
-| `consume(turn, memory)` | 当前观测与记忆 | `(purpose, reply)` | 清空旧pending；仅接收发送后的紧接下一轮，任务还须匹配原文 |
+| `consume(turn, memory)` | 当前观测与记忆 | `(purpose, reply)` | 清空旧pending；仅接收发送后的紧接下一轮，任务还须匹配原文及开始轮 |
 | `task_prompt(turn, memory)` | 活跃任务、命令结果、历史 | prompt字符串 | 设置task pending；不增加普通LLM额度 |
 | `news_prompt(turn, memory)` | 历史新闻、当前价格、记忆 | prompt或空字符串 | 无新内容或额度用完时不调用；有调用则增加普通计数并记录news pending |
 | `apply_news(turn, memory, data)` | 结构化新闻回复 | `None` | 校验停矿信息与宝藏计划，将接受的结果写入记忆 |
@@ -528,10 +533,10 @@ TaskService.active(turn, memory, plan, llm, reply: dict, defense_due: bool = Fal
 | `memory` | 工作副本`GameMemory` | 保存方法提示和提交历史 |
 | `plan` | 当前`ActionPlan` | 加入submitAnswer，或保留开拓者本轮动作 |
 | `llm` | `LLMService` | 没有可用命令/答案时生成下一次prompt |
-| `reply` | 已通过轮次匹配的任务回复字典 | 读取`taskAnswer/executeCmd/skill` |
+| `reply` | 已通过轮次匹配的任务回复字典 | 读取v2的`action/command/answer`，兼容旧`taskAnswer/executeCmd/skill` |
 | `defense_due` | 是否需要开拓者回防，默认False | True时不提交答案、不发任务prompt/命令、不占用开拓者；由Strategy接管防御 |
 
-返回顺序为`(prompt, executeCmd)`。需要回防、无活跃任务或开拓者死亡时返回两个空字符串。其余时候合法非空答案优先于命令；答案通过`plan.add`提交。命令只放入返回值，由判题器在沙盒执行；当前进程不会调用`subprocess`执行它。正常任务分支保留开拓者，避免策略安排第二个动作。回防离开任务范围可能导致任务结束，程序不自行清空官方`phaseTask`。
+返回顺序为`(prompt, executeCmd)`。需要回防、无活跃任务或开拓者死亡时返回两个空字符串。其余时候仅接收单一明确分支；答案和命令同时出现会重新请求回复。答案通过`plan.add`提交。剩余≤2轮不再发新命令；原样重复上次已确认失败命令也会重新提示。命令只放入返回值，由判题器在沙盒执行；当前进程不会调用`subprocess`执行它。正常任务分支保留开拓者，避免策略安排第二个动作。回防离开任务范围可能导致任务结束，程序不自行清空官方`phaseTask`。
 
 <a id="strategy-api"></a>
 
@@ -708,6 +713,8 @@ Strategy.run() -> None
 
 ## 任务、新闻与宝藏流程
 
+任务模块的目录、关键参数、证据上限、时限计算及Postman逐轮示例见[任务接入与维护](CoreGeek/docs/TASK_INTEGRATION.md)。`temp/`是后续用户资料入口，正式运行不依赖该目录。
+
 ### 自进化任务
 
 ```mermaid
@@ -733,16 +740,16 @@ sequenceDiagram
 内部约定的LLM回复示例：
 
 ```json
-{"executeCmd": "python3 inspect_task.py", "taskAnswer": "", "skill": "先检查任务数据字段，再计算答案"}
+{"action": "execute_command", "command": "python3 inspect_task.py"}
 ```
 
 或者：
 
 ```json
-{"executeCmd": "", "taskAnswer": "{\"answer\":42}", "skill": ""}
+{"action": "final_answer", "answer": "{\"answer\":42}"}
 ```
 
-这是给LLM的回复约定，未向官方请求增加字段。`taskAnswer`仍是字符串，即使任务答案本身是JSON，也要放成字符串。Agent收到命令时先返回命令，等待下一轮结果后再组织新的prompt，不会凭空预测沙盒输出。
+这是用户模块的v2回复约定，兼容旧executeCmd/taskAnswer格式，未向官方请求增加字段。command映射顶层executeCmd，answer映射角色submitAnswer.taskAnswer。`taskAnswer`仍是字符串，即使任务答案本身是JSON，也要放成字符串。Agent收到命令时先返回命令，等待下一轮结果后再组织新的prompt，不会凭空预测沙盒输出。
 
 任务完成/超时/死亡的真实奖励与最高通过率由判题器维护；程序保存反馈并支持重新作答。需要回防时停止任务输出，允许开拓者离开；离开范围可能结束任务，下一轮以`phaseTask`为准。没有防守责任时继续保持任务站位。题目结束后迟到的LLM命令不会再进入executeCmd。
 
@@ -837,10 +844,10 @@ if step is not None:
 
 ```powershell
 python CoreGeek/run_tests.py
-python CoreGeek/tools/replay.py request.txt --output reports/sample-response-v0.3.4.json
+python CoreGeek/tools/replay.py request.txt --output reports/sample-response-v0.3.5.json
 python CoreGeek/tools/replay.py observations.jsonl --output reports/replayed-responses.json --config CoreGeek/config.local.json
-python CoreGeek/tools/smoke_server.py --output reports/http-smoke-v0.3.4.json
-python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v0.3.4.json
+python CoreGeek/tools/smoke_server.py --output reports/http-smoke-v0.3.5.json
+python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v0.3.5.json
 ```
 
 上述JSONL命令需要先准备`observations.jsonl`。工具会覆盖指定的同名输出；新版本应另取报告文件名，保留历史证据。`validate.py`不会自动重写人工说明，修改代码后需另存对应版本的说明。本版压力观测同时覆盖三火箭和混合旧炮，增加“仅开拓者攻击”和输入冷却为0的断言。
@@ -858,7 +865,7 @@ python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v0.3.4.
 | `test_http_config.py` | HTTP响应/错误、请求上限、配置文件检查 | 启动入口、网络层、配置变化 |
 | `fixtures.py` | 统一合成数据构造，布局专供测试 | 不能当官方地图坐标或规则来源 |
 
-v0.3.4报告记录123个测试通过、80份合成观测检查通过。数值和源码指纹见[当前验证报告](reports/VALIDATION-v0.3.4.md)及[机器记录](reports/validation-v0.3.4.json)。[原报告](reports/VALIDATION.md)的56个测试属于v0.2.0历史证据；两者均不代表正式比赛通过或胜率。
+v0.3.5报告记录140个测试通过、80份合成观测检查通过。数值和源码指纹见[当前验证报告](reports/VALIDATION-v0.3.5.md)及[机器记录](reports/validation-v0.3.5.json)。[原报告](reports/VALIDATION.md)的56个测试属于v0.2.0历史证据；两者均不代表正式比赛通过或胜率。
 
 `validate.independent_contract(raw, response)`是压力工具中的附加结构断言，检查角色互斥、移动占用和攻击时机等。它不是完整判题器，不能代替官方平台对动作执行结果和比分的裁定。
 
@@ -878,7 +885,7 @@ v0.3.4报告记录123个测试通过、80份合成观测检查通过。数值和
 | 改寻路或拥挤处理 | `grid.Routes`、`Turn.blocked`、`plan.reserved` | 官方八方向及同时结算约束 |
 | 改三炮站位与轮换 | `select_defense_layout`、`control_position/operate_weapons` | 共同邻格、冷却0、每轮一炮、工人不操炮 |
 | 改选敌和火力分配 | `choose_targets/damage_for` | 射程、目标数量、90°、预测HP与真实HP分离 |
-| 改任务解题提示 | `LLMService.task_prompt` | reply结构、命令结果语义、不能在本机执行 |
+| 改任务解题提示 | `task_prompt.build_self_evolve_prompt`、`LLMService.task_prompt` | reply结构、命令结果语义、不能在本机执行 |
 | 改任务动作流程 | `TaskService.active`、`Strategy.task` | 回防优先、离开任务点的代价、过期回复和免费额度 |
 | 改新闻/宝藏推理 | `news_prompt/apply_news`、`Strategy.treasure` | 长期线索、精确物品、时间窗口、失败去重 |
 | 新增跨回合字段 | `GameMemory` | observe/record、深拷贝、换日与新局重置 |
