@@ -1,6 +1,6 @@
 # CoreGeek 参赛 Agent
 
-当前版本0.3.7：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后两翼六墙升2级。基地不升级。全部达标后双工人墙内维修，白天轮流批量买包，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。新增工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。原任务模块、U形阵型和升级顺序保留。
+当前版本0.3.8：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后两翼六墙升2级。基地不升级。全部达标后双工人墙内维修，白天轮流批量买包，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。本版统一昼夜经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。原任务模块、U形阵型和升级顺序保留。
 
 此目录可作为参赛程序目录提交。沿用示例的 `main3.py`、`src/agent/protocol.py`、`grid.py`、`brain.py`；HTTP 处理与跨回合协作放在 `app`。新增代码无第三方运行依赖。
 
@@ -59,7 +59,7 @@ python main3.py 8080 --config config.local.json
 - 官方请求解析，敌方可见单位与双格任务点障碍，八方向寻路。
 - 同回合目标预留、共享金币预算、角色与武器操控互斥。
 - 开局75金币先建三火箭，再攒够石头建墙；后续按实时价格卖矿、购买与使用升级券。
-- 规划三炮共同操控格，黄昏开拓者回防，夜间每轮选一座冷却完成的炮发射；普通工人避险挖矿，第三天起维修工黄昏回到墙内、夜间专职修墙。
+- 规划三炮共同操控格，黄昏开拓者回防，夜间每轮选一座冷却完成的炮发射；普通工人昼夜按相同经济优先级工作，夜间避险且禁建；第三天起维修工黄昏回到墙内，夜间维修优先并可沿内侧升级。
 - 防御优先于活跃任务与宝藏；保留射程、目标数量、伤害估值和角色互斥检查。
 - 开拓者接任务，官方 LLM / 沙盒探索，提交与修订答案，保存跨任务方法提示。
 - 跨日新闻积累、停矿信息推理、宝藏购买与定时献祭、失败方案去重。
@@ -71,9 +71,9 @@ python main3.py 8080 --config config.local.json
 
 ```powershell
 python run_tests.py
-python tools/smoke_server.py --output ../reports/http-smoke-v0.3.7.json
-python tools/replay.py ../request.txt --output ../reports/sample-response-v0.3.7.json
-python tools/validate.py --cases 20 --output ../reports/validation-v0.3.7.json
+python tools/smoke_server.py --output ../reports/http-smoke-v0.3.8.json
+python tools/replay.py ../request.txt --output ../reports/sample-response-v0.3.8.json
+python tools/validate.py --cases 20 --output ../reports/validation-v0.3.8.json
 ```
 
 回放输入支持单个 JSON、JSON 数组、每行一份观测的 JSONL。单个队伍按回合递增；同回合相同内容返回缓存，不同内容拒绝，以免状态被重复推进。
@@ -140,7 +140,7 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | [src/agent/brain.py](src/agent/brain.py) | `Strategy.run()` | 就地更新ActionPlan，编排角色行为 |
 | 同上 | `route/travel/cost/interact` | 缓存寻路、走一步、估算成本、靠近或操作 |
 | 同上 | `opening_stage/opening_worker/stone_targets/missing_walls` | 开局阶段、建造顺序、石头配额和缺墙列表 |
-| 同上 | `night_worker/clear_build_cell` | 夜间采矿、墙材保护、建筑位与操控格避让 |
+| 同上 | `night_worker/clear_build_cell` | night_worker兼容转入run_worker；昼夜经济统一、墙材保护及建筑位避让 |
 | 同上 | `control_position/pioneer_should_defend/move_to_control/operate_weapons` | 选择操控格、黄昏回防、就位和单人轮换 |
 | 同上 | `worker/build_weapon/build_wall/wall_keeps_exit` | 后续工人策略、建炮、建墙和通路检查 |
 | 同上 | `consume/sell/buy_upgrade/mine` | 使用物品、销售、购买升级券、采矿 |
@@ -183,3 +183,5 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 升级目标集中于[src/agent/upgrade_policy.py](src/agent/upgrade_policy.py)，由`wall_group/wall_target_level/upgrade_candidates/purchase_needs/upgrades_complete`计算；具体参数见[维护开发文档](docs/MAINTENANCE.md#6-关键模块函数与参数)。
 
 `src/agent/worker_coordinator.py`负责逐工人目的格与让行，`WallGuard.daily_stock`计算第3天5包、此后每日+3及昨日消耗+2的目标；可用`repair_stock_per_day`调整。
+
+昼夜统一经济、维修工升级范围、夜间限制与跨边界测试见[工人昼夜调度](docs/WORKER_SCHEDULE.md)。

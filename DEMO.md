@@ -1,6 +1,6 @@
 # 当前实现现状
 
-更新日期：2026-09-22，程序版本0.3.7。本文件补齐`DEVELOPMENT_RULES.md`引用的实现入口；不补造历史模拟器结果。
+更新日期：2026-09-22，程序版本0.3.8。本文件补齐`DEVELOPMENT_RULES.md`引用的实现入口；不补造历史模拟器结果。
 
 CoreGeek 已从仅含建造/采集/单目标夜间攻击的 demo，扩展为有应用层和跨回合记忆的 HTTP Agent。
 
@@ -27,4 +27,6 @@ CoreGeek 已从仅含建造/采集/单目标夜间攻击的 demo，扩展为有�
 
 0.3.7增加工人独立任务、协作侧移、城墙掩护和动态备货，见[工人协作](CoreGeek/docs/WORKER_COORDINATION.md)。
 
-本轮具体运行结果见[0.3.7报告](reports/VALIDATION-v0.3.7.md)，原[0.2.0报告](reports/VALIDATION.md)保留；机器报告包含源码与官方基线SHA256。策略阶段和关键函数见[开局防御策略](CoreGeek/docs/OPENING_DEFENSE.md)。未提供完整判题模拟器或调试网页。
+0.3.8以用户确认的0.3.7为基准，统一工人昼夜经济与升级配送，维修工在墙内兼顾升级，见[昼夜统一调度](CoreGeek/docs/WORKER_SCHEDULE.md)。
+
+本轮具体运行结果见[0.3.8报告](reports/VALIDATION-v0.3.8.md)，原[0.2.0报告](reports/VALIDATION.md)保留；机器报告包含源码与官方基线SHA256。策略阶段和关键函数见[开局防御策略](CoreGeek/docs/OPENING_DEFENSE.md)。未提供完整判题模拟器或调试网页。

@@ -2,7 +2,7 @@
 
 基于本目录《未来战争》v1.0 任务书、接口文档和 `DEVELOPMENT_RULES.md` 实现的参赛 HTTP Agent。保留 CoreGeek 的 `main3.py → src/agent` 基础结构，新增 `CoreGeek/app` 应用层。运行仅依赖 Python 标准库，Python 3.10 及以上。
 
-当前程序版本为 `0.3.7`，声明位置是 [CoreGeek/pyproject.toml](CoreGeek/pyproject.toml)。开局仍为三火箭→采石→U形墙，随后集中升满一台火箭；第二天起依次强化正中两墙3级、第二台火箭2级、正面其余四墙2→3级、所有火箭3级，最后把两翼六墙升2级；不升级基地。全部目标达成后，两名工人全天墙内维修，白天轮流采购，后续金币用于修复包。阈值仍为严格低于30%。详细坐标、镜像、购买规则和关键函数见[建筑维护](CoreGeek/docs/MAINTENANCE.md)。本版新增工人独立任务与目的格、堵路侧移让行、城墙掩护、上下分区值守，以及随天数和昨日消耗增加的备货量，详见[工人协作](CoreGeek/docs/WORKER_COORDINATION.md)。任务模块、三炮阵型和P站位保持。
+当前程序版本为 `0.3.8`，声明位置是 [CoreGeek/pyproject.toml](CoreGeek/pyproject.toml)。开局仍为三火箭→采石→U形墙，随后集中升满一台火箭；第二天起依次强化正中两墙3级、第二台火箭2级、正面其余四墙2→3级、所有火箭3级，最后把两翼六墙升2级；不升级基地。全部目标达成后，两名工人全天墙内维修，白天轮流采购，后续金币用于修复包。阈值仍为严格低于30%。详细坐标、镜像、购买规则和关键函数见[建筑维护](CoreGeek/docs/MAINTENANCE.md)。沿用工人独立任务、让行、城墙掩护与动态备货，见[工人协作](CoreGeek/docs/WORKER_COORDINATION.md)。本版统一工人昼夜经济流程，夜间可继续采购与配送升级券，维修工可在内侧兼顾升级，详见[昼夜统一调度](CoreGeek/docs/WORKER_SCHEDULE.md)。任务模块、三炮阵型和P站位保持。
 
 ## 阅读导航
 
@@ -50,8 +50,9 @@ bash run.sh 8080
 | [开局防御策略](CoreGeek/docs/OPENING_DEFENSE.md) | 三火箭布局、攒石建墙、单人轮换、测试与升级步骤 |
 | [实现现状](DEMO.md) | 本轮完成范围与未完成的外部验证 |
 | [任务模块接入](CoreGeek/docs/TASK_INTEGRATION.md) | 用户提示词、协议转换、证据历史、诊断、预算和Postman逐轮调试 |
+| [昼夜统一调度](CoreGeek/docs/WORKER_SCHEDULE.md) | 跨昼夜任务连续、夜间升级/采购、维修岗位限制与函数参数 |
 | [工人协作与备货](CoreGeek/docs/WORKER_COORDINATION.md) | 单人任务、让行、墙掩护、值守分区及按日备货参数 |
-| [v0.3.7验证报告](reports/VALIDATION-v0.3.7.md) | 当前源码测试证据、哈希、验证边界；旧报告独立保留 |
+| [v0.3.8验证报告](reports/VALIDATION-v0.3.8.md) | 当前源码测试证据、哈希、验证边界；旧报告独立保留 |
 | [开发规则](DEVELOPMENT_RULES.md) | 本地开发约束与官方规则索引，原文保留 |
 | [任务书](任务书.md) / [接口文档](接口文档.md) | 原始比赛规则与接口定义，原文保留 |
 
@@ -59,9 +60,9 @@ bash run.sh 8080
 
 ```powershell
 python CoreGeek/run_tests.py
-python CoreGeek/tools/smoke_server.py --output reports/http-smoke-v0.3.7.json
-python CoreGeek/tools/replay.py request.txt --output reports/sample-response-v0.3.7.json
-python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v0.3.7.json
+python CoreGeek/tools/smoke_server.py --output reports/http-smoke-v0.3.8.json
+python CoreGeek/tools/replay.py request.txt --output reports/sample-response-v0.3.8.json
+python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v0.3.8.json
 ```
 
 `replay.py` 只计算响应，不执行响应中的沙盒命令或 LLM 请求。验证脚本生成的压力结果是合成观测检查，不是比赛模拟、官方难度或胜率。
@@ -83,10 +84,10 @@ futurewar/
 ├── .gitignore                        # 忽略缓存、构建中间文件和本地配置
 ├── reports/
 │   ├── VALIDATION.md                 # 人类可读的历史验证报告
-│   ├── VALIDATION-v0.3.7.md          # 工人协作与城墙掩护验证报告
-│   ├── validation-v0.3.7.json        # 本版测试、压力、环境与源码哈希
-│   ├── http-smoke-v0.3.7.json        # 本版真实进程HTTP验证
-│   ├── sample-response-v0.3.7.json   # 本版对原样例的响应
+│   ├── VALIDATION-v0.3.8.md          # 工人昼夜统一调度验证报告
+│   ├── validation-v0.3.8.json        # 本版测试、压力、环境与源码哈希
+│   ├── http-smoke-v0.3.8.json        # 本版真实进程HTTP验证
+│   ├── sample-response-v0.3.8.json   # 本版对原样例的响应
 │   ├── validation.json               # 测试/压力结果、环境、源码和规则文件SHA256
 │   ├── http-smoke.json               # 实际启动进程后的HTTP检查结果
 │   └── sample-response.json          # 原请求样例生成的离线响应
@@ -156,7 +157,7 @@ futurewar/
         ├── coregeek_futurewar-0.3.1-py3-none-any.whl  # 历史默认建造版本
         ├── coregeek_futurewar-0.3.2-py3-none-any.whl  # 用户认可的基准版本
         ├── coregeek_futurewar-0.3.3-py3-none-any.whl  # 历史维护策略版本
-        └── coregeek_futurewar-0.3.7-py3-none-any.whl  # 当前可选构建产物
+        └── coregeek_futurewar-0.3.8-py3-none-any.whl  # 当前可选构建产物
 ```
 
 `config.local.json` 是可选文件，初始不会自动创建。`dist/` 由打包生成；`__pycache__/`、`build/`、`*.egg-info/` 是运行或构建缓存，不属于业务架构。
@@ -212,7 +213,7 @@ flowchart TD
 4. 拷贝原`GameMemory`，调用`observe(turn)`处理换日、任务原文变化、宝藏结果与失败采集反馈。
 5. `LLMService.consume()`取出与上次发起调用匹配的下一轮回复。新闻结果交给`apply_news()`；任务回复交给`TaskService.active()`。
 6. 创建本轮`ActionPlan`及`Strategy`，选择/复用三炮布局，计算开拓者是否到回防时间。将`defense_due`传给任务服务；需要回防时任务让出开拓者，其余时候保持任务站位。
-7. 运行`Strategy`，先安排开拓者，再安排工人。白天工人执行开局阶段或后续经济，维修工备货和黄昏回岗；夜间普通工人避险采矿、维修工墙内值守。全部升级达标后，两工人白天夜晚都由WallGuard接管，白天轮流买包。动作全部进入`ActionPlan.add()`，只将通过校验的命令写入计划。
+7. 运行`Strategy`，先安排开拓者，再安排工人。白天工人执行开局阶段或后续经济，维修工备货和黄昏回岗；普通工人昼夜执行相同经济流程，夜间受避敌与禁建约束；维修工墙内维修及升级。全部升级达标后，两工人白天夜晚都由WallGuard接管，白天轮流买包。动作全部进入`ActionPlan.add()`，只将通过校验的命令写入计划。
 8. 任务外按配置与普通额度决定是否调用`news_prompt()`。它仅构造返回字符串，不在进程内等待LLM。
 9. `GameMemory.record()`记录本轮计划，再统一提交新会话、响应深拷贝及最近回合号。内部异常不会提交中间记忆。
 10. `Handler.send_json()`将响应编码为UTF-8，写入HTTP状态、字节长度和JSON内容。
@@ -650,12 +651,12 @@ Strategy.run() -> None
 
 构造函数选择布局并更新工作记忆中的`defense_layout`，不直接产生响应。`run()`就地更新`plan`，由服务层读取`plan.commands`；它不会直接发送HTTP，也不创建新会话。`deadline`是`time.monotonic()`时间基准上的绝对截止点，默认无限；应用层每轮将其设为开始时间加3.5秒。
 
-执行时先安排开拓者，再安排工人。角色已被任务占用则跳过；低血量且持有Medicine时先用药。开拓者需要回防时选择可发射炮或移动就位；其余时间可接任务，开局完成后再允许宝藏采购。白天工人按“三炮 → 攒石 → 建墙 → 常规经济”推进；夜间工人先避险再挖矿及必要交易，第三天起其中一人由WallGuard负责墙内维修；所有建筑达到目标后两人都转为墙内值守，白天轮流补货，不分配操炮任务。
+执行时先安排开拓者，再安排工人。角色已被任务占用则跳过；低血量且持有Medicine时先用药。开拓者需要回防时选择可发射炮或移动就位；其余时间可接任务，开局完成后再允许宝藏采购。白天工人按“三炮 → 攒石 → 建墙 → 常规经济”推进；普通工人昼夜按相同经济流程升级、交易及采矿，夜间需安全路线且不能建造；第三天起其中一人由WallGuard负责墙内维修及内侧升级；所有建筑达到目标后两人都转为墙内值守，白天轮流补货，不分配操炮任务。
 
 | 方法 | 参数 | 返回值和实际作用 |
 |---|---|---|
 | `route(role)` | 当前角色`Unit` | 返回Routes；禁入本轮预留和规划炮位，工人额外避让操控格；按角色与禁入格快照缓存；临时忽略工人的路线仅供诊断堵路，实际动作仍禁止进入占用格 |
-| `run_worker(role)` | 当前工人Unit | 单工人控制入口，按自己的任务/岗位执行与让路 |
+| `run_worker(role)` | 当前工人Unit | 昼夜统一的单工人入口，按自己的任务/岗位执行与让路 |
 | `travel(role, cells, job="travel")` | 角色、交互对象的占用格集合 | `bool`；尝试朝相邻站位移动一步，已到达或不可达时为False |
 | `cost(role, cells)` | 同上 | 到最近合法交互站位的步数，不可达为10000 |
 | `interact(role, target, command, footprint=None)` | 角色、目标坐标、候选命令、可选完整占地 | 已相邻则提交命令，否则移动；基地交互可传四格footprint |
@@ -663,17 +664,17 @@ Strategy.run() -> None
 | `missing_walls()` | 无 | 当前自定义/默认墙位中尚未存在存活己方墙的位置列表 |
 | `stone_targets()` | 无 | 工人ID→本批所需石头数；优先分配已有石头，再按剩余容量均摊缺口 |
 | `opening_worker(role)` | 工人 | `bool`；开局阶段接管角色，即使本轮只能等待也返回True；完成/无配置时False |
-| `night_worker(role)` | 工人 | 返回None；先撤离机器人警戒区，再保护墙材、安全采集或运矿，无安全矿则尝试回墙内 |
+| `night_worker(role)` | 工人 | 返回None；兼容入口，仅调用run_worker，不再提供独立夜间采矿流程 |
 | `clear_build_cell(role)` | 当前角色 | `bool`；角色占用规划建筑格，或工人占用操控格时，尝试移开一格 |
 | `control_position(role)` | 开拓者 | 返回可达且覆盖最多现有炮的Pos，优先既有共同站位；无可达站位为None |
 | `pioneer_should_defend(role)` | 开拓者 | `bool`；有炮且入夜，或日照不足路径成本加return_margin时回防 |
 | `move_to_control(role)` | 开拓者 | `bool`；朝选定操控格移动一步，已就位或不可达时False |
 | `operate_weapons(role)` | 开拓者 | `bool`；夜间从相邻、冷却0、有目标的炮中选一座发射；否则移动或等待 |
-| `consume(role, allow_travel=True)` | 角色、是否允许为使用建筑物品而行走 | 依次考虑药剂、夜间法宝/炸弹、召唤令，再按统一阶段用券；按中央/外围/两翼阶段，组内前列与残血优先，升级优先于已有修复包 |
-| `worker(role)` | 工人 | 返回None；开局结束后的白天流程：补缺墙/筹石 → 商店旁补齐当前券 → 用券 → 补炮 → 卖矿（保护墙材）→ 买券 → 采矿 |
-| `build_wall(role)` | 工人 | `bool`；选择缺失墙位并检查通路，建造或前往其邻格 |
+| `consume(role, allow_travel=True, allowed=None)` | 角色、是否允许为使用建筑物品而行走、可选巡护范围 | 依次考虑药剂、夜间法宝/炸弹、召唤令，再按统一阶段用券；按中央/外围/两翼阶段，组内前列与残血优先，升级优先于已有修复包 |
+| `worker(role)` | 工人 | 返回None；昼夜统一经济流程（建造仅白天）：补缺墙/筹石 → 商店旁补齐当前券 → 用券 → 补炮 → 卖矿（保护墙材）→ 买券 → 采矿 |
+| `build_wall(role)` | 工人 | `bool`；白天选择缺失墙位并检查通路，建造或前往其邻格；夜间False |
 | `wall_keeps_exit(role, target)` | 工人、待建墙坐标 | `bool`；近处真正建墙前检查小贩/本队任务点路线及开拓者操控格通路 |
-| `build_weapon(role)` | 工人 | `bool`；仅在规划炮位与当前建造区域的交集按loadout缺口建造或靠近，使用共享预算 |
+| `build_weapon(role)` | 工人 | `bool`；白天在规划炮位与当前建造区域的交集按loadout缺口建造或靠近；夜间False |
 | `sell(role, keep_stone=False)` | 角色、是否保留石头 | `bool`；按持有量×收购价选矿种；keep_stone=True时不出售石头，适用于开局墙材保护 |
 | `upgrade_candidates()` / `upgrades_complete()` | 无 | 委托upgrade_policy返回当前阶段/完成状态，详见[维护文档](CoreGeek/docs/MAINTENANCE.md) |
 | `buy_upgrade(role)` | 角色 | `bool`；按purchase_needs批量购券，可预购当前火箭的2→3券；扣全队库存/本轮买用，受金币/容量和维修预算限制 |
@@ -693,7 +694,7 @@ Strategy.run() -> None
 - 回防条件只用于开拓者：有炮且夜晚，或`daylight_left <= 到操控站位的实际路径成本 + return_margin`。普通采矿工不黄昏回防；第三天起维修工另按到墙内通路的成本提前返岗。
 - 接任务预算为“前往路径成本 + 任务timeout（缺省15）+ 任务点至操控格的切比雪夫距离 + return_margin”。返程是估计；仍在任务中但已到回防时间时让出开拓者。
 - 每轮只由开拓者操控一座炮；直接读取`cooldown==0`。按发射后3轮空窗，理想共同站位下为A→B→C→空→A；无目标或移动会额外消耗轮次。
-- Medicine在角色血量不超过初始上限一半时优先考虑。`consume`支持Bomb/DizzyWeapon等物品，但夜间工人采矿、开拓者有炮防守时不进入普通consume分支。不主动采购炸弹、眩晕法宝或召唤令。
+- Medicine在角色血量不超过初始上限一半时优先考虑。`consume`支持Bomb/DizzyWeapon等物品，工人夜间同样进入consume分支；开拓者有炮防守时优先控炮。不主动采购炸弹、眩晕法宝或召唤令。
 
 旧`agent.brain.decide(payload) -> dict`仅返回动作map，每次使用新默认配置和新记忆，没有完整LLM协作。它保留兼容，不应替代比赛主入口中的`TurnService.decide`。
 
@@ -853,10 +854,10 @@ if step is not None:
 
 ```powershell
 python CoreGeek/run_tests.py
-python CoreGeek/tools/replay.py request.txt --output reports/sample-response-v0.3.7.json
+python CoreGeek/tools/replay.py request.txt --output reports/sample-response-v0.3.8.json
 python CoreGeek/tools/replay.py observations.jsonl --output reports/replayed-responses.json --config CoreGeek/config.local.json
-python CoreGeek/tools/smoke_server.py --output reports/http-smoke-v0.3.7.json
-python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v0.3.7.json
+python CoreGeek/tools/smoke_server.py --output reports/http-smoke-v0.3.8.json
+python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v0.3.8.json
 ```
 
 上述JSONL命令需要先准备`observations.jsonl`。工具会覆盖指定的同名输出；新版本应另取报告文件名，保留历史证据。`validate.py`不会自动重写人工说明，修改代码后需另存对应版本的说明。本版压力观测同时覆盖三火箭和混合旧炮，增加“仅开拓者攻击”和输入冷却为0的断言。
@@ -874,7 +875,7 @@ python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v0.3.7.
 | `test_http_config.py` | HTTP响应/错误、请求上限、配置文件检查 | 启动入口、网络层、配置变化 |
 | `fixtures.py` | 统一合成数据构造，布局专供测试 | 不能当官方地图坐标或规则来源 |
 
-v0.3.7报告记录169个测试通过、80份合成观测检查通过。数值和源码指纹见[当前验证报告](reports/VALIDATION-v0.3.7.md)及[机器记录](reports/validation-v0.3.7.json)。[原报告](reports/VALIDATION.md)的56个测试属于v0.2.0历史证据；两者均不代表正式比赛通过或胜率。
+v0.3.8报告记录185个测试通过、80份合成观测检查通过。数值和源码指纹见[当前验证报告](reports/VALIDATION-v0.3.8.md)及[机器记录](reports/validation-v0.3.8.json)。[原报告](reports/VALIDATION.md)的56个测试属于v0.2.0历史证据；两者均不代表正式比赛通过或胜率。
 
 `validate.independent_contract(raw, response)`是压力工具中的附加结构断言，检查角色互斥、移动占用和攻击时机等。它不是完整判题器，不能代替官方平台对动作执行结果和比分的裁定。
 
@@ -888,7 +889,7 @@ v0.3.7报告记录169个测试通过、80份合成观测检查通过。数值和
 |---|---|---|
 | 调整三炮组合 | `config.local.json: loadout` | `Strategy.build_weapon`、三炮总上限、建造区确认 |
 | 调整开局顺序与城墙数量 | `opening_stage/opening_worker/stone_targets`、配置walls | 先三炮再攒石建墙；完成标记只读取观测 |
-| 调整采矿偏好或运矿批量 | `Strategy.mine/sell/night_worker`、`sell_batch` | 实时价格、停矿信息、容量与墙材预留 |
+| 调整采矿偏好或运矿批量 | `Strategy.mine/sell/run_worker/worker`、`sell_batch` | 实时价格、停矿信息、容量与墙材预留 |
 | 调整回防时间 | `return_margin`、`pioneer_should_defend` | 开拓者回防、任务让位，维修工也需提前回墙内 |
 | 调整升级优先级 | `Strategy.buy_upgrade/consume` | 已有券库存、共享金币、建筑等级与重复目标 |
 | 改寻路或拥挤处理 | `grid.Routes`、`Turn.blocked`、`plan.reserved` | 官方八方向及同时结算约束 |

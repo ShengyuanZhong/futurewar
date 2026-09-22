@@ -121,6 +121,8 @@ class WallGuard:
             if target is None:
                 return self.turn.daylight_left <= self.settings.return_margin
         if self.turn.daylight_left <= route.cost[target] + self.settings.return_margin:
+            if self.nighttime(role, urgent_only=True) or self.on_site_upgrade(role):
+                return True
             s.coordinator.move_to(role,cells,'return_guard',self.home(role),allow_risk=True)
             return True
         missing = self.stock_missing()
@@ -161,6 +163,32 @@ class WallGuard:
                     elif s.travel(role, shops, 'repair_supply'):
                         return
         self.nighttime(role)
+
+    def on_site_upgrade(self, role) -> bool:
+        """A guard may deliver a voucher along the inner lane without leaving duty."""
+        if role.pos not in self.inner_cells() or self.strategy.danger.get(role.pos, 0):
+            return False
+        return self.strategy.consume(role, allowed=self.inner_cells())
+
+    def on_duty(self, role) -> None:
+        """Repair first, finish a nearby supply stop, upgrade inside, then hold."""
+        if self.nighttime(role, urgent_only=True):
+            return
+        s = self.strategy
+        # Do not abandon a safe shop reached at dusk without buying. No new
+        # night shopping expedition: once inside, the guard remains inside.
+        if (role.pos not in self.inner_cells() and not s.danger.get(role.pos, 0)
+                and self.plan.near_zone(role, 'weaponShop')
+                and 'WallFixer' in self.turn.shop_prices):
+            missing = self.stock_missing(role)
+            reserve = max(0, 3-self.plan.tower_count)*25 if self.settings.build_cells(self.turn, 'rocket') else 0
+            price = self.turn.shop_prices['WallFixer']
+            count = min(missing, role.capacity-len(role.backpack),
+                        max(0, self.plan.gold-reserve)//price if price else missing)
+            if count > 0 and self.plan.add(role.unit_id, {'action':'buy', 'name':'WallFixer', 'num':count}):
+                return
+        if not self.on_site_upgrade(role):
+            self.nighttime(role)
 
     def nighttime(self, role, urgent_only=False) -> bool:
         s = self.strategy

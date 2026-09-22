@@ -101,7 +101,7 @@ class WorkerSafetyTests(unittest.TestCase):
         self.assertEqual(plan.commands['501'], {'action': 'buy', 'name': 'WallFixer', 'num': 5})
         self.assertEqual(plan.rejections, [])
 
-    def test_guard_repairs_below_thirty_percent_and_miner_keeps_collecting(self):
+    def test_guard_repairs_below_thirty_percent_and_other_worker_runs_economy(self):
         for mirrored in (False, True):
             raw = fortified(331, mirrored=mirrored)
             raw['teamOur']['roles'][2].update(pos=point(8, 7, mirrored).dump(), backpack=['WallFixer'] * 5)
@@ -111,7 +111,8 @@ class WorkerSafetyTests(unittest.TestCase):
             s, plan = strategy(raw)
             s.run()
             self.assertEqual(plan.commands['501'], {'action': 'use', 'name': 'WallFixer', 'targetPos': [wall['pos']]})
-            self.assertEqual(plan.commands['504']['action'], 'collect')
+            self.assertEqual(plan.commands['504']['action'], 'move')
+            self.assertEqual(s.memory.worker_tasks[504]['kind'], 'buy_upgrade')
             self.assertEqual(plan.rejections, [])
 
     def test_repair_threshold_uses_level_max_health_strictly(self):
@@ -124,12 +125,13 @@ class WorkerSafetyTests(unittest.TestCase):
             s.run()
             self.assertEqual(plan.commands.get('501', {}).get('name') == 'WallFixer', should_repair, (level, health))
 
-    def test_before_day_three_workers_keep_old_night_jobs(self):
+    def test_before_day_three_workers_can_shop_at_night(self):
         raw = fortified(201)
         raw['teamOur']['roles'][2].update(backpack=['WallFixer'] * 5)
         s, plan = strategy(raw)
         s.run()
-        self.assertEqual(plan.commands['501']['action'], 'collect')
+        self.assertEqual(plan.commands['501']['action'], 'move')
+        self.assertEqual(s.memory.worker_tasks[501]['kind'], 'buy_upgrade')
 
     def test_guard_stays_inside_without_mining_or_leaving_for_shop(self):
         raw = fortified(331)

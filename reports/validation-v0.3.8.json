@@ -1,0 +1,95 @@
+{
+  "created_utc": "2026-09-22T04:01:53.747614+00:00",
+  "python": "3.10.6",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "rules_baseline": "local v1.0 2026-09-09; upstream commit recorded in DEVELOPMENT_RULES.md",
+  "tests": {
+    "run": 185,
+    "failures": 0,
+    "errors": 0
+  },
+  "synthetic_input_stress": {
+    "seeds": [
+      17,
+      20260917
+    ],
+    "teams": [
+      "challenger",
+      "defender"
+    ],
+    "cases": 80,
+    "pressure": "0..150 robots on night observations; no simulated match outcomes",
+    "failures": [],
+    "loadout_cases": {
+      "three_rockets": 40,
+      "mixed_compatibility": 40
+    },
+    "median_ms": 21.165,
+    "max_ms": 822.552
+  },
+  "source_hashes": {
+    "CoreGeek/app/__init__.py": "ac90658d59e0bdb5068ff620f3b2b1cbc9339df0b59a33264cd4dc2326b6a9ff",
+    "CoreGeek/app/config.py": "5c7784295362a3ac96bb70c421cddb2676f63a5c5f06db62b1e82ba4570f9a2b",
+    "CoreGeek/app/server.py": "a08b22d2e90b0b2e4af8183d53f6ad4e946b853a6b14df276e34dc6cefdd491d",
+    "CoreGeek/app/service/__init__.py": "3703fd280555c674cdc2ffc883472ff4b8696d9a8919b0bcb69c2507445ad5a3",
+    "CoreGeek/app/service/llm_service.py": "cae85fdf46aa3d50a2338519522fdcafc6ac989fc3ba3b4c6c24c8acee5bb051",
+    "CoreGeek/app/service/memory.py": "f4d72d85ef19449ae617d9a6f4bd6c7e60d211229586b44ebfdda42af10aa7e2",
+    "CoreGeek/app/service/task_context.py": "e75d0b3c7ae28489e0cd8ce9e732b9941585155b611293fd9bf3a4b4defb4e9f",
+    "CoreGeek/app/service/task_prompt.py": "61a5d938962f757bc12cc45e0634cfc114cfade47dde938b22e080e6dbebca02",
+    "CoreGeek/app/service/task_service.py": "8797423b9c082e087d606cc0d9a661b86c95db988b7fbaee46bb89bf6d4bca39",
+    "CoreGeek/app/service/turn_service.py": "c896880e7dd286f0642d09d04a36a146b11f81baff6e827ad3a87b7e606b2dd3",
+    "CoreGeek/main3.py": "977ebaacf991af1927ab75cb88698a1eca7c494d153851c5650cbcef67cbec80",
+    "CoreGeek/run_tests.py": "df960cddccd5a7ec3012b873aaf6580e36cb2c9124259322ed45e5a04329d60a",
+    "CoreGeek/src/agent/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "CoreGeek/src/agent/actions.py": "b610c460e1ca95eaf43c253063a3cdfd8282f83f477dac0b92e76057a75a77e7",
+    "CoreGeek/src/agent/brain.py": "5c03cb87a8c94ef2f463c4de9b47ab06132dd73594a928073f2059a4f02d9095",
+    "CoreGeek/src/agent/combat.py": "ea0fd2f563ea5f813ff552424bd9a5c81ddb999a37708b565e494286f382273e",
+    "CoreGeek/src/agent/construction.py": "6ab5dea018cb4c614b2d0c74b149725a795ec8ae892558d686f6b457bfd98429",
+    "CoreGeek/src/agent/grid.py": "0ea7548d791d397f34269ef6cfa3f6db801950e6a638163dbabf0b2ff93d4820",
+    "CoreGeek/src/agent/protocol.py": "e8a9d92be515839b7695097af632b71211a18a0c0d9f42ebcbdba41f1a5a252d",
+    "CoreGeek/src/agent/server.py": "70220a5075dbf80cbcbd639f41d454a7066b72074428cf9e7a64672d731c87e4",
+    "CoreGeek/src/agent/upgrade_policy.py": "bd0fd2a417e8344d23c0f2fa3ad146128499e207eb74b0dafd6c9f33802ca7bb",
+    "CoreGeek/src/agent/wall_guard.py": "8033946f1bad13f3d2db7f481822cf28e4e56d27f371ccfab1d6406396de4702",
+    "CoreGeek/src/agent/worker_coordinator.py": "7bbeef76ae3e44f0d40e99da699b71e48ae1a35e619df8a348a67470fbdf2c1b",
+    "CoreGeek/src/agent/worker_safety.py": "1da5e1877d9d895293c9db229ea8296ccf36dc934de0f434b00f0885c3b64c52",
+    "CoreGeek/tests/__init__.py": "ec8b04e9f07ccb8027aafd7f0cad4d82af8a5d42a5ced9887397234e22e5636f",
+    "CoreGeek/tests/fixtures.py": "6f72021ced1795fd70987ef73f71f20131d0b519e048efe8268e964e0f766cde",
+    "CoreGeek/tests/test_actions.py": "1bf03dc64c9c6ddfe503f8d8b6ebc764c9d91b40fb0ebfd73a0439f219006e25",
+    "CoreGeek/tests/test_combat_strategy.py": "c4df89cbbb657d743a5cc1ae523c795255e4b1a04a4d08047e239daa4e03d6b7",
+    "CoreGeek/tests/test_default_opening.py": "ebc273af493be89de103d57cb32a62783a72a12e9467ab70c4842ccf234075aa",
+    "CoreGeek/tests/test_focused_upgrades.py": "fe49b03ad0a248b09c77262498706b3b8313b26a5ec3231a07ec34e87a47cf63",
+    "CoreGeek/tests/test_http_config.py": "bc906d10beba252089d87e0ebf79cc484548fbe3d1212759baf72005158def38",
+    "CoreGeek/tests/test_maintenance.py": "7a02cdccf9dc857177da80f6462c38217d59c68a7604f55fb806b812e1cdbc57",
+    "CoreGeek/tests/test_opening_defense.py": "ce57810428ae8af491d0508bcdfb18770808d0a0a10394915cfe9a4c78463e66",
+    "CoreGeek/tests/test_protocol.py": "8face6ac1cf67dc4640a711874c3ab0687c6d3735cc37f7b403fa2ccdb419ef9",
+    "CoreGeek/tests/test_services.py": "5c1e734e176c6916efe6faf5385be78e918aeec9ee303e51bd9bb6c2eeb5bad4",
+    "CoreGeek/tests/test_task_prompt.py": "9e9f8e7ef812b2cb1f070fa7b378a445689a19e73133f48a93d332f10bc26894",
+    "CoreGeek/tests/test_u_layout.py": "b2a258a13bcc220d60e1e9b645c5e33c5739a5e7cee38bb41ec31618ddab723d",
+    "CoreGeek/tests/test_worker_coordination.py": "901bd0ecd21e04e38a6e485a7df1ef1e010d2aa985f066205eafd81b388a5198",
+    "CoreGeek/tests/test_worker_safety.py": "07882fcfbac22abb078c0844b5b048167b355197f15a2c9ad5ebffec5bceb58c",
+    "CoreGeek/tests/test_worker_schedule.py": "7e44f9c641e0086d580aae626ced3f272e4ba00069e989e973761306d7b2c13c",
+    "CoreGeek/tools/replay.py": "7a75d81b744d97de6255a9f7bcc451ab1c964de8e8fd7f6f1ba54d89f221f5d9",
+    "CoreGeek/tools/smoke_server.py": "706ac25d78d5c2663243ff5e55a69788c5aa42cdeb1d957e0fd0509d3f6cf435",
+    "CoreGeek/tools/validate.py": "5b4661cefbb11f4d8b0e7144569f86dc9471bb1ddd4a0e9bbc5fa2953ee660f2",
+    "CoreGeek/pyproject.toml": "e897e0bba71ca562e86b13db1b5c23de315f1bc3177d90f28664a12f59ac4fa3",
+    "CoreGeek/config.example.json": "c2cde9256d6898070af41b4899f9b4a04f2b5431ee0f176f98b87ddc85178f8d",
+    "CoreGeek/run.sh": "5b5e487f21d92617336e0872702156ac9ed52d27f6dff89186f35cdcfc66af6e",
+    "run.sh": "30370a40ad49d9853f25a0374deb64e88677b9e8a04795a588d752353309a63d"
+  },
+  "baseline_hashes": {
+    "DEVELOPMENT_RULES.md": "77cf9f2dfe12e8bbd95c7f0e482f842c812d8b4d7fc3045fd0e1cdbdfcedf38b",
+    "任务书.md": "c548e2c66b85a71d52c60f23929b5af38caae1fc9908f8f2e5ddd0c457893d3e",
+    "接口文档.md": "931a65d09f881b30644225ca8d6b1bfbc7b2bea7b4f6ce50d1f70cf858cb144d",
+    "request.txt": "5fc36943ce3d7bbca678b6342cd4a6c092d91ae8032e3107e8e840ba8cc88d82",
+    "response.txt": "5daf8278d7f097417b50082165a28dc4ce03163323730dc160ee4f7a534ed8d0"
+  },
+  "construction_policy": "user-authorized base-surroundings fallback enabled by default; explicit verified layouts take precedence; not official geography",
+  "unverified": [
+    "D01 official construction coordinates",
+    "D07 trajectory cell-boundary ties and round conventions",
+    "full matches and held-out maps",
+    "official LLM/sandbox/judger integration",
+    "Linux bash entry on target runtime"
+  ],
+  "scope": "protocol and rule regression plus synthetic observation stress; not official certification or win rate"
+}

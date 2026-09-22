@@ -45,8 +45,6 @@ class Strategy:
             return self.coordinator.move_to(role,adjacent_cells(self.turn,cells),job,cells)
         route = self.route(role)
         goal = route.nearest(adjacent_cells(self.turn, cells))
-        if role.kind == "worker" and not self.turn.is_day and route.exposure.get(goal, 0) > 0:
-            return False
         step = route.step([goal]) if goal is not None else None
         return step is not None and self.plan.add(role.unit_id, move_command(step))
 
@@ -102,23 +100,27 @@ class Strategy:
                     Pos.load(points[0]) if points else None,role.pos)
 
     def run_worker(self, role: Unit) -> None:
-        """Each worker owns its job and goal; cooperative yields take precedence."""
+        """One economic schedule; night adds safety and assigned guard duty."""
         if self.coordinator.hold_for_yield(role):
             return
-        if not self.turn.is_day:
-            if self.guard.is_guard(role):
-                self.guard.nighttime(role)
-            else:
-                self.night_worker(role)
-            return
         if self.guard.full_time:
-            self.guard.final_daytime(role)
+            if self.turn.is_day:
+                self.guard.final_daytime(role)
+            else:
+                self.guard.on_duty(role)
+            return
+        if self.guard.is_guard(role) and not self.turn.is_day:
+            self.guard.on_duty(role)
             return
         if self.evade_worker(role):
             return
-        if not self.clear_build_cell(role) and not self.opening_worker(role):
-            if not self.guard.daytime(role):
-                self.worker(role)
+        if self.clear_build_cell(role):
+            return
+        if self.turn.is_day and self.opening_worker(role):
+            return
+        if self.turn.is_day and self.guard.daytime(role):
+            return
+        self.worker(role)
 
     def control_position(self, role: Unit) -> Pos | None:
         weapons = self.turn.weapons()
@@ -249,24 +251,8 @@ class Strategy:
         return True
 
     def night_worker(self, role: Unit) -> None:
-        if self.evade_worker(role):
-            return
-        if self.clear_build_cell(role):
-            return
-        keep_stone = bool(self.missing_walls())
-        quota = self.stone_targets().get(role.unit_id, 0) if keep_stone else 0
-        need_stone = role.backpack.count("stone") < quota
-        minerals = sum(i in MINERALS and (i != "stone" or not keep_stone) for i in role.backpack)
-        if (role.backpack_full or minerals >= self.settings.sell_batch) and self.sell(role, keep_stone=keep_stone):
-            return
-        if not self.mine(role, need_stone=need_stone):
-            # No safe mine: head to a safe reachable inner lane, otherwise wait.
-            route = self.route(role)
-            cells = {p for p in self.guard.inner_cells() if not self.danger.get(p, 0)
-                     and route.exposure.get(p) == 0}
-            step = route.step(cells)
-            if step is not None:
-                self.plan.add(role.unit_id, move_command(step))
+        """Compatibility entry; no separate night-only mining policy."""
+        self.run_worker(role)
 
     def evade_worker(self, role: Unit) -> bool:
         """Stop economic work in a threat zone; flee if a non-worsening step exists."""
@@ -287,6 +273,8 @@ class Strategy:
         return True
 
     def build_wall(self, role: Unit) -> bool:
+        if not self.turn.is_day:
+            return False
         walls = [p for p in self.missing_walls() if p not in self.turn.blocked(role)
                  and p not in self.plan.reserved and p not in self.goals and p != role.pos]
         for target in sorted(walls, key=lambda p: (self.cost(role, [p]), p)):
@@ -295,7 +283,7 @@ class Strategy:
                 return True
         return False
 
-    def consume(self, role: Unit, allow_travel: bool = True) -> bool:
+    def consume(self, role: Unit, allow_travel: bool = True, allowed: set[Pos] | None = None) -> bool:
         maximum = 200 if role.kind == PIONEER else 220
         if role.health <= maximum // 2 and "Medicine" in role.backpack:
             return self.plan.add(role.unit_id, {"action": "use", "name": "Medicine"})
@@ -330,14 +318,25 @@ class Strategy:
         for name, building in choices:
             if building.unit_id in self.plan.upgrade_targets | self.maintenance_claims:
                 continue
-            if (not self.turn.is_day or not allow_travel) and not self.plan.near(role, self.turn.footprint(building)):
+            cells = self.turn.footprint(building)
+            if not allow_travel and not self.plan.near(role, cells):
                 continue
-            if self.interact(role, building.pos, {"action": "use", "name": name, "targetPos": [building.pos.dump()]}, self.turn.footprint(building)):
+            if allowed is not None:
+                if role.pos not in allowed:
+                    continue
+                if not self.plan.near(role, cells):
+                    if self.coordinator.move_to(role, adjacent_cells(self.turn, cells),
+                                                'use:'+name, tuple(cells), allowed=allowed):
+                        self.maintenance_claims.add(building.unit_id)
+                        return True
+                    continue
+            if self.interact(role, building.pos, {"action": "use", "name": name, "targetPos": [building.pos.dump()]}, cells):
                 self.maintenance_claims.add(building.unit_id)
                 return True
         return False
 
     def worker(self, role: Unit) -> None:
+        """Upgrade, trade and collect in the same order on either side of dusk."""
         if self.rebuild_wall(role):
             return
         if self.plan.near_zone(role, "weaponShop") and self.buy_upgrade(role):
@@ -346,7 +345,10 @@ class Strategy:
             return
         if self.sell(role, keep_stone=bool(self.missing_walls())) or self.buy_upgrade(role):
             return
-        self.mine(role, need_stone=bool(self.missing_walls()) and "stone" not in role.backpack)
+        quota = self.stone_targets().get(role.unit_id, 0) if self.missing_walls() else 0
+        if not self.mine(role, need_stone=role.backpack.count('stone') < quota) and not self.turn.is_day:
+            # Economic work is unreachable: take a safe route to shelter or wait.
+            self.coordinator.move_to(role, self.guard.inner_cells(), 'shelter')
 
     def rebuild_wall(self, role: Unit) -> bool:
         """Repair a breach before economy; only build from actual observed stone."""
@@ -398,7 +400,7 @@ class Strategy:
         return True
 
     def build_weapon(self, role: Unit) -> bool:
-        if self.plan.tower_count >= 3 or self.plan.gold < 25:
+        if not self.turn.is_day or self.plan.tower_count >= 3 or self.plan.gold < 25:
             return False
         sites = [p for p in self.layout.tower_sites if p in self.settings.build_cells(self.turn, "rocket")
                  if p not in self.turn.blocked(role) and p not in self.plan.reserved and p not in self.goals and p != role.pos]
@@ -455,8 +457,6 @@ class Strategy:
             return False
         if self.plan.near_zone(role, "weaponShop"):
             return self.plan.add(role.unit_id, {"action": "buy", "name": name, "num": count})
-        if self.cost(role, shops) + self.settings.return_margin >= self.turn.daylight_left:
-            return False
         return self.travel(role, shops, 'buy_upgrade')
 
     def mine(self, role: Unit, need_stone: bool = False) -> bool:
