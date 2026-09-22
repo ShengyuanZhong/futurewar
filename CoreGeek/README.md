@@ -1,6 +1,6 @@
 # CoreGeek 参赛 Agent
 
-当前版本0.3.8：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后两翼六墙升2级。基地不升级。全部达标后双工人墙内维修，白天轮流批量买包，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。本版统一昼夜经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。原任务模块、U形阵型和升级顺序保留。
+当前版本0.3.9：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后两翼六墙升2级。基地不升级。全部达标后双工人墙内维修，白天轮流批量买包，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。原任务模块、U形阵型和升级顺序保留。
 
 此目录可作为参赛程序目录提交。沿用示例的 `main3.py`、`src/agent/protocol.py`、`grid.py`、`brain.py`；HTTP 处理与跨回合协作放在 `app`。新增代码无第三方运行依赖。
 
@@ -71,9 +71,9 @@ python main3.py 8080 --config config.local.json
 
 ```powershell
 python run_tests.py
-python tools/smoke_server.py --output ../reports/http-smoke-v0.3.8.json
-python tools/replay.py ../request.txt --output ../reports/sample-response-v0.3.8.json
-python tools/validate.py --cases 20 --output ../reports/validation-v0.3.8.json
+python tools/smoke_server.py --output ../reports/http-smoke-v0.3.9.json
+python tools/replay.py ../request.txt --output ../reports/sample-response-v0.3.9.json
+python tools/validate.py --cases 20 --output ../reports/validation-v0.3.9.json
 ```
 
 回放输入支持单个 JSON、JSON 数组、每行一份观测的 JSONL。单个队伍按回合递增；同回合相同内容返回缓存，不同内容拒绝，以免状态被重复推进。
@@ -185,3 +185,5 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 `src/agent/worker_coordinator.py`负责逐工人目的格与让行，`WallGuard.daily_stock`计算第3天5包、此后每日+3及昨日消耗+2的目标；可用`repair_stock_per_day`调整。
 
 昼夜统一经济、维修工升级范围、夜间限制与跨边界测试见[工人昼夜调度](docs/WORKER_SCHEDULE.md)。
+
+0.3.9修复待建/缺墙格造成的寻路与清理往返冲突，新增实际位置/动作诊断；日志证据及函数见[往返修复](docs/WORKER_PATH_FIX.md)。

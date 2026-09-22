@@ -84,6 +84,14 @@ class TurnService:
                         [e.get("errorCode") for e in turn.errors], strategy.opening_stage(), strategy.layout.shared_control,
                         strategy.guard.worker_id, len(strategy.danger), strategy.guard.full_time, memory.repair_supplier_id,
                         {uid:(job.get('kind'),job.get('goal'),job.get('stalled',0)) for uid,job in memory.worker_tasks.items()})
+            LOGGER.info("worker_motion round=%s details=%s", turn.round_no,
+                        {w.unit_id: {'position': w.pos, 'job': memory.worker_tasks.get(w.unit_id, {}).get('kind'),
+                         'target': memory.worker_tasks.get(w.unit_id, {}).get('target'),
+                         'goal': memory.worker_tasks.get(w.unit_id, {}).get('goal'),
+                         'command': plan.commands.get(str(w.unit_id)),
+                         'last_action_ok': turn.action_results.get(str(w.unit_id)),
+                         'oscillating': memory.worker_tasks.get(w.unit_id, {}).get('oscillating', False)}
+                         for w in turn.workers()})
             for reason in plan.rejections:
                 LOGGER.warning("action_rejected %s", reason)
             return response

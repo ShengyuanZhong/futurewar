@@ -1,0 +1,204 @@
+{
+  "scope": "Observed job/goal alternation in real logs; positions and complete observations were not recorded. Reconstructed tests are not official match replay.",
+  "logs": {
+    "log1.log": {
+      "sha256": "bd7fc734283da648dc5e6e9b76d31ef9d4c4cbc2dc9f3581b2d0b0df8d462e92",
+      "decision_count": 611,
+      "round_span": [
+        1,
+        611
+      ],
+      "max_stalled": 0,
+      "all_feedback_failed_zero": true,
+      "cycles": [
+        {
+          "worker": 20010,
+          "start_round": 36,
+          "end_round": 70,
+          "start_line": 43,
+          "end_line": 77,
+          "alternating_logged_jobs": [
+            [
+              "build:wall",
+              [
+                27,
+                10
+              ],
+              0
+            ],
+            [
+              "build:wall",
+              [
+                28,
+                6
+              ],
+              0
+            ]
+          ]
+        },
+        {
+          "worker": 20010,
+          "start_round": 522,
+          "end_round": 569,
+          "start_line": 529,
+          "end_line": 576,
+          "alternating_logged_jobs": [
+            [
+              "repair_supply",
+              [
+                24,
+                19
+              ],
+              0
+            ],
+            [
+              "move:",
+              [
+                30,
+                12
+              ],
+              0
+            ]
+          ]
+        },
+        {
+          "worker": 20012,
+          "start_round": 36,
+          "end_round": 71,
+          "start_line": 43,
+          "end_line": 78,
+          "alternating_logged_jobs": [
+            [
+              "build:wall",
+              [
+                29,
+                8
+              ],
+              0
+            ],
+            [
+              "move:",
+              [
+                28,
+                11
+              ],
+              0
+            ]
+          ]
+        },
+        {
+          "worker": 20012,
+          "start_round": 143,
+          "end_round": 148,
+          "start_line": 150,
+          "end_line": 155,
+          "alternating_logged_jobs": [
+            [
+              "build:wall",
+              [
+                29,
+                7
+              ],
+              0
+            ],
+            [
+              "move:",
+              [
+                29,
+                7
+              ],
+              0
+            ]
+          ]
+        }
+      ]
+    },
+    "log2.log": {
+      "sha256": "ec754317d4d68cb529636e4de9d997ce9f56c09fcc99e194f2596ba14850c0d2",
+      "decision_count": 903,
+      "round_span": [
+        1,
+        903
+      ],
+      "max_stalled": 0,
+      "all_feedback_failed_zero": true,
+      "cycles": [
+        {
+          "worker": 20010,
+          "start_round": 7,
+          "end_round": 10,
+          "start_line": 14,
+          "end_line": 17,
+          "alternating_logged_jobs": [
+            [
+              "build:rocket",
+              [
+                33,
+                9
+              ],
+              0
+            ],
+            [
+              "move:",
+              [
+                31,
+                7
+              ],
+              0
+            ]
+          ]
+        },
+        {
+          "worker": 20010,
+          "start_round": 15,
+          "end_round": 80,
+          "start_line": 22,
+          "end_line": 87,
+          "alternating_logged_jobs": [
+            [
+              "collect:stone",
+              [
+                33,
+                9
+              ],
+              0
+            ],
+            [
+              "move:",
+              [
+                31,
+                7
+              ],
+              0
+            ]
+          ]
+        },
+        {
+          "worker": 20012,
+          "start_round": 74,
+          "end_round": 78,
+          "start_line": 81,
+          "end_line": 85,
+          "alternating_logged_jobs": [
+            [
+              "collect:copper",
+              [
+                30,
+                13
+              ],
+              0
+            ],
+            [
+              "move:",
+              [
+                28,
+                11
+              ],
+              0
+            ]
+          ]
+        }
+      ]
+    }
+  }
+}

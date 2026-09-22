@@ -11,6 +11,11 @@ class WorkerCoordinator:
         self.memory.worker_tasks = {uid: job for uid,job in self.memory.worker_tasks.items()
                                     if uid in live and job.get('round',0) >= self.turn.round_no-2}
         for uid,job in self.memory.worker_tasks.items():
+            history = job.get('recent_positions', []) if job.get('round') == self.turn.round_no-1 else []
+            history = (history + [live[uid].pos])[-4:]
+            job['recent_positions'] = history
+            job['oscillating'] = (len(history) == 4 and history[0] == history[2]
+                                  and history[1] == history[3] and history[0] != history[1])
             if job.get('round') == self.turn.round_no-1:
                 job['stalled'] = min(8, job.get('stalled',0)+1) if job.get('moving') and live[uid].pos == job.get('position') else 0
 
@@ -21,6 +26,7 @@ class WorkerCoordinator:
         old = self.job(role)
         self.memory.worker_tasks[role.unit_id] = dict(old, kind=kind, target=target, goal=goal,
             round=self.turn.round_no, position=role.pos, moving=moving,
+            recent_positions=old.get('recent_positions', [role.pos]),
             stalled=old.get('stalled',0) if old.get('target') == target else 0)
 
     def claimed_goals(self, role):
@@ -50,8 +56,7 @@ class WorkerCoordinator:
                       frozenset(w.unit_id for w in self.turn.workers() if w.unit_id != role.unit_id))
 
     def reserved(self):
-        return (set(self.plan.reserved) | set(self.s.layout.tower_sites)
-                | ({self.s.layout.operator_pos} if self.s.layout.operator_pos else set()))
+        return self.s.movement_reserved()
 
     def move_to(self, role, goals, kind='travel', target=None, allowed=None, allow_risk=False):
         goals = set(goals) - self.claimed_goals(role)

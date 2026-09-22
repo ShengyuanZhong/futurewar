@@ -27,12 +27,17 @@ class Strategy:
         self.guard = WallGuard(self)
         self.coordinator = WorkerCoordinator(self)
 
-    def route(self, role: Unit, allowed: set[Pos] | None = None) -> Routes:
+    def movement_reserved(self, role: Unit | None = None) -> set[Pos]:
+        """Use the same future sites in paths, yields and site clearance."""
         reserved = set(self.plan.reserved)
-        # Planned tower cells must stay clear even before the buildings are observed.
         reserved.update(self.layout.tower_sites)
-        if role.kind != PIONEER and self.layout.operator_pos is not None:
+        reserved.update(self.missing_walls())
+        if (role is None or role.kind != PIONEER) and self.layout.operator_pos is not None:
             reserved.add(self.layout.operator_pos)
+        return reserved
+
+    def route(self, role: Unit, allowed: set[Pos] | None = None) -> Routes:
+        reserved = self.movement_reserved(role)
         key = (role.unit_id, frozenset(reserved), None if allowed is None else frozenset(allowed))
         if key not in self.routes:
             self.routes[key] = Routes(self.turn, role, reserved,
@@ -217,12 +222,15 @@ class Strategy:
             sites.add(self.layout.operator_pos)
         if role.pos not in sites:
             return False
-        blocked = self.turn.blocked(role) | self.plan.reserved | sites
+        blocked = self.turn.blocked(role) | self.movement_reserved(role)
         for target in sorted(role.pos.neighbours(), key=lambda p: (self.danger.get(p, 0) if role.kind == "worker" else 0, p)):
             if role.kind == "worker" and self.danger.get(target, 0) > self.danger.get(role.pos, 0):
                 continue
             if self.turn.land(target) and target not in blocked:
-                return self.plan.add(role.unit_id, move_command(target))
+                if self.plan.add(role.unit_id, move_command(target)):
+                    if role.kind == 'worker':
+                        self.coordinator.assign(role, 'clear_site', role.pos, target, moving=True)
+                    return True
         return False
 
     def opening_worker(self, role: Unit) -> bool:
