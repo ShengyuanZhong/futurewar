@@ -6,9 +6,13 @@ from .protocol import Pos, Turn, Unit
 
 class Routes:
     def __init__(self, turn: Turn, role: Unit, reserved: set[Pos] | None = None,
-                 danger: dict[Pos, int] | None = None, allowed: set[Pos] | None = None):
+                 danger: dict[Pos, int] | None = None, allowed: set[Pos] | None = None,
+                 ignore_workers: frozenset[int] = frozenset()):
         self.start = role.pos
-        blocked = turn.blocked(role) | frozenset(reserved or ())
+        # Used only to diagnose a friendly worker blockage; ActionPlan still
+        # forbids moving into every currently occupied cell.
+        ignored = {w.pos for w in turn.workers() if w.unit_id in ignore_workers}
+        blocked = (turn.blocked(role) - ignored) | frozenset(reserved or ())
         self.cost = {role.pos: 0}
         self.exposure = {role.pos: 0}
         self.first: dict[Pos, Pos] = {}

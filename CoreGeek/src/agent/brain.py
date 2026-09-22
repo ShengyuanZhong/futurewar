@@ -6,6 +6,7 @@ from .combat import choose_targets
 from .construction import select_defense_layout
 from .grid import Routes, adjacent_cells
 from .worker_safety import robot_danger
+from .worker_coordinator import WorkerCoordinator
 from .wall_guard import WallGuard
 from . import upgrade_policy
 from .protocol import (MINERALS, PIONEER, TOWER_TYPES, Pos, Turn, Unit,
@@ -24,6 +25,7 @@ class Strategy:
         memory.defense_layout = self.layout
         self.danger = robot_danger(turn)
         self.guard = WallGuard(self)
+        self.coordinator = WorkerCoordinator(self)
 
     def route(self, role: Unit, allowed: set[Pos] | None = None) -> Routes:
         reserved = set(self.plan.reserved)
@@ -37,7 +39,10 @@ class Strategy:
                                       self.danger if role.kind == "worker" else None, allowed)
         return self.routes[key]
 
-    def travel(self, role: Unit, cells) -> bool:
+    def travel(self, role: Unit, cells, job: str = 'travel') -> bool:
+        cells = tuple(cells)
+        if role.kind == 'worker':
+            return self.coordinator.move_to(role,adjacent_cells(self.turn,cells),job,cells)
         route = self.route(role)
         goal = route.nearest(adjacent_cells(self.turn, cells))
         if role.kind == "worker" and not self.turn.is_day and route.exposure.get(goal, 0) > 0:
@@ -46,18 +51,24 @@ class Strategy:
         return step is not None and self.plan.add(role.unit_id, move_command(step))
 
     def cost(self, role: Unit, cells) -> int:
+        cells = tuple(cells)
         route = self.route(role)
+        if role.kind == 'worker' and route.nearest(adjacent_cells(self.turn,cells)) is None:
+            route = self.coordinator.diagnostic_route(role)
         return route.cost.get(route.nearest(adjacent_cells(self.turn, cells)), 10_000)
 
     def interact(self, role: Unit, target: Pos, command: dict, footprint=None) -> bool:
         cells = footprint or [target]
         if self.plan.near(role, cells):
+            if role.kind == 'worker':
+                self.coordinator.assign(role,command['action']+':'+command.get('name',''),target,role.pos)
             return self.plan.add(role.unit_id, command)
-        return self.travel(role, cells)
+        return self.travel(role, cells, command['action']+':'+command.get('name',''))
 
     def run(self) -> None:
         # Resolve the pioneer first, so workers never claim its next step or control cell.
-        available = sorted(self.turn.controllable(), key=lambda r: (r.kind != PIONEER, r.unit_id != self.guard.worker_id, r.unit_id))
+        available = sorted(self.turn.controllable(), key=lambda r: (r.kind != PIONEER,
+                           -self.coordinator.job(r).get('stalled',0), r.unit_id != self.guard.worker_id, r.unit_id))
         self.opening_stage()
         for role in available:
             if role.unit_id in self.plan.used:
@@ -81,20 +92,33 @@ class Strategy:
                 if self.turn.is_day and (self.task(role) or self.sell(role)):
                     continue
                 self.move_to_control(role)
-            elif not self.turn.is_day:
-                if self.guard.is_guard(role):
-                    self.guard.nighttime(role)
-                else:
-                    self.night_worker(role)
             else:
-                if self.guard.full_time:
-                    self.guard.final_daytime(role)
-                    continue
-                if self.evade_worker(role):
-                    continue
-                if not self.clear_build_cell(role) and not self.opening_worker(role):
-                    if not self.guard.daytime(role):
-                        self.worker(role)
+                self.run_worker(role)
+        for role in self.turn.workers():
+            if self.coordinator.job(role).get('round') != self.turn.round_no:
+                command = self.plan.commands.get(str(role.unit_id),{})
+                points = command.get('targetPos',[])
+                self.coordinator.assign(role,command.get('action','wait')+':'+command.get('name',''),
+                    Pos.load(points[0]) if points else None,role.pos)
+
+    def run_worker(self, role: Unit) -> None:
+        """Each worker owns its job and goal; cooperative yields take precedence."""
+        if self.coordinator.hold_for_yield(role):
+            return
+        if not self.turn.is_day:
+            if self.guard.is_guard(role):
+                self.guard.nighttime(role)
+            else:
+                self.night_worker(role)
+            return
+        if self.guard.full_time:
+            self.guard.final_daytime(role)
+            return
+        if self.evade_worker(role):
+            return
+        if not self.clear_build_cell(role) and not self.opening_worker(role):
+            if not self.guard.daytime(role):
+                self.worker(role)
 
     def control_position(self, role: Unit) -> Pos | None:
         weapons = self.turn.weapons()
@@ -400,7 +424,7 @@ class Strategy:
         vendors = [p for p, k in self.turn.zones.items() if k == "vendor"]
         if near:
             return self.plan.add(role.unit_id, {"action": "sell", "name": name, "num": minerals[name]})
-        return self.travel(role, vendors)
+        return self.travel(role, vendors, 'sell')
 
     def buy_upgrade(self, role: Unit) -> bool:
         if role.backpack_full:
@@ -433,7 +457,7 @@ class Strategy:
             return self.plan.add(role.unit_id, {"action": "buy", "name": name, "num": count})
         if self.cost(role, shops) + self.settings.return_margin >= self.turn.daylight_left:
             return False
-        return self.travel(role, shops)
+        return self.travel(role, shops, 'buy_upgrade')
 
     def mine(self, role: Unit, need_stone: bool = False) -> bool:
         if role.backpack_full:
@@ -448,6 +472,8 @@ class Strategy:
                 continue
             route = self.route(role)
             goals = adjacent_cells(self.turn, [pos])
+            if route.nearest(goals) is None:
+                route = self.coordinator.diagnostic_route(role)
             if self.danger:
                 goals = {p for p in goals if not self.danger.get(p, 0) and route.exposure.get(p) == 0}
             cost = route.cost.get(route.nearest(goals), 10_000)
@@ -456,12 +482,14 @@ class Strategy:
             value = 1 if need_stone else self.turn.vendor_prices.get(kind, 0)
             if value <= 0:
                 continue
-            options.append((value / (cost + 2), -cost, pos, goals))
-        for _, _, pos, goals in sorted(options, key=lambda entry: entry[:3], reverse=True):
+            options.append((not self.coordinator.target_owned(role,pos),
+                            self.coordinator.job(role).get('target') == pos,
+                            value / (cost + 2), -cost, pos, goals))
+        for _, _, _, _, pos, goals in sorted(options, key=lambda entry: entry[:5], reverse=True):
             if role.pos in goals and self.plan.add(role.unit_id, collect_command(pos)):
+                self.coordinator.assign(role,'collect:'+self.turn.zones[pos],pos,role.pos)
                 return True
-            step = self.route(role).step(goals)
-            if step is not None and self.plan.add(role.unit_id, move_command(step)):
+            if self.coordinator.move_to(role,goals,'collect:'+self.turn.zones[pos],pos):
                 return True
         return False
 

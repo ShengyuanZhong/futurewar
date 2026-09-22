@@ -1,5 +1,5 @@
 """Night repair duty; after all target upgrades, both workers guard and resupply."""
-from .protocol import Pos, distance, move_command
+from .protocol import Pos, distance
 
 
 class WallGuard:
@@ -8,7 +8,10 @@ class WallGuard:
         self.turn, self.plan = strategy.turn, strategy.plan
         self.settings, self.memory = strategy.settings, strategy.memory
         self.worker_id = None
-        self.full_time = strategy.upgrades_complete()
+        complete = strategy.upgrades_complete()
+        self.memory.dual_repair_active = self.memory.dual_repair_active or complete
+        # A night breach does not turn the second repairer into a fleeing miner.
+        self.full_time = complete or (self.memory.dual_repair_active and not self.turn.is_day)
         self.stock_targets = {}
         if (not self.full_time and self.turn.day < self.settings.repair_start_day) or not self.turn.station():
             return
@@ -41,9 +44,11 @@ class WallGuard:
             return targets
         price = self.turn.shop_prices['WallFixer']
         free = sum(capacities[i]-targets[i] for i in targets)
+        demands = {w.unit_id:self.daily_stock(w) for w in workers}
         budget = min(free, self.plan.gold // price) if price else free
         for _ in range(budget):
-            uid = min((i for i in targets if targets[i] < capacities[i]), key=lambda i: (targets[i], i))
+            uid = min((i for i in targets if targets[i] < capacities[i]),
+                      key=lambda i: (min(0,targets[i]-demands[i]),targets[i],i))
             targets[uid] += 1
         return targets
 
@@ -66,8 +71,35 @@ class WallGuard:
         command = self.plan.commands.get(str(worker.unit_id), {})
         if command.get("name") == "WallFixer":
             held += command.get("num", 1) if command.get("action") == "buy" else -1 if command.get("action") == "use" else 0
-        target = self.stock_targets.get(worker.unit_id, held) if self.full_time else self.settings.repair_stock
+        target = self.stock_targets.get(worker.unit_id, held) if self.full_time else self.daily_stock(worker)
         return max(0, target - held)
+
+    def daily_stock(self, worker):
+        growth = max(0,self.turn.day-self.settings.repair_start_day)*self.settings.repair_stock_per_day
+        observed = self.memory.repair_usage_previous.get(worker.unit_id,0)
+        return min(worker.capacity,max(self.settings.repair_stock+growth,observed+2 if observed else 0))
+
+    def home(self, role):
+        cells = self.inner_cells()
+        base = self.turn.station()
+        if not cells or not base:
+            return None
+        workers = sorted(self.turn.workers(),key=lambda w:w.unit_id)
+        upper = not self.full_time or role.unit_id == workers[0].unit_id
+        y = base.pos.y if upper else base.pos.y-1
+        x = base.pos.x + (-1 if self.settings.mirrored_layout(self.turn) else 2)
+        return min(cells,key=lambda p:(distance(p,Pos(x,y)),p))
+
+    def owns_wall(self, role, wall):
+        if not self.full_time:
+            return True
+        workers = sorted(self.turn.workers(),key=lambda w:w.unit_id)
+        base = self.turn.station()
+        if len(workers)<2 or not base:
+            return True
+        owner = workers[0] if wall.pos.y >= base.pos.y else workers[1]
+        return (owner.unit_id == role.unit_id or 'WallFixer' not in owner.backpack
+                or owner.pos not in self.inner_cells())
 
     def budget_reserve(self) -> int:
         return self.stock_missing() * self.turn.shop_prices.get("WallFixer", 0)
@@ -84,11 +116,12 @@ class WallGuard:
         route = s.route(role)
         target = route.nearest(cells)
         if target is None:
-            return False
+            route = s.coordinator.diagnostic_route(role)
+            target = route.nearest(cells)
+            if target is None:
+                return self.turn.daylight_left <= self.settings.return_margin
         if self.turn.daylight_left <= route.cost[target] + self.settings.return_margin:
-            step = route.step(cells)
-            if step is not None:
-                self.plan.add(role.unit_id, move_command(step))
+            s.coordinator.move_to(role,cells,'return_guard',self.home(role),allow_risk=True)
             return True
         missing = self.stock_missing()
         shops = [p for p, k in self.turn.zones.items() if k == "weaponShop"]
@@ -104,11 +137,9 @@ class WallGuard:
         # Include the trip back from the shop, plus the purchasing turn.
         return_cost = min(max(0, distance(shop, p) - 1) for shop in shops for p in cells)
         if s.cost(role, shops) + 1 + return_cost + self.settings.return_margin >= self.turn.daylight_left:
-            step = route.step(cells)
-            if step is not None:
-                self.plan.add(role.unit_id, move_command(step))
+            s.coordinator.move_to(role,cells,'return_guard',self.home(role),allow_risk=True)
             return True
-        return s.travel(role, shops)
+        return s.travel(role, shops, 'repair_supply')
 
     def final_daytime(self, role) -> None:
         """Repair first; only one supplier may leave, and only with return time."""
@@ -127,7 +158,7 @@ class WallGuard:
                         count = min(missing, role.capacity-len(role.backpack), self.plan.gold//price if price else missing)
                         if count > 0 and self.plan.add(role.unit_id, {'action':'buy','name':'WallFixer','num':count}):
                             return
-                    elif s.travel(role, shops):
+                    elif s.travel(role, shops, 'repair_supply'):
                         return
         self.nighttime(role)
 
@@ -138,32 +169,36 @@ class WallGuard:
         route = s.route(role, allowed=cells if role.pos in cells else None)
         reachable = cells & set(route.cost)
         if not reachable:
-            return False if urgent_only else s.evade_worker(role)
+            # Stay assigned to the wall: a blocked entrance calls for yielding,
+            # never an unbounded escape to distant zero-risk map cells.
+            return False if urgent_only else s.coordinator.move_to(role,cells,'return_guard',self.home(role),allow_risk=True)
         if "WallFixer" in role.backpack:
             critical = [w for w in self.turn.walls()
                         if w.health * 100 < s.building_max_health(w) * self.settings.repair_threshold_percent
+                        and self.owns_wall(role,w)
                         and w.unit_id not in self.plan.upgrade_targets | s.maintenance_claims]
             critical.sort(key=lambda w: (w.health / s.building_max_health(w), s.wall_depth(w), w.unit_id))
             for wall in critical:
                 goals = {p for p in reachable if distance(p, wall.pos) == 1}
                 if role.pos in goals:
                     if self.plan.add(role.unit_id, {"action": "use", "name": "WallFixer", "targetPos": [wall.pos.dump()]}):
+                        s.coordinator.assign(role,'repair',wall.pos,role.pos)
                         s.maintenance_claims.add(wall.unit_id)
                         return True
-                step = route.step(goals)
-                if step is not None:
-                    if self.plan.add(role.unit_id, move_command(step)):
-                        s.maintenance_claims.add(wall.unit_id)
-                        return True
+                if s.coordinator.move_to(role,{p for p in cells if distance(p,wall.pos)==1},'repair',wall.pos,
+                                         allowed=cells if role.pos in cells else None,allow_risk=True):
+                    s.maintenance_claims.add(wall.unit_id)
+                    return True
         if urgent_only:
             return False
         # No urgent repair / no kits: hold inside; relocate only to a safer lane cell.
-        if role.pos in reachable:
+        home = self.home(role)
+        if home is not None and not s.danger.get(home,0):
+            goals = {home}
+        elif role.pos in reachable:
             safer = {p for p in reachable if s.danger.get(p, 0) < s.danger.get(role.pos, 0)}
             goals = safer or {role.pos}
         else:
             goals = reachable
-        step = route.step(goals)
-        if step is not None:
-            return self.plan.add(role.unit_id, move_command(step))
-        return False
+        return s.coordinator.move_to(role,goals,'guard_post',home,
+                                     allowed=cells if role.pos in cells else None,allow_risk=True)

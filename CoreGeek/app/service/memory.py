@@ -39,9 +39,21 @@ class GameMemory:
     opening_complete: bool = False
     repair_worker_id: int | None = None
     repair_supplier_id: int | None = None
+    dual_repair_active: bool = False
+    worker_tasks: dict[int, dict[str, Any]] = field(default_factory=dict)
+    repair_usage_today: dict[int, int] = field(default_factory=dict)
+    repair_usage_previous: dict[int, int] = field(default_factory=dict)
 
     def observe(self, turn) -> None:
+        if self.last_round == turn.round_no - 1:
+            for actor, command in self.last_commands.items():
+                if (command.get("action") == "use" and command.get("name") == "WallFixer"
+                        and turn.action_results.get(actor) is True):
+                    uid = int(actor)
+                    self.repair_usage_today[uid] = self.repair_usage_today.get(uid, 0) + 1
         if self.day != turn.day:
+            self.repair_usage_previous = self.repair_usage_today if self.day == turn.day-1 else {}
+            self.repair_usage_today = {}
             self.day = turn.day
             self.ordinary_llm_calls = 0
             self.summon_attempts = 0

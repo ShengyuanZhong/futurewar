@@ -77,12 +77,13 @@ class TurnService:
             self.sessions.move_to_end(key)
             while len(self.sessions) > 16:
                 self.sessions.popitem(last=False)
-            LOGGER.info("decision round=%s team=%s actions=%d rejected=%d elapsed_ms=%.1f feedback_failed=%d errors=%s opening=%s shared_control=%s repair_worker=%s worker_danger_cells=%d full_time_repair=%s repair_supplier=%s",
+            LOGGER.info("decision round=%s team=%s actions=%d rejected=%d elapsed_ms=%.1f feedback_failed=%d errors=%s opening=%s shared_control=%s repair_worker=%s worker_danger_cells=%d full_time_repair=%s repair_supplier=%s worker_jobs=%s",
                         turn.round_no, turn.team_type, len(plan.commands), len(plan.rejections),
                         (time.monotonic() - started) * 1000,
                         sum(v is False for v in turn.action_results.values()),
                         [e.get("errorCode") for e in turn.errors], strategy.opening_stage(), strategy.layout.shared_control,
-                        strategy.guard.worker_id, len(strategy.danger), strategy.guard.full_time, memory.repair_supplier_id)
+                        strategy.guard.worker_id, len(strategy.danger), strategy.guard.full_time, memory.repair_supplier_id,
+                        {uid:(job.get('kind'),job.get('goal'),job.get('stalled',0)) for uid,job in memory.worker_tasks.items()})
             for reason in plan.rejections:
                 LOGGER.warning("action_rejected %s", reason)
             return response

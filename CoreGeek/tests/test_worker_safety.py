@@ -270,4 +270,5 @@ class WorkerSafetyTests(unittest.TestCase):
         self.assertNotEqual(service.decide(copy.deepcopy(raw))['roleCommandMap'].get('501', {}).get('name'), 'WallFixer')
         raw['roundNo'] = 391
         raw['teamOur']['roles'][2]['pos'] = {'x': 3, 'y': 7}
-        self.assertEqual(service.decide(copy.deepcopy(raw))['roleCommandMap']['501'], {'action': 'buy', 'name': 'WallFixer', 'num': 4})
+        # Day four target is eight, and actual inventory contains one kit.
+        self.assertEqual(service.decide(copy.deepcopy(raw))['roleCommandMap']['501'], {'action': 'buy', 'name': 'WallFixer', 'num': 7})

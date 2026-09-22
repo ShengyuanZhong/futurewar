@@ -29,6 +29,7 @@ class Settings:
     return_margin: int = 4
     repair_start_day: int = 3
     repair_stock: int = 5
+    repair_stock_per_day: int = 3
     repair_threshold_percent: int = 30
     enable_tasks: bool = True
     enable_news: bool = True
@@ -53,6 +54,8 @@ class Settings:
                 raise ValueError(f"{key} must be a positive integer")
         if settings.repair_start_day > 10 or settings.repair_stock > 100 or settings.repair_threshold_percent > 100:
             raise ValueError("repair settings exceed days, worker capacity or percentage")
+        if type(settings.repair_stock_per_day) is not int or not 0 <= settings.repair_stock_per_day <= 100:
+            raise ValueError("repair_stock_per_day must be an integer in 0..100")
         for key in ("allow_base_surroundings", "enable_tasks", "enable_news"):
             if type(getattr(settings, key)) is not bool:
                 raise ValueError(f"{key} must be boolean")
