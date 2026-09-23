@@ -15,6 +15,7 @@ class TaskAgentMemory:
     self_evolve_active: bool = False
     self_evolve_steps: int = 0
     self_evolve_context: list[str] = field(default_factory=list)
+    self_evolve_command_trace: list[dict] = field(default_factory=list)
     self_evolve_task_desc: str = ""
     self_evolve_first_question: str = ""
     self_evolve_started_round: int = 0

@@ -1,3 +1,5 @@
+> 当前版本0.4.1：用户已将下述实现提升为v0.4基准，后续改动见[失败任务修正](TASK_FAILURE_LEARNING.md)。下文保留0.3.10接入来源。
+
 # 0.3.10 任务模块更新
 
 当前版本以用户最新提供的 `temp/task_prompt(1).py` 与 `temp/task_controller.py` 为准。详细架构、函数、字段、阈值及 Postman 回合示例见 [任务接入文档](TASK_INTEGRATION.md)。

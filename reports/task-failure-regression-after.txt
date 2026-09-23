@@ -1,0 +1,2 @@
+Full final regression: 216 tests, 0 failures, 0 errors; includes all 11 failure-learning cases.
+See validation-v0.4.1.json for source hashes and synthetic observation checks.

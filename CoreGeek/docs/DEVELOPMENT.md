@@ -1,6 +1,6 @@
 # 开发与维护文档
 
-更新日期：2026-09-23，版本0.3.10。本轮接入用户新版任务控制器与提示词，见[任务接入](TASK_INTEGRATION.md)。战斗、升级、维修和工人策略沿用0.3.9；接取任务增加点位快照与冷却检查。
+更新日期：2026-09-23，版本0.4.1。本轮以用户确认的v0.4为基准，修复失败任务的经验污染、JSON结构丢失与短预算提示；见[失败任务修正](TASK_FAILURE_LEARNING.md)。其它策略沿用基准。
 
 ## 1. 设计目标与边界
 
@@ -26,6 +26,7 @@ CoreGeek/
 │       ├── task_prompt.py       # 项目维护的任务prompt
 │       ├── task_controller.py   # 用户控制器：SOP/Skill、任务推进与失败退出
 │       ├── task_state.py        # 同局任务状态和经验库
+│       ├── task_evidence.py     # 业务结果分类、JSON结构和诊断
 │       ├── task_context.py      # 协议适配、证据、诊断与预算
 │       └── task_service.py       # 活跃任务、沙盒与答案协作
 ├── src/agent/
@@ -163,3 +164,5 @@ flowchart LR
 | `decision_busy` | 并发锁繁忙，降级为空动作 | 是否存在非官方并发调用 |
 
 不把本地HTTP错误、官方 `errors`、`lastRoundRoleActionResults=false` 混为同一个异常计数。日志不默认输出完整 prompt、新闻、答案和沙盒输出。决策循环及攻击候选搜索有3.5秒软预算，但不是硬实时保证；本机时延数据见验证报告。
+
+0.4.1任务证据先在完整lastCmdResult上分类，再裁剪给模型；分类结果写入self_evolve_command_trace，成功SOP排除业务/脚本失败。JSON结构记录字段路径及类型，跨同型任务复用；失败后可追加诊断而不覆盖成功解法。实现、限制及参数见[任务失败分析](TASK_FAILURE_LEARNING.md)。

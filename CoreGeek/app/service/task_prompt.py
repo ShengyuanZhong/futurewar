@@ -15,6 +15,9 @@ def build_self_evolve_prompt(task_desc: str, context, steps_used: int = 0, timeo
     if timeout_rounds <= 0:
         timeout_rounds = 15
     rounds_left = max(timeout_rounds - steps_used, 0)
+    command_budget = max(0, (rounds_left - 2) // 2)
+    urgent = ('- 当前已接近截止：有已验证结果时优先提交，不再重读资料或展开长脚本；'
+              '缺少的数据不能编造。\n' if rounds_left <= 3 else '')
     skill_block = f"{skill_hint}\n\n" if skill_hint else ""
     sop_block = f"{sop_hint}\n\n" if sop_hint else ""
     return (
@@ -34,8 +37,10 @@ def build_self_evolve_prompt(task_desc: str, context, steps_used: int = 0, timeo
         f"{sop_block}{skill_block}"
         "# 回合预算（关键约束）\n"
         f"- 任务有限时约 {timeout_rounds} 回合：目前已用 {steps_used} 回合，剩余约 {rounds_left} 回合。\n"
-        "- 每轮只能请求一条命令，且命令结果要到下一轮才返回（每条命令平均消耗约 2 回合），"
-        "因此整个任务你能执行的命令条数只有约 5~7 条。\n"
+        "- 一次命令需要经历LLM回复、命令结果返回，再由LLM生成答案并提交；"
+        "预留最终答案及提交余量2回合。\n"
+        f"- 按当前剩余预算，后续命令最多约 {command_budget} 条；这不是固定5到7条，短任务必须压缩步骤。\n"
+        f"{urgent}"
         "- 必须把能合并的操作压进同一条命令（用 `&&`、shell 变量与内联脚本），命令数越少，越早进入提交。\n\n"
         "# 行动准则\n"
         "0. 前提条件——文件读取规则（先于第 1 步执行）：\n"
@@ -48,6 +53,9 @@ def build_self_evolve_prompt(task_desc: str, context, steps_used: int = 0, timeo
         "   - 除非题目/任务书明确给出文件确切路径，否则不得直接 `cat` 猜测路径；`find / ...` 全盘扫描易超时返回 [TIMEOUT]，禁止使用。\n"
         f"当前阶段：{step}。请按顺序推进：\n"
         "1. 找到并阅读任务书（沙盒内某处的任务书），明确三件事：任务目标、需要调用的服务或接口、答案的提交格式。\n"
+        "   - 同型任务先读当前任务书以确认变更项。若任务书明确API服务、认证和参数与上一题相同，"
+        "直接复用SOP中已验证的请求及JSON结构，只替换当前查询条件；不要重读相同的旧API文档、"
+        "不要再尝试已失败的认证方式。工作区与配置值仍以当前spec.md为准。\n"
         "   - 若是本任务第一条命令，用下面这一条命令同时完成“定位 + 读出任务书”，不要分两条执行（限定了搜索起点与深度，稳定快速）：\n"
         '     f=$(find /tmp /var/tmp /root /home /workspace -maxdepth 6 -name "task_*.md" 2>/dev/null | head -1); echo "== $f =="; cat "$f"\n'
         "   - 注意：`find / ...` 全盘扫描很可能超过命令 15 秒上限并返回 [TIMEOUT]，禁止用全盘 find。若上方命令的 `==` 后为空（未找到），"
@@ -58,7 +66,17 @@ def build_self_evolve_prompt(task_desc: str, context, steps_used: int = 0, timeo
         "   - 收到 4xx 时，以响应 message 字段为准修参后立即重试：`Missing required parameter: location` 说明必须用 `location=北京`"
         "（哪怕任务书/文档写的是 `city=北京`，也以服务端提示为准）；`Missing 'Authorization' header. Expected format: ...` 说明认证头必须按该格式"
         "（如 `Authorization: Bearer <key>`）。修正后直接重试该接口，禁止重复发送与上一条完全相同的请求。\n"
-        "   - 涉及数据处理可用 `python3 -c '...'`，但要保留关键输出：总数、首个样本、以及任何异常/错误字段。\n"
+        "   - 解析JSON前先核对真实层级：对象不是记录数组，遍历dict得到的是字符串键。"
+        "依据原始响应或api_schema逐层取出列表，使用isinstance(records, list)并确认元素为dict后再统计。"
+        "字段名按响应逐字使用，不猜测近义名称；必须核对分页总量与实际取回数量。"
+        "AttributeError/JSONDecodeError属于解析故障，没有新401/400证据时不要修改已成功的认证或参数。\n"
+        "   - 首次得到正确响应时同时保留原文和结构（顶层keys、记录数组路径、首条字段、分页信息）；"
+        "数据短且完整时直接据此生成答案，避免额外写长统计脚本。数据大时先将原始响应存为沙盒临时JSON文件，"
+        "打印结构和精简统计；修复解析代码时重用该文件，不反复请求API。不能把解析失败当作0条记录。\n"
+        "   - 短脚本可用python3 -c；多行Python含单引号/注释时优先使用带引号的heredoc："
+        "python3 - <<'PY'\\n...Python代码...\\nPY（将\\n写成实际换行），避免外层shell单引号被内部撇号截断。"
+        "heredoc脚本已经占用stdin，不要同时通过管道把curl输出传给json.load(sys.stdin)；"
+        "改为先存文件再json.load(open(path))，或Python内使用urllib完成请求。\n"
         "   - 工程修复/部署/启动类任务（含 check 等验证脚本）：读 `spec.md` → 运行验证脚本（如 `./check`）→ 若因 CRLF 报不可执行/权限错"
         "（exitCode 126），先 `sed -i 's/\\r$//' <脚本>` 修复再运行 → 通过后提交任务书要求的签名 token。\n"
         "3. 任务时限严格：每做完一步就规划下一步能否与之合并；一旦完成计算并确认最终答案，必须立即输出 final_answer 并结束，"

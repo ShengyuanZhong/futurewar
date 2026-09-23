@@ -1,0 +1,360 @@
+{
+  "source": {
+    "path": "temp\\teamA (2).log",
+    "bytes": 547396,
+    "sha256": "0231f7d25d1b0b9573e05f801dfb8ed3dafef7cf772c793661abb21e79bd0726"
+  },
+  "round_count": 1213,
+  "episodes": [
+    {
+      "description": "请阅读task_1_beijing.md，获取任务信息",
+      "start_round": 12,
+      "start_line": 90,
+      "start_score": 0,
+      "answer_rounds": [
+        23
+      ],
+      "commands": [
+        {
+          "round": 13,
+          "line": 158,
+          "sha256": "4916ae0951006e0fb63a6fd50a6f24b1cf77be7bf28997fc6ef69b5e1cbef409",
+          "result_round": 14,
+          "result_line": 164,
+          "header": "[exitCode:0]",
+          "application_ok": true,
+          "diagnostics": [],
+          "observed_schema": ""
+        },
+        {
+          "round": 15,
+          "line": 309,
+          "sha256": "2817acc577283bceea059c98f1e5d46287a640071cf8df72e37334987e63224c",
+          "result_round": 16,
+          "result_line": 315,
+          "header": "[exitCode:0]",
+          "application_ok": true,
+          "diagnostics": [],
+          "observed_schema": ""
+        },
+        {
+          "round": 17,
+          "line": 550,
+          "sha256": "dcd42feafbc71d874cae86a9c69a681e0aadbf65a9a9222aa91956ce1e017ff8",
+          "result_round": 18,
+          "result_line": 556,
+          "header": "[exitCode:0]",
+          "application_ok": false,
+          "diagnostics": [
+            "API 返回业务错误，即使 exitCode 为 0 也未成功。根据响应 message 和当前任务文档核对认证头及参数后再请求；不要猜测字段或原样重复失败请求。"
+          ],
+          "observed_schema": ""
+        },
+        {
+          "round": 19,
+          "line": 733,
+          "sha256": "562477138951340252f355dfd7276aeb112bdc9537168b60424e7196789f1dd9",
+          "result_round": 20,
+          "result_line": 739,
+          "header": "[exitCode:0]",
+          "application_ok": false,
+          "diagnostics": [
+            "API 返回业务错误，即使 exitCode 为 0 也未成功。根据响应 message 和当前任务文档核对认证头及参数后再请求；不要猜测字段或原样重复失败请求。"
+          ],
+          "observed_schema": ""
+        },
+        {
+          "round": 21,
+          "line": 920,
+          "sha256": "15687b2d00a9dbaee382190d93a2d04a83d67fc02b4b30f2aa5c2e5763407791",
+          "result_round": 22,
+          "result_line": 926,
+          "header": "[exitCode:0]",
+          "application_ok": true,
+          "diagnostics": [],
+          "observed_schema": "{\"objects\":[{\"path\":[],\"fields\":{\"code\":\"number\",\"data\":\"object\"}},{\"path\":[\"data\"],\"fields\":{\"pagination\":\"object\",\"records\":\"array\"}},{\"path\":[\"data\",\"pagination\"],\"fields\":{\"limit\":\"number\",\"offset\":\"number\",\"total_count\":\"number\"}}],\"arrays\":[{\"path\":[\"data\",\"records\"],\"item_types\":[\"object\"],\"sample_fields\":[\"era\",\"id\",\"name\",\"protected_level\",\"type\"]}]}"
+        }
+      ],
+      "end_round": 24,
+      "end_line": 1381,
+      "score_delta": 86,
+      "outcome_evidence": "answer_then_score_increase"
+    },
+    {
+      "description": "请阅读task_1_alpha.md，获取任务信息",
+      "start_round": 50,
+      "start_line": 1537,
+      "start_score": 86,
+      "answer_rounds": [
+        60
+      ],
+      "commands": [
+        {
+          "round": 52,
+          "line": 1611,
+          "sha256": "4916ae0951006e0fb63a6fd50a6f24b1cf77be7bf28997fc6ef69b5e1cbef409",
+          "result_round": 53,
+          "result_line": 1617,
+          "header": "[exitCode:0]",
+          "application_ok": true,
+          "diagnostics": [],
+          "observed_schema": ""
+        },
+        {
+          "round": 54,
+          "line": 1748,
+          "sha256": "65b29e8a8602091e4c5e8f8434bfc5d02071b2650a9a856670b6ff32c644c49c",
+          "result_round": 55,
+          "result_line": 1754,
+          "header": "[exitCode:0]",
+          "application_ok": true,
+          "diagnostics": [],
+          "observed_schema": ""
+        },
+        {
+          "round": 56,
+          "line": 1880,
+          "sha256": "1ac5d5d4ff7e1ade6f1d118298d65f8c9827b1fbdae7e345940147776547cf70",
+          "result_round": 57,
+          "result_line": 1886,
+          "header": "[exitCode:0]",
+          "application_ok": false,
+          "diagnostics": [
+            "解释器启动失败，即使被|| true掩盖为exitCode 0也未完成验证；检查脚本首行和CRLF换行，修复后重新运行check。"
+          ],
+          "observed_schema": ""
+        },
+        {
+          "round": 58,
+          "line": 2006,
+          "sha256": "9979a113ba5db313cfad78d918df407651a007b59796891471c408db21d432b2",
+          "result_round": 59,
+          "result_line": 2012,
+          "header": "[exitCode:0]",
+          "application_ok": true,
+          "diagnostics": [],
+          "observed_schema": ""
+        }
+      ],
+      "end_round": 61,
+      "end_line": 2210,
+      "score_delta": 87,
+      "outcome_evidence": "answer_then_score_increase"
+    },
+    {
+      "description": "请阅读task_2_nanjing.md，获取任务信息",
+      "start_round": 141,
+      "start_line": 2705,
+      "start_score": 212,
+      "answer_rounds": [],
+      "commands": [
+        {
+          "round": 143,
+          "line": 2792,
+          "sha256": "4916ae0951006e0fb63a6fd50a6f24b1cf77be7bf28997fc6ef69b5e1cbef409",
+          "result_round": 144,
+          "result_line": 2798,
+          "header": "[exitCode:0]",
+          "application_ok": true,
+          "diagnostics": [],
+          "observed_schema": ""
+        },
+        {
+          "round": 145,
+          "line": 2954,
+          "sha256": "2817acc577283bceea059c98f1e5d46287a640071cf8df72e37334987e63224c",
+          "result_round": 146,
+          "result_line": 2960,
+          "header": "[exitCode:0]",
+          "application_ok": true,
+          "diagnostics": [],
+          "observed_schema": ""
+        },
+        {
+          "round": 147,
+          "line": 3207,
+          "sha256": "96760213c4c485b1c7194bb50b748436e5549146beaf93b622fed1c550179910",
+          "result_round": 148,
+          "result_line": 3213,
+          "header": "[exitCode:1]",
+          "application_ok": false,
+          "diagnostics": [
+            "命令未成功，先查看实际错误再修正；不能当作已取得答案。",
+            "检测到把对象当作列表遍历的风险：遍历dict会得到字符串键。先输出type/keys，根据实际响应定位记录数组，确认isinstance(records, list)及每项是dict后再统计。这是JSON结构/解析问题；没有新的401/400证据时不要改回旧认证头或旧请求参数。"
+          ],
+          "observed_schema": ""
+        },
+        {
+          "round": 149,
+          "line": 3415,
+          "sha256": "192d81b039298c5486a0da1ccfb9ea8d8b60b1b846a8c0434e35b1334cc28091",
+          "result_round": 150,
+          "result_line": 3421,
+          "header": "[exitCode:1]",
+          "application_ok": false,
+          "diagnostics": [
+            "命令未成功，先查看实际错误再修正；不能当作已取得答案。",
+            "检测到把对象当作列表遍历的风险：遍历dict会得到字符串键。先输出type/keys，根据实际响应定位记录数组，确认isinstance(records, list)及每项是dict后再统计。这是JSON结构/解析问题；没有新的401/400证据时不要改回旧认证头或旧请求参数。",
+            "shell语法错误可能来自python3 -c外层单引号被内部撇号截断。多行Python改用带引号的heredoc或脚本文件；curl结果先存文件，不要让heredoc脚本与json.load(sys.stdin)争用stdin。"
+          ],
+          "observed_schema": ""
+        }
+      ],
+      "end_round": 151,
+      "end_line": 3720,
+      "score_delta": 0,
+      "outcome_evidence": "no_answer_before_phase_end"
+    },
+    {
+      "description": "请阅读task_2_beta.md，获取任务信息",
+      "start_round": 177,
+      "start_line": 3876,
+      "start_score": 212,
+      "answer_rounds": [
+        184
+      ],
+      "commands": [
+        {
+          "round": 178,
+          "line": 3952,
+          "sha256": "4916ae0951006e0fb63a6fd50a6f24b1cf77be7bf28997fc6ef69b5e1cbef409",
+          "result_round": 179,
+          "result_line": 3958,
+          "header": "[exitCode:0]",
+          "application_ok": true,
+          "diagnostics": [],
+          "observed_schema": ""
+        },
+        {
+          "round": 180,
+          "line": 4093,
+          "sha256": "e1282e338940095963029847ab2c51737e11ff8b34047524defbfa554fa761aa",
+          "result_round": 181,
+          "result_line": 4099,
+          "header": "[exitCode:0]",
+          "application_ok": true,
+          "diagnostics": [],
+          "observed_schema": ""
+        },
+        {
+          "round": 182,
+          "line": 4231,
+          "sha256": "45a3d7a9db5fd0087fcf26d27fd0c86861d8fa8b529f80477f60d503b67455d7",
+          "result_round": 183,
+          "result_line": 4237,
+          "header": "[exitCode:0]",
+          "application_ok": true,
+          "diagnostics": [],
+          "observed_schema": ""
+        }
+      ],
+      "end_round": 185,
+      "end_line": 4437,
+      "score_delta": 86,
+      "outcome_evidence": "answer_then_score_increase"
+    },
+    {
+      "description": "请阅读task_3_chengdu.md，获取任务信息",
+      "start_round": 271,
+      "start_line": 4974,
+      "start_score": 344,
+      "answer_rounds": [
+        279
+      ],
+      "commands": [
+        {
+          "round": 273,
+          "line": 5061,
+          "sha256": "4916ae0951006e0fb63a6fd50a6f24b1cf77be7bf28997fc6ef69b5e1cbef409",
+          "result_round": 274,
+          "result_line": 5067,
+          "header": "[exitCode:0]",
+          "application_ok": true,
+          "diagnostics": [],
+          "observed_schema": ""
+        },
+        {
+          "round": 275,
+          "line": 5223,
+          "sha256": "2817acc577283bceea059c98f1e5d46287a640071cf8df72e37334987e63224c",
+          "result_round": 276,
+          "result_line": 5229,
+          "header": "[exitCode:0]",
+          "application_ok": true,
+          "diagnostics": [],
+          "observed_schema": ""
+        },
+        {
+          "round": 277,
+          "line": 5476,
+          "sha256": "145f02de7adf119761503d347408775a4b0ce606c35ccaf1b2424188adc3052b",
+          "result_round": 278,
+          "result_line": 5482,
+          "header": "[exitCode:0]",
+          "application_ok": true,
+          "diagnostics": [],
+          "observed_schema": "{\"objects\":[{\"path\":[],\"fields\":{\"code\":\"number\",\"data\":\"object\"}},{\"path\":[\"data\"],\"fields\":{\"pagination\":\"object\",\"records\":\"array\"}},{\"path\":[\"data\",\"pagination\"],\"fields\":{\"limit\":\"number\",\"offset\":\"number\",\"total_count\":\"number\"}}],\"arrays\":[{\"path\":[\"data\",\"records\"],\"item_types\":[\"object\"],\"sample_fields\":[\"era\",\"id\",\"name\",\"protected_level\",\"type\"]}]}"
+        }
+      ],
+      "end_round": 280,
+      "end_line": 5872,
+      "score_delta": 86,
+      "outcome_evidence": "answer_then_score_increase"
+    },
+    {
+      "description": "请阅读task_3_gamma.md，获取任务信息",
+      "start_round": 306,
+      "start_line": 6028,
+      "start_score": 430,
+      "answer_rounds": [
+        314
+      ],
+      "commands": [
+        {
+          "round": 308,
+          "line": 6109,
+          "sha256": "4916ae0951006e0fb63a6fd50a6f24b1cf77be7bf28997fc6ef69b5e1cbef409",
+          "result_round": 309,
+          "result_line": 6115,
+          "header": "[exitCode:0]",
+          "application_ok": true,
+          "diagnostics": [],
+          "observed_schema": ""
+        },
+        {
+          "round": 310,
+          "line": 6249,
+          "sha256": "c4ece481749ee2da6f43ba3e9ea2ac36758772f3b83716878d8103bc37d9d1f1",
+          "result_round": 311,
+          "result_line": 6255,
+          "header": "[exitCode:0]",
+          "application_ok": true,
+          "diagnostics": [],
+          "observed_schema": ""
+        },
+        {
+          "round": 312,
+          "line": 6386,
+          "sha256": "1fbc7e53b72ffa4319d5d6205c5cbeba7e592fae9ef55bd265232e7d85f1f68a",
+          "result_round": 313,
+          "result_line": 6392,
+          "header": "[exitCode:0]",
+          "application_ok": true,
+          "diagnostics": [],
+          "observed_schema": ""
+        }
+      ],
+      "end_round": 315,
+      "end_line": 6591,
+      "score_delta": 86,
+      "outcome_evidence": "answer_then_score_increase"
+    }
+  ],
+  "summary": {
+    "episodes": 6,
+    "answer_then_score_increase": 5,
+    "no_answer_before_phase_end": 1,
+    "exit_zero_but_failed": 3
+  },
+  "scope": "Read-only reference log analysis. Score changes are evidence, not current-version match results. No full official action feedback exists in this log; timeout/completion causes are inferred. Commands, answers and authentication values are not copied into this report."
+}

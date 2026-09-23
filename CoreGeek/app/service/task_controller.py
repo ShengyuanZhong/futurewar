@@ -3,6 +3,7 @@ import re
 from typing import Optional
 
 from .task_state import TaskAction as ActionType
+from .task_evidence import inspect_result, merged_strings
 
 
 class SelfEvolveController:
@@ -36,6 +37,7 @@ class SelfEvolveController:
         self.state.self_evolve_active = False
         self.state.self_evolve_steps = 0
         self.state.self_evolve_context = []
+        self.state.self_evolve_command_trace = []
         self.state._self_evolve_diags = set()
         self.state._self_evolve_fail_streak = 0
         self.state.self_evolve_last_action = ActionType.NOTHING.value
@@ -104,9 +106,7 @@ class SelfEvolveController:
         cmd_result = self.state.last_cmd_result or ""
         if not cmd_result:
             return False
-        header = cmd_result.splitlines()[0]
-        if ((header.startswith("[exitCode:") and header != "[exitCode:0]")
-                or header in ("[TIMEOUT]", "[JUDGER_ERROR]")):
+        if not inspect_result(cmd_result).ok:
             self.state._self_evolve_fail_streak = getattr(self.state, "_self_evolve_fail_streak", 0) + 1
         else:
             self.state._self_evolve_fail_streak = 0
@@ -171,9 +171,14 @@ class SelfEvolveController:
         cmd_result = self.state.last_cmd_result or ""
         if cmd_result and not getattr(self.state, "_result_recorded", False):
             self.state._result_recorded = True
+            evidence = inspect_result(cmd_result)
+            commands = [line[5:] for line in self.state.self_evolve_context if line.startswith('cmd: ')]
+            if commands:
+                self.state.self_evolve_command_trace.append({
+                    'command': commands[-1], 'ok': evidence.ok, 'schema': evidence.schema})
             self.state.self_evolve_context.append(f"cmd_result: {_clip_cmd_result(cmd_result)}")
             diag = _extract_api_diag(cmd_result)
-            if diag:
+            for diag in merged_strings([diag] if diag else [], evidence.diagnostics):
                 diags = getattr(self.state, "_self_evolve_diags", None)
                 if diags is None:
                     diags = set()
@@ -181,6 +186,8 @@ class SelfEvolveController:
                 if diag not in diags:
                     diags.add(diag)
                     self.state.self_evolve_context.append(f"api_diag: {diag}")
+            if evidence.schema:
+                self.state.self_evolve_context.append(f'api_schema: {evidence.schema}')
             self.state.response_prompt = None
 
     def _dispatch_prompt(self, role):
@@ -263,20 +270,8 @@ class SelfEvolveController:
         return segs[-1] if segs else None
 
     def _extract_trace(self):
-        """从上下文提取成功路径：仅保留执行成功（[exitCode:0]）的命令 + 最终提交答案"""
-        steps = []
-        answer = None
-        pending_cmd = None
-        for line in self.state.self_evolve_context:
-            if line.startswith("cmd: "):
-                pending_cmd = line[len("cmd: "):]
-            elif line.startswith("cmd_result: ") and pending_cmd is not None:
-                result = line[len("cmd_result: "):]
-                if result.startswith("[exitCode:0]"):
-                    steps.append(pending_cmd)
-                pending_cmd = None
-            elif line.startswith("llm_answer: ") and answer is None:
-                answer = line[len("llm_answer: "):]
+        """只保留没有进程/业务错误的步骤；退出码0不能证明HTTP请求成功。"""
+        steps, _, answer, _ = self._extract_experience()
         return steps, answer
 
     def _extract_experience(self):
@@ -290,15 +285,24 @@ class SelfEvolveController:
                 pending_cmd = line[len("cmd: "):]
             elif line.startswith("cmd_result: ") and pending_cmd is not None:
                 result = line[len("cmd_result: "):]
-                if result.startswith("[exitCode:0]"):
+                if inspect_result(result).ok:
                     success_steps.append(pending_cmd)
                 else:
                     fail_steps.append(pending_cmd)
                 pending_cmd = None
             elif line.startswith("llm_answer: "):
                 answer = line[len("llm_answer: "):]
-        diags = [d for d in getattr(self.state, "_self_evolve_diags", None) or []]
+        trace = getattr(self.state, 'self_evolve_command_trace', [])
+        if trace:
+            # These statuses were computed before output clipping, not inferred from a fragment.
+            success_steps = [entry['command'] for entry in trace if entry['ok']]
+            fail_steps = [entry['command'] for entry in trace if not entry['ok']]
+        diags = sorted(getattr(self.state, "_self_evolve_diags", None) or [])
         return success_steps, fail_steps, answer, diags
+
+    def _observed_schemas(self):
+        return merged_strings([item.get('schema', '') for item in
+                              getattr(self.state, 'self_evolve_command_trace', []) if item['ok']], limit=4)
 
     def _archive_experience(self):
         """任务失败/放弃时，把已探索到的信息固化进经验库，方便后续同类任务继续探索。
@@ -318,6 +322,7 @@ class SelfEvolveController:
             "steps": steps,
             "fail_steps": fail_steps[:10],
             "diags": diags[:10],
+            "schemas": self._observed_schemas(),
             "answer": (answer or "")[:500],
             "ok": False,
         }
@@ -336,6 +341,13 @@ class SelfEvolveController:
         for k in keys:
             existing = self.state.self_evolve_sop.get(k)
             if existing is not None and existing.get("ok"):
+                # A later failed task can add lessons without replacing the proven solution.
+                updates = {}
+                for field in ('fail_steps', 'diags'):
+                    if entry.get(field):
+                        updates[field] = merged_strings(existing.get(field, []), entry[field])
+                if updates:
+                    self.state.self_evolve_sop[k] = {**existing, **updates}
                 continue
             self.state.self_evolve_sop[k] = entry
 
@@ -349,7 +361,7 @@ class SelfEvolveController:
         同时按"每类任务的第一个问题"沉淀 Skill：把该 taskType 的首个问题原文
         连同成功解法归档，后续同类任务命中 Skill 时可直接给出题型与解法速览。
         """
-        steps, answer = self._extract_trace()
+        steps, fail_steps, answer, diags = self._extract_experience()
         if not steps:
             return
         desc = self.state.self_evolve_task_desc or self.state.phase_task
@@ -358,6 +370,9 @@ class SelfEvolveController:
             "steps": steps,
             "answer": answer,
             "ok": True,
+            "fail_steps": fail_steps[:10],
+            "diags": diags[:10],
+            "schemas": self._observed_schemas(),
         }
         task = self._current_task()
         if task is not None:
@@ -413,7 +428,8 @@ class SelfEvolveController:
             lines.append(f"首次触达该类型时的任务描述：{question}")
         if skill.get("answer"):
             lines.append(f"上次成功提交答案参考：{skill['answer']}")
-        lines.append(f"上次成功的关键命令序列（{len(skill['steps'])} 条，顺序执行）：\n{steps}")
+        lines.append(f"上次成功的关键命令序列（{len(skill['steps'])} 条，按当前题目调整参数）：\n{steps}")
+        lines.append('先读当前任务要求；同服务的已验证认证/参数/结构可复用，城市、路径、配置值和答案必须重新核对。')
         return "\n".join(lines)
 
     def _sop_hint(self):
@@ -454,9 +470,12 @@ class SelfEvolveController:
             if entry.get("answer"):
                 tip = f"\n  最终提交答案参考：{entry['answer']}"
             return (
-                "# 已知成功流程（SOP，优先照做，但是不可以直接抄答案返回）\n"
-                f"该任务已有验证成功的固定流程（关键命令 {len(steps)} 条），"
-                f"请直接按以下顺序执行，不要重复探索、不要调整步骤：\n{steps_block}{tip}"
+                "# 已知成功流程（SOP，复用方法并适配当前任务，不能直接抄答案）\n"
+                f"历史成功步骤（{len(steps)} 条）：\n{steps_block}{tip}\n"
+                "先读当前任务，替换城市、工作区、文件名、配置值等变量；历史答案只用于核对提交结构。"
+                "若当前任务明确同一服务/接口，沿用已验证的认证与参数，不重复读取相同旧文档，"
+                "不重试已否定的认证头和参数；只在当前响应出现新证据时更新。\n"
+                + self._evidence_hint(entry)
             )
         lines = [
             "# 已探索经验（上次任务未完成，仅供继续探索参考，勿照搬流程）",
@@ -471,7 +490,21 @@ class SelfEvolveController:
             lines.append(f"已知执行失败的命令（不要再原样重试）：\n{fails}")
         if entry.get("answer"):
             lines.append(f"上次提交的答案已被判定错误，仅作参考，不要直接复用：{entry['answer']}")
+        if entry.get('schemas'):
+            lines.append('已观察的JSON结构（需核对当前响应）：\n' + '\n'.join(entry['schemas']))
         return "\n".join(lines)
+
+    @staticmethod
+    def _evidence_hint(entry):
+        lines = []
+        if entry.get('schemas'):
+            lines.append('已观察的JSON结构（path为逐层字段路径，字段名按此核对，勿猜别名）：\n'
+                         + '\n'.join(entry['schemas']))
+        if entry.get('diags'):
+            lines.append('已有错误纠正与避坑信息：\n' + '\n'.join(entry['diags']))
+        if entry.get('fail_steps'):
+            lines.append('以下命令已观察到失败，不要原样执行：\n' + '\n'.join(entry['fail_steps'][:5]))
+        return '\n'.join(lines)
 
 
 class TreasureController:

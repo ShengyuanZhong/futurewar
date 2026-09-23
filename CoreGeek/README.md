@@ -71,9 +71,9 @@ python main3.py 8080 --config config.local.json
 
 ```powershell
 python run_tests.py
-python tools/smoke_server.py --output ../reports/http-smoke-v0.3.10.json
-python tools/replay.py ../request.txt --output ../reports/sample-response-v0.3.10.json
-python tools/validate.py --cases 20 --output ../reports/validation-v0.3.10.json
+python tools/smoke_server.py --output ../reports/http-smoke-v0.4.1.json
+python tools/replay.py ../request.txt --output ../reports/sample-response-v0.4.1.json
+python tools/validate.py --cases 20 --output ../reports/validation-v0.4.1.json
 ```
 
 回放输入支持单个 JSON、JSON 数组、每行一份观测的 JSONL。单个队伍按回合递增；同回合相同内容返回缓存，不同内容拒绝，以免状态被重复推进。
@@ -189,3 +189,5 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 0.3.9修复待建/缺墙格造成的寻路与清理往返冲突，新增实际位置/动作诊断；日志证据及函数见[往返修复](docs/WORKER_PATH_FIX.md)。
 
 0.3.10接入用户实战任务控制器：SOP/Skill分库复用、失败经验、API诊断、JSON/XML兼容、4次连续失败退出及25轮冷却；详细函数和状态见[任务接入](docs/TASK_INTEGRATION.md)。
+
+当前0.4.1以用户确认的v0.4为基准，修正成功SOP混入API/脚本失败、跨题结构丢失和短预算问题。新增`app/service/task_evidence.py`，日志证据、函数参数及验证见[失败任务修正](docs/TASK_FAILURE_LEARNING.md)。

@@ -1,0 +1,11 @@
+......................................................protocol_error Expecting property name enclosed in double quotes: line 1 column 2 (char 1)
+protocol_error request must be a JSON object
+protocol_error request must be a JSON object
+protocol_error 'roundNo'
+protocol_error invalid JSON constant: NaN
+..................................................................................................................................................................
+----------------------------------------------------------------------
+Ran 216 tests in 17.992s
+
+OK
+{"tests": {"run": 216, "failures": 0, "errors": 0}, "stress": {"seeds": [17, 20260917], "teams": ["challenger", "defender"], "cases": 80, "pressure": "0..150 robots on night observations; no simulated match outcomes", "failures": [], "loadout_cases": {"three_rockets": 40, "mixed_compatibility": 40}, "median_ms": 21.47, "max_ms": 824.673}}
