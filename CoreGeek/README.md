@@ -71,9 +71,9 @@ python main3.py 8080 --config config.local.json
 
 ```powershell
 python run_tests.py
-python tools/smoke_server.py --output ../reports/http-smoke-v0.4.1.json
-python tools/replay.py ../request.txt --output ../reports/sample-response-v0.4.1.json
-python tools/validate.py --cases 20 --output ../reports/validation-v0.4.1.json
+python tools/smoke_server.py --output ../reports/http-smoke-v0.4.2.json
+python tools/replay.py ../request.txt --output ../reports/sample-response-v0.4.2.json
+python tools/validate.py --cases 20 --output ../reports/validation-v0.4.2.json
 ```
 
 回放输入支持单个 JSON、JSON 数组、每行一份观测的 JSONL。单个队伍按回合递增；同回合相同内容返回缓存，不同内容拒绝，以免状态被重复推进。
@@ -122,6 +122,7 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | 同上 | `LLMService.consume(turn, memory)` | 返回与pending匹配的目的和回复 |
 | 同上 | `task_prompt/news_prompt` | 构造任务/普通新闻提示，更新相应调用状态 |
 | 同上 | `apply_news(turn, memory, data)` | 校验并保存停矿和宝藏推理 |
+| [app/service/task_logging.py](app/service/task_logging.py) | `task_debug_message(turn, response)` | 生成用户提供格式的多行任务日志；由TurnService在成功回合记录 |
 | [app/service/task_service.py](app/service/task_service.py) | `TaskService.active(turn, memory, plan, llm, reply, defense_due=False)` | 返回`(prompt, executeCmd)`；回防时让出开拓者，其余时候处理任务并保持站位 |
 | [src/agent/protocol.py](src/agent/protocol.py) | `Turn.load(payload)` | 官方请求转观测模型 |
 | 同上 | `Pos/Unit/Robot/PlayerTask/CommandResult` | 坐标、单位、机器人、任务点、沙盒结果 |
@@ -191,3 +192,5 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 0.3.10接入用户实战任务控制器：SOP/Skill分库复用、失败经验、API诊断、JSON/XML兼容、4次连续失败退出及25轮冷却；详细函数和状态见[任务接入](docs/TASK_INTEGRATION.md)。
 
 当前0.4.1以用户确认的v0.4为基准，修正成功SOP混入API/脚本失败、跨题结构丢失和短预算问题。新增`app/service/task_evidence.py`，日志证据、函数参数及验证见[失败任务修正](docs/TASK_FAILURE_LEARNING.md)。
+
+0.4.2接入用户提供的`print_log.py`格式：每个新回合记录`[TASK-DEBUG]`，完整打印phaseTask、llmResp、lastCmdResult、本轮prompt和executeCmd。stderr为默认输出，具体映射见[任务日志](docs/TASK_LOGGING.md)。

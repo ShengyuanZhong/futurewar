@@ -1,6 +1,6 @@
 # 当前实现现状
 
-更新日期：2026-09-23，程序版本0.4.1。本文件补齐`DEVELOPMENT_RULES.md`引用的实现入口；不补造历史模拟器结果。
+更新日期：2026-09-23，程序版本0.4.2。本文件补齐`DEVELOPMENT_RULES.md`引用的实现入口；不补造历史模拟器结果。
 
 CoreGeek 已从仅含建造/采集/单目标夜间攻击的 demo，扩展为有应用层和跨回合记忆的 HTTP Agent。
 
@@ -33,6 +33,8 @@ CoreGeek 已从仅含建造/采集/单目标夜间攻击的 demo，扩展为有�
 
 0.3.10接入用户新增的实战任务prompt和SelfEvolveController，SOP/Skill按任务类型复用，失败经验归档、API诊断、宽容解析和退出冷却；见[任务接入](CoreGeek/docs/TASK_INTEGRATION.md)。
 
-本轮具体运行结果见[0.4.1报告](reports/VALIDATION-v0.4.1.md)，原[0.2.0报告](reports/VALIDATION.md)保留；机器报告包含源码与官方基线SHA256。策略阶段和关键函数见[开局防御策略](CoreGeek/docs/OPENING_DEFENSE.md)。未提供完整判题模拟器或调试网页。
+本轮具体运行结果见[0.4.2报告](reports/VALIDATION-v0.4.2.md)，原[0.2.0报告](reports/VALIDATION.md)保留；机器报告包含源码与官方基线SHA256。策略阶段和关键函数见[开局防御策略](CoreGeek/docs/OPENING_DEFENSE.md)。未提供完整判题模拟器或调试网页。
 
 用户将0.3.10运行实现确认为v0.4新基准，已保存独立源码归档。0.4.1针对南京API任务失败修复经验污染、JSON结构复用、脚本引用诊断和短预算提示；工程成功路径保留，见[任务失败修正](CoreGeek/docs/TASK_FAILURE_LEARNING.md)。
+
+0.4.2把用户提供的print_log.py片段适配到TurnService日志，每回合打印完整任务输入/反馈及最终prompt/executeCmd；见[任务日志](CoreGeek/docs/TASK_LOGGING.md)。

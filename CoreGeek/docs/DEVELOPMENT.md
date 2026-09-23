@@ -1,6 +1,6 @@
 # 开发与维护文档
 
-更新日期：2026-09-23，版本0.4.1。本轮以用户确认的v0.4为基准，修复失败任务的经验污染、JSON结构丢失与短预算提示；见[失败任务修正](TASK_FAILURE_LEARNING.md)。其它策略沿用基准。
+更新日期：2026-09-23，版本0.4.2。当前接入用户提供的任务交互日志格式，见[任务日志](TASK_LOGGING.md)；0.4.1的失败任务修正见[开发记录](TASK_FAILURE_LEARNING.md)。
 
 ## 1. 设计目标与边界
 
@@ -27,6 +27,7 @@ CoreGeek/
 │       ├── task_controller.py   # 用户控制器：SOP/Skill、任务推进与失败退出
 │       ├── task_state.py        # 同局任务状态和经验库
 │       ├── task_evidence.py     # 业务结果分类、JSON结构和诊断
+│       ├── task_logging.py      # 完整任务交互日志格式
 │       ├── task_context.py      # 协议适配、证据、诊断与预算
 │       └── task_service.py       # 活跃任务、沙盒与答案协作
 ├── src/agent/
@@ -158,11 +159,12 @@ flowchart LR
 | `construction_mode=base_surroundings` | 已启用基地周围默认布局 | allow_base_surroundings / 用户指定的本地假设 |
 | `D01` | 显式关闭默认布局且没有确认坐标 | config |
 | `decision` | 回合、阵营、动作数、耗时、反馈失败数、错误码、opening阶段、shared_control | 策略与原始观测；shared_control只代表规划具备共同邻格 |
+| `[TASK-DEBUG R...]` | 题目、LLM回复、沙盒结果、本轮prompt和executeCmd | task_logging按用户片段生成，详见[任务日志](TASK_LOGGING.md) |
 | `action_rejected` | 本地动作校验拦截 | 对应策略与 ActionPlan |
 | `protocol_error` | HTTP/JSON/必要字段/序列错误，返回400 | 请求和接入路径 |
 | `decision_failed` | 内部缺陷，返回空动作且不提交状态 | traceback，补回归测试 |
 | `decision_busy` | 并发锁繁忙，降级为空动作 | 是否存在非官方并发调用 |
 
-不把本地HTTP错误、官方 `errors`、`lastRoundRoleActionResults=false` 混为同一个异常计数。日志不默认输出完整 prompt、新闻、答案和沙盒输出。决策循环及攻击候选搜索有3.5秒软预算，但不是硬实时保证；本机时延数据见验证报告。
+不把本地HTTP错误、官方 `errors`、`lastRoundRoleActionResults=false` 混为同一个异常计数。[TASK-DEBUG]会输出完整任务prompt、LLM回复和沙盒结果；新闻未加入此记录。决策循环及攻击候选搜索有3.5秒软预算，但不是硬实时保证；本机时延数据见验证报告。
 
 0.4.1任务证据先在完整lastCmdResult上分类，再裁剪给模型；分类结果写入self_evolve_command_trace，成功SOP排除业务/脚本失败。JSON结构记录字段路径及类型，跨同型任务复用；失败后可追加诊断而不覆盖成功解法。实现、限制及参数见[任务失败分析](TASK_FAILURE_LEARNING.md)。

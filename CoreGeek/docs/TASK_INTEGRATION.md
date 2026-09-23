@@ -1,6 +1,6 @@
 # 自进化任务模块接入与维护
 
-当前版本0.4.1；用户确认的v0.4基准来自0.3.10对实战模块的接入。采用用户提供的 `temp/task_prompt(1).py` 与 `temp/task_controller.py`，基准的自进化决策与提示词以这两个文件为准；0.4.1在此基础上进行[失败任务修正](TASK_FAILURE_LEARNING.md)。正式源码不读取 `temp/`；原件保留。涉及 R01、R07，官方规则、接口与 demo 原件没有修改。
+当前版本0.4.2；用户确认的v0.4基准来自0.3.10对实战模块的接入。采用用户提供的 `temp/task_prompt(1).py` 与 `temp/task_controller.py`，基准的自进化决策与提示词以这两个文件为准；0.4.1在此基础上进行[失败任务修正](TASK_FAILURE_LEARNING.md)。正式源码不读取 `temp/`；原件保留。涉及 R01、R07，官方规则、接口与 demo 原件没有修改。
 
 ## 1. 来源与接入范围
 
@@ -22,7 +22,7 @@
 | `app/service/llm_service.py` | 校验回复属于上一轮及同一任务；任务原始文本交给新解析器，新闻仍独立严格解析 |
 | `app/service/memory.py` | 每队、每阵营会话记忆，接任务的轮次及预算；嵌入 `task_agent` |
 | `app/service/task_context.py` | 接取轮次估计、旧协议规范化及兼容工具；不再决定新版重试策略 |
-| `app/service/turn_service.py` | observe → consume → TaskService.active → Strategy.run → record，最后事务提交 |
+| `app/service/turn_service.py` | observe → consume → TaskService.active → Strategy.run → record，最后事务提交及[TASK-DEBUG日志](TASK_LOGGING.md) |
 | `src/agent/brain.py` | 接取前的路径/日照预算，接受时调用 `task_agent.accept(task)`，冷却期不重接；其它策略沿用基准 |
 | `tests/test_task_controller.py` | 同型复用、失败归档、冷却、协议兼容、预算和会话隔离 |
 | `tools/audit_task_integration.py` | 离线比较用户源码和正式源码，并检查日志中的 LLM 回复能否解析 |
@@ -107,4 +107,4 @@ LLM 回复与命令结果都需要你手动填写或由官方平台产生。本�
 python CoreGeek/tools/audit_task_integration.py --prompt 'temp/task_prompt(1).py' --controller temp/task_controller.py --log 'temp/teamA (2).log' --output reports/task-integration-v0.3.10.json
 ```
 
-正式源码回归、HTTP 与验证范围见 [本版验证报告](../../reports/VALIDATION-v0.4.1.md)。参考日志中28条非空LLM回复全部可解析（23命令、5答案），不代表本版本已经完成对应官方对局。
+正式源码回归、HTTP 与验证范围见 [0.4.1任务优化验证报告](../../reports/VALIDATION-v0.4.1.md)。参考日志中28条非空LLM回复全部可解析（23命令、5答案），不代表本版本已经完成对应官方对局。

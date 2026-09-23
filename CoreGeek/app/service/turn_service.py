@@ -12,6 +12,7 @@ from app.config import Settings
 from .llm_service import LLMService, digest
 from .memory import GameMemory
 from .task_service import TaskService
+from .task_logging import task_debug_message
 
 LOGGER = logging.getLogger(__name__)
 
@@ -77,6 +78,7 @@ class TurnService:
             self.sessions.move_to_end(key)
             while len(self.sessions) > 16:
                 self.sessions.popitem(last=False)
+            LOGGER.info("%s", task_debug_message(turn, response))
             LOGGER.info("decision round=%s team=%s actions=%d rejected=%d elapsed_ms=%.1f feedback_failed=%d errors=%s opening=%s shared_control=%s repair_worker=%s worker_danger_cells=%d full_time_repair=%s repair_supplier=%s worker_jobs=%s",
                         turn.round_no, turn.team_type, len(plan.commands), len(plan.rejections),
                         (time.monotonic() - started) * 1000,

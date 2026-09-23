@@ -64,6 +64,13 @@ def main():
             report["bind_verified_from_startup_log"] = f"0.0.0.0:{port}".encode() in stderr
             report["construction_warning"] = b"D01" in stderr
             report["base_surroundings_enabled"] = b"construction_mode=base_surroundings" in stderr
+            report["task_debug_logged"] = all(
+                marker in stderr for marker in (
+                    b"[TASK-DEBUG R", b"phaseTask :", b"llmResp   :",
+                    b"lastCmdResult   :", b"prompt    :", b"executeCmd:",
+                )
+            )
+            assert report["task_debug_logged"], "Task trace is missing from server stderr"
             output = args.output
             output.parent.mkdir(parents=True, exist_ok=True)
             output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
