@@ -173,7 +173,7 @@ class TaskPromptTests(unittest.TestCase):
 
     def test_ambiguous_invalid_and_non_string_answers_reprompt(self):
         cases = [
-            {'action':'final_answer','answer':{'count':1}},
+            {'action':'final_answer','answer':False},
             {'action':'final_answer','answer':'x','command':'pwd'},
             {'action':'execute_command','command':'pwd','taskAnswer':'x'},
             {'executeCmd':'pwd','taskAnswer':'x'},

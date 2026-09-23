@@ -1,0 +1,150 @@
+{
+  "source_directory": "replay_crawler/logs/0df417d673710fe4e14f8b43",
+  "files": {
+    "observations.jsonl": {
+      "records": 1013,
+      "sha256": "ddc5910f7c7c397605ec50b942751bc48c1906f798f1fdf62c79bedc0df512fb"
+    },
+    "responses.jsonl": {
+      "records": 1013,
+      "sha256": "2eacd48b74be07a2723dab4755b1351dc54eba3c340085656820f93accee0d67"
+    },
+    "diagnostics.jsonl": {
+      "records": 1013,
+      "sha256": "0a7bed2aa61da44305613bc6272a850ab163a9423f06f2814e8f6d939f4022e7"
+    }
+  },
+  "half_side_counts": {
+    "(1, 'challenger')": 1013
+  },
+  "episodes": [
+    {
+      "start": 14,
+      "task": "本地自进化任务：读取 /tmp/task/spec.md。\n快速任务模拟：读取 /tmp/task/spec.md，提交 JSON 对象，包含字符串字段 result。解题结果由预设能力模型决定，不代表真实解题质量。",
+      "commands": [
+        {
+          "round": 14,
+          "sha256": "0f4968f214d8a878969ffcdfe1c018edc7493b44d5e279288078f7d854387124",
+          "chars": 5519
+        }
+      ],
+      "prompt_rounds": [
+        15
+      ],
+      "submission_rounds": [
+        16
+      ],
+      "synthetic_results": 1,
+      "ended_observation": 17
+    },
+    {
+      "start": 20,
+      "task": "本地自进化任务：读取 /tmp/task/spec.md。\n快速任务模拟：读取 /tmp/task/spec.md，提交 JSON 对象，包含字符串字段 result。解题结果由预设能力模型决定，不代表真实解题质量。",
+      "commands": [
+        {
+          "round": 20,
+          "sha256": "0f4968f214d8a878969ffcdfe1c018edc7493b44d5e279288078f7d854387124",
+          "chars": 5519
+        },
+        {
+          "round": 22,
+          "sha256": "c338faabbbd7ed2a4be1dc284f7d47c00b2c8e6ccd9c1fefc9938ca5f612f7e9",
+          "chars": 37
+        },
+        {
+          "round": 24,
+          "sha256": "c338faabbbd7ed2a4be1dc284f7d47c00b2c8e6ccd9c1fefc9938ca5f612f7e9",
+          "chars": 37
+        }
+      ],
+      "prompt_rounds": [
+        21,
+        23,
+        25,
+        26
+      ],
+      "submission_rounds": [
+        27
+      ],
+      "synthetic_results": 3,
+      "ended_observation": 28
+    },
+    {
+      "start": 143,
+      "task": "本地自进化任务：读取 /tmp/task/spec.md。\n快速任务模拟：读取 /tmp/task/spec.md，提交 JSON 对象，包含字符串字段 result。解题结果由预设能力模型决定，不代表真实解题质量。",
+      "commands": [
+        {
+          "round": 143,
+          "sha256": "0f4968f214d8a878969ffcdfe1c018edc7493b44d5e279288078f7d854387124",
+          "chars": 5519
+        }
+      ],
+      "prompt_rounds": [
+        144
+      ],
+      "submission_rounds": [
+        145
+      ],
+      "synthetic_results": 1,
+      "ended_observation": 146
+    },
+    {
+      "start": 166,
+      "task": "本地自进化任务：读取 /tmp/task/spec.md。\n快速任务模拟：读取 /tmp/task/spec.md，提交 JSON 对象，包含字符串字段 result。解题结果由预设能力模型决定，不代表真实解题质量。",
+      "commands": [
+        {
+          "round": 166,
+          "sha256": "0f4968f214d8a878969ffcdfe1c018edc7493b44d5e279288078f7d854387124",
+          "chars": 5519
+        }
+      ],
+      "prompt_rounds": [
+        167
+      ],
+      "submission_rounds": [
+        168
+      ],
+      "synthetic_results": 1,
+      "ended_observation": 169
+    },
+    {
+      "start": 272,
+      "task": "本地自进化任务：读取 /tmp/task/spec.md。\n快速任务模拟：读取 /tmp/task/spec.md，提交 JSON 对象，包含字符串字段 result。解题结果由预设能力模型决定，不代表真实解题质量。",
+      "commands": [
+        {
+          "round": 272,
+          "sha256": "0f4968f214d8a878969ffcdfe1c018edc7493b44d5e279288078f7d854387124",
+          "chars": 5519
+        }
+      ],
+      "prompt_rounds": [
+        273
+      ],
+      "submission_rounds": [
+        274
+      ],
+      "synthetic_results": 1,
+      "ended_observation": 275
+    },
+    {
+      "start": 278,
+      "task": "本地自进化任务：读取 /tmp/task/spec.md。\n快速任务模拟：读取 /tmp/task/spec.md，提交 JSON 对象，包含字符串字段 result。解题结果由预设能力模型决定，不代表真实解题质量。",
+      "commands": [
+        {
+          "round": 278,
+          "sha256": "0f4968f214d8a878969ffcdfe1c018edc7493b44d5e279288078f7d854387124",
+          "chars": 5519
+        }
+      ],
+      "prompt_rounds": [
+        279
+      ],
+      "submission_rounds": [
+        280
+      ],
+      "synthetic_results": 1,
+      "ended_observation": 281
+    }
+  ],
+  "conclusion": "One replay, three aligned data streams; six tasks explicitly described as local simulation. Synthetic answers are not evidence of real problem-solving quality. No recorded commands executed on host."
+}

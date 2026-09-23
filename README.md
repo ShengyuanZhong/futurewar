@@ -2,7 +2,7 @@
 
 基于本目录《未来战争》v1.0 任务书、接口文档和 `DEVELOPMENT_RULES.md` 实现的参赛 HTTP Agent。保留 CoreGeek 的 `main3.py → src/agent` 基础结构，新增 `CoreGeek/app` 应用层。运行仅依赖 Python 标准库，Python 3.10 及以上。
 
-当前程序版本为 `0.3.9`，声明位置是 [CoreGeek/pyproject.toml](CoreGeek/pyproject.toml)。开局仍为三火箭→采石→U形墙，随后集中升满一台火箭；第二天起依次强化正中两墙3级、第二台火箭2级、正面其余四墙2→3级、所有火箭3级，最后把两翼六墙升2级；不升级基地。全部目标达成后，两名工人全天墙内维修，白天轮流采购，后续金币用于修复包。阈值仍为严格低于30%。详细坐标、镜像、购买规则和关键函数见[建筑维护](CoreGeek/docs/MAINTENANCE.md)。沿用工人独立任务、让行、城墙掩护与动态备货，见[工人协作](CoreGeek/docs/WORKER_COORDINATION.md)。沿用昼夜统一工人经济流程，夜间可继续采购与配送升级券，维修工可在内侧兼顾升级，详见[昼夜统一调度](CoreGeek/docs/WORKER_SCHEDULE.md)。本版根据log1/log2统一寻路与建筑位清理的预留集合，修复待建/缺墙位置造成的往返循环，详见[日志定位与修复](CoreGeek/docs/WORKER_PATH_FIX.md)。任务模块、三炮阵型和P站位保持。
+当前程序版本为 `0.3.10`，声明位置是 [CoreGeek/pyproject.toml](CoreGeek/pyproject.toml)。开局仍为三火箭→采石→U形墙，随后集中升满一台火箭；第二天起依次强化正中两墙3级、第二台火箭2级、正面其余四墙2→3级、所有火箭3级，最后把两翼六墙升2级；不升级基地。全部目标达成后，两名工人全天墙内维修，白天轮流采购，后续金币用于修复包。阈值仍为严格低于30%。详细坐标、镜像、购买规则和关键函数见[建筑维护](CoreGeek/docs/MAINTENANCE.md)。沿用工人独立任务、让行、城墙掩护与动态备货，见[工人协作](CoreGeek/docs/WORKER_COORDINATION.md)。沿用昼夜统一工人经济流程，夜间可继续采购与配送升级券，维修工可在内侧兼顾升级，详见[昼夜统一调度](CoreGeek/docs/WORKER_SCHEDULE.md)。沿用根据log1/log2统一寻路与建筑位清理的预留集合，修复待建/缺墙位置造成的往返循环，详见[日志定位与修复](CoreGeek/docs/WORKER_PATH_FIX.md)。本版优化任务准备、提示词、结构化答案、重复命令限制及回防预算，见[任务优化](CoreGeek/docs/TASK_OPTIMIZATION.md)；战斗与工人代码保持。
 
 ## 阅读导航
 
@@ -49,11 +49,12 @@ bash run.sh 8080
 | [规则覆盖与差异登记](CoreGeek/docs/RULE_COVERAGE.md) | R01–R08、D01–D08、仍待确认的行为 |
 | [开局防御策略](CoreGeek/docs/OPENING_DEFENSE.md) | 三火箭布局、攒石建墙、单人轮换、测试与升级步骤 |
 | [实现现状](DEMO.md) | 本轮完成范围与未完成的外部验证 |
+| [任务流程优化](CoreGeek/docs/TASK_OPTIMIZATION.md) | 回放资料审计、只读准备、提示词、结构化答案与预算 |
 | [任务模块接入](CoreGeek/docs/TASK_INTEGRATION.md) | 用户提示词、协议转换、证据历史、诊断、预算和Postman逐轮调试 |
 | [实战日志往返修复](CoreGeek/docs/WORKER_PATH_FIX.md) | log1/log2证据、统一路径预留、重建场景与诊断字段 |
 | [昼夜统一调度](CoreGeek/docs/WORKER_SCHEDULE.md) | 跨昼夜任务连续、夜间升级/采购、维修岗位限制与函数参数 |
 | [工人协作与备货](CoreGeek/docs/WORKER_COORDINATION.md) | 单人任务、让行、墙掩护、值守分区及按日备货参数 |
-| [v0.3.9验证报告](reports/VALIDATION-v0.3.9.md) | 当前源码测试证据、哈希、验证边界；旧报告独立保留 |
+| [v0.3.10验证报告](reports/VALIDATION-v0.3.10.md) | 当前源码测试证据、哈希、验证边界；旧报告独立保留 |
 | [开发规则](DEVELOPMENT_RULES.md) | 本地开发约束与官方规则索引，原文保留 |
 | [任务书](任务书.md) / [接口文档](接口文档.md) | 原始比赛规则与接口定义，原文保留 |
 
@@ -61,9 +62,9 @@ bash run.sh 8080
 
 ```powershell
 python CoreGeek/run_tests.py
-python CoreGeek/tools/smoke_server.py --output reports/http-smoke-v0.3.9.json
-python CoreGeek/tools/replay.py request.txt --output reports/sample-response-v0.3.9.json
-python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v0.3.9.json
+python CoreGeek/tools/smoke_server.py --output reports/http-smoke-v0.3.10.json
+python CoreGeek/tools/replay.py request.txt --output reports/sample-response-v0.3.10.json
+python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v0.3.10.json
 ```
 
 `replay.py` 只计算响应，不执行响应中的沙盒命令或 LLM 请求。验证脚本生成的压力结果是合成观测检查，不是比赛模拟、官方难度或胜率。
@@ -85,10 +86,10 @@ futurewar/
 ├── .gitignore                        # 忽略缓存、构建中间文件和本地配置
 ├── reports/
 │   ├── VALIDATION.md                 # 人类可读的历史验证报告
-│   ├── VALIDATION-v0.3.9.md          # 日志往返与路径预留修复报告
-│   ├── validation-v0.3.9.json        # 本版测试、压力、环境与源码哈希
-│   ├── http-smoke-v0.3.9.json        # 本版真实进程HTTP验证
-│   ├── sample-response-v0.3.9.json   # 本版对原样例的响应
+│   ├── VALIDATION-v0.3.10.md          # 任务流程与提示词验证报告
+│   ├── validation-v0.3.10.json        # 本版测试、压力、环境与源码哈希
+│   ├── http-smoke-v0.3.10.json        # 本版真实进程HTTP验证
+│   ├── sample-response-v0.3.10.json   # 本版对原样例的响应
 │   ├── validation.json               # 测试/压力结果、环境、源码和规则文件SHA256
 │   ├── http-smoke.json               # 实际启动进程后的HTTP检查结果
 │   └── sample-response.json          # 原请求样例生成的离线响应
@@ -158,7 +159,7 @@ futurewar/
         ├── coregeek_futurewar-0.3.1-py3-none-any.whl  # 历史默认建造版本
         ├── coregeek_futurewar-0.3.2-py3-none-any.whl  # 用户认可的基准版本
         ├── coregeek_futurewar-0.3.3-py3-none-any.whl  # 历史维护策略版本
-        └── coregeek_futurewar-0.3.9-py3-none-any.whl  # 当前可选构建产物
+        └── coregeek_futurewar-0.3.10-py3-none-any.whl  # 当前可选构建产物
 ```
 
 `config.local.json` 是可选文件，初始不会自动创建。`dist/` 由打包生成；`__pycache__/`、`build/`、`*.egg-info/` 是运行或构建缓存，不属于业务架构。
@@ -495,6 +496,7 @@ empty_response() -> dict
 | 宝藏 | `treasure`、`treasure_done`、`treasure_attempt_round`、`failed_treasures` | 当前计划、结束标记、最近尝试回合、失败方案签名 |
 | 矿区 | `mine_closures`、`failed_mines` | 新闻推理的停矿窗口、单个失败矿点的短期退避 |
 | 开局防线 | `defense_layout`、`opening_complete` | 复用选定炮位/共同站位；观测确认三炮及配置墙已建好后标记完成，换日保留、新局重置 |
+| 任务效率状态 | `task_bootstrap_done/task_last_result_hash/task_command_repeats/task_defense_deadline` | 每任务只读准备、无进展重复检测及每轮回防截止 |
 | 工人独立任务 | `worker_tasks` | 按实际工人ID保存任务、目标、目的格、停滞、让路等待及最多4个实际位置的往返诊断 |
 | 维修消耗与阶段 | `repair_usage_today`、`repair_usage_previous`、`dual_repair_active` | 记录确认成功的用包量和曾进入双维修阶段的状态 |
 | 维修与采购工 | `repair_worker_id`、`repair_supplier_id` | 主维修工、完成阶段唯一采购工；采购往返期间保持身份，死亡/消失时接替 |
@@ -856,10 +858,10 @@ if step is not None:
 
 ```powershell
 python CoreGeek/run_tests.py
-python CoreGeek/tools/replay.py request.txt --output reports/sample-response-v0.3.9.json
+python CoreGeek/tools/replay.py request.txt --output reports/sample-response-v0.3.10.json
 python CoreGeek/tools/replay.py observations.jsonl --output reports/replayed-responses.json --config CoreGeek/config.local.json
-python CoreGeek/tools/smoke_server.py --output reports/http-smoke-v0.3.9.json
-python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v0.3.9.json
+python CoreGeek/tools/smoke_server.py --output reports/http-smoke-v0.3.10.json
+python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v0.3.10.json
 ```
 
 上述JSONL命令需要先准备`observations.jsonl`。工具会覆盖指定的同名输出；新版本应另取报告文件名，保留历史证据。`validate.py`不会自动重写人工说明，修改代码后需另存对应版本的说明。本版压力观测同时覆盖三火箭和混合旧炮，增加“仅开拓者攻击”和输入冷却为0的断言。
@@ -877,7 +879,7 @@ python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v0.3.9.
 | `test_http_config.py` | HTTP响应/错误、请求上限、配置文件检查 | 启动入口、网络层、配置变化 |
 | `fixtures.py` | 统一合成数据构造，布局专供测试 | 不能当官方地图坐标或规则来源 |
 
-v0.3.9报告记录194个测试通过、80份合成观测检查通过。数值和源码指纹见[当前验证报告](reports/VALIDATION-v0.3.9.md)及[机器记录](reports/validation-v0.3.9.json)。[原报告](reports/VALIDATION.md)的56个测试属于v0.2.0历史证据；两者均不代表正式比赛通过或胜率。
+v0.3.10报告记录206个测试通过、80份合成观测检查通过。数值和源码指纹见[当前验证报告](reports/VALIDATION-v0.3.10.md)及[机器记录](reports/validation-v0.3.10.json)。[原报告](reports/VALIDATION.md)的56个测试属于v0.2.0历史证据；两者均不代表正式比赛通过或胜率。
 
 `validate.independent_contract(raw, response)`是压力工具中的附加结构断言，检查角色互斥、移动占用和攻击时机等。它不是完整判题器，不能代替官方平台对动作执行结果和比分的裁定。
 

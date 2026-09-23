@@ -30,6 +30,10 @@ class GameMemory:
     task_execution: dict[str, Any] | None = None
     task_last_command: str = ""
     task_last_command_failed: bool = False
+    task_bootstrap_done: bool = False
+    task_last_result_hash: str = ''
+    task_command_repeats: int = 0
+    task_defense_deadline: int | None = None
     task_history: list[dict[str, Any]] = field(default_factory=list)
     skills: list[str] = field(default_factory=list)
     failed_mines: dict[str, int] = field(default_factory=dict)

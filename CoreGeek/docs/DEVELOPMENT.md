@@ -1,6 +1,6 @@
 # 开发与维护文档
 
-更新日期：2026-09-22，版本0.3.9。本轮统一路径预留与清理规则，修复日志中的往返冲突，见[路径修复](WORKER_PATH_FIX.md)。沿用工人昼夜统一经济流程，保留夜间避敌、禁建和维修职责；见[昼夜统一调度](WORKER_SCHEDULE.md)。原[独立任务与协作](WORKER_COORDINATION.md)、升级顺序、基地不升级、任务模块和官方原件保持。
+更新日期：2026-09-23，版本0.3.10。本轮优化任务准备、提示词、答案序列化、重复命令与回防预算，见[任务优化](TASK_OPTIMIZATION.md)。战斗、升级、维修和工人代码保持0.3.9基准。
 
 ## 1. 设计目标与边界
 
@@ -23,7 +23,8 @@ CoreGeek/
 │       ├── turn_service.py       # 一次回合事务、缓存、状态隔离
 │       ├── memory.py             # 新闻、任务、额度与行为反馈记忆
 │       ├── llm_service.py        # prompt、结构化回复解析与校验
-│       ├── task_prompt.py       # 用户提供的prompt生成器
+│       ├── task_prompt.py       # 项目维护的任务prompt
+│       ├── task_bootstrap.py    # 官方沙盒只读准备命令生成
 │       ├── task_context.py      # 协议适配、证据、诊断与预算
 │       └── task_service.py       # 活跃任务、沙盒与答案协作
 ├── src/agent/

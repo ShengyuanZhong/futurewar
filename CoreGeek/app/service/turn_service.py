@@ -66,6 +66,11 @@ class TurnService:
             strategy.deadline = started + 3.5
             pioneer = next(iter(turn.alive(("pioneer",))), None)
             defense_due = pioneer is not None and strategy.pioneer_should_defend(pioneer)
+            memory.task_defense_deadline = None
+            if pioneer is not None and turn.weapons():
+                control = strategy.control_position(pioneer)
+                travel = strategy.route(pioneer).cost.get(control, 10_000)
+                memory.task_defense_deadline = turn.round_no + max(0, turn.daylight_left-travel-self.settings.return_margin)
             prompt, execute = self.tasks.active(turn, memory, plan, self.llm,
                                                 reply if purpose == "task" else {}, defense_due=defense_due)
             strategy.run()
