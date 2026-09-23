@@ -1,6 +1,5 @@
 """Bounded task evidence and protocol adaptation; never executes commands."""
 import json
-import hashlib
 from agent.protocol import PIONEER, distance
 from .task_prompt import HISTORY_WINDOW
 
@@ -36,11 +35,6 @@ def normalize_reply(reply: dict) -> tuple[str, str]:
             return '', ''
         kind = 'command' if field == 'command' else 'answer'
         value = reply.get(field)
-        if kind == 'answer' and isinstance(value, (dict, list)):
-            try:
-                value = json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(',', ':'))
-            except (ValueError, TypeError):
-                return '', ''
     else:
         if set(reply) - {'executeCmd', 'taskAnswer', 'skill'}:
             return '', ''
@@ -68,10 +62,7 @@ def task_timeout(turn) -> int:
 
 
 def remaining_rounds(turn, memory) -> int:
-    remaining = max(0, memory.task_timeout_rounds - max(0, turn.round_no - memory.task_started))
-    if memory.task_defense_deadline is not None:
-        remaining = min(remaining, max(0, memory.task_defense_deadline-turn.round_no))
-    return remaining
+    return max(0, memory.task_timeout_rounds - max(0, turn.round_no - memory.task_started))
 
 
 def diagnose(result) -> tuple[bool, str]:
@@ -117,20 +108,12 @@ def observe_task(turn, memory) -> None:
         memory.task_execution = None
         memory.task_last_command = ''
         memory.task_last_command_failed = False
-        memory.task_bootstrap_done = False
-        memory.task_last_result_hash = ''
-        memory.task_command_repeats = 0
     execution = memory.task_execution
     if execution:
         memory.task_execution = None
         if (turn.phase_task and execution['task'] == turn.phase_task
                 and execution['started'] == memory.task_started and execution['round'] + 1 == turn.round_no):
             failed, hint = diagnose(turn.command_result)
-            result_hash = hashlib.sha256(turn.command_result.raw.encode('utf-8')).hexdigest()
-            same = (execution['command'].strip() == memory.task_last_command.strip()
-                    and result_hash == memory.task_last_result_hash)
-            memory.task_command_repeats = memory.task_command_repeats+1 if same else 1
-            memory.task_last_result_hash = result_hash
             memory.task_last_command = execution['command']
             memory.task_last_command_failed = failed
             append_context(memory, f"round {turn.round_no}: command: {clipped(execution['command'], 2000)}\n"

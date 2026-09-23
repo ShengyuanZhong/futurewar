@@ -2,7 +2,7 @@
 
 基于本目录《未来战争》v1.0 任务书、接口文档和 `DEVELOPMENT_RULES.md` 实现的参赛 HTTP Agent。保留 CoreGeek 的 `main3.py → src/agent` 基础结构，新增 `CoreGeek/app` 应用层。运行仅依赖 Python 标准库，Python 3.10 及以上。
 
-当前程序版本为 `0.3.10`，声明位置是 [CoreGeek/pyproject.toml](CoreGeek/pyproject.toml)。开局仍为三火箭→采石→U形墙，随后集中升满一台火箭；第二天起依次强化正中两墙3级、第二台火箭2级、正面其余四墙2→3级、所有火箭3级，最后把两翼六墙升2级；不升级基地。全部目标达成后，两名工人全天墙内维修，白天轮流采购，后续金币用于修复包。阈值仍为严格低于30%。详细坐标、镜像、购买规则和关键函数见[建筑维护](CoreGeek/docs/MAINTENANCE.md)。沿用工人独立任务、让行、城墙掩护与动态备货，见[工人协作](CoreGeek/docs/WORKER_COORDINATION.md)。沿用昼夜统一工人经济流程，夜间可继续采购与配送升级券，维修工可在内侧兼顾升级，详见[昼夜统一调度](CoreGeek/docs/WORKER_SCHEDULE.md)。沿用根据log1/log2统一寻路与建筑位清理的预留集合，修复待建/缺墙位置造成的往返循环，详见[日志定位与修复](CoreGeek/docs/WORKER_PATH_FIX.md)。本版优化任务准备、提示词、结构化答案、重复命令限制及回防预算，见[任务优化](CoreGeek/docs/TASK_OPTIMIZATION.md)；战斗与工人代码保持。
+当前程序版本为 `0.3.10`，声明位置是 [CoreGeek/pyproject.toml](CoreGeek/pyproject.toml)。开局仍为三火箭→采石→U形墙，随后集中升满一台火箭；第二天起依次强化正中两墙3级、第二台火箭2级、正面其余四墙2→3级、所有火箭3级，最后把两翼六墙升2级；不升级基地。全部目标达成后，两名工人全天墙内维修，白天轮流采购，后续金币用于修复包。阈值仍为严格低于30%。详细坐标、镜像、购买规则和关键函数见[建筑维护](CoreGeek/docs/MAINTENANCE.md)。沿用工人独立任务、让行、城墙掩护与动态备货，见[工人协作](CoreGeek/docs/WORKER_COORDINATION.md)。沿用昼夜统一工人经济流程，夜间可继续采购与配送升级券，维修工可在内侧兼顾升级，详见[昼夜统一调度](CoreGeek/docs/WORKER_SCHEDULE.md)。沿用根据log1/log2统一寻路与建筑位清理的预留集合，修复待建/缺墙位置造成的往返循环，详见[日志定位与修复](CoreGeek/docs/WORKER_PATH_FIX.md)。本版接入用户最新提供的任务prompt和SelfEvolveController，按任务类型复用SOP/Skill、归档失败经验、兼容JSON/XML并在连续失败后冷却；详见[任务接入](CoreGeek/docs/TASK_INTEGRATION.md)。战斗和工人策略沿用0.3.9。
 
 ## 阅读导航
 
@@ -49,8 +49,8 @@ bash run.sh 8080
 | [规则覆盖与差异登记](CoreGeek/docs/RULE_COVERAGE.md) | R01–R08、D01–D08、仍待确认的行为 |
 | [开局防御策略](CoreGeek/docs/OPENING_DEFENSE.md) | 三火箭布局、攒石建墙、单人轮换、测试与升级步骤 |
 | [实现现状](DEMO.md) | 本轮完成范围与未完成的外部验证 |
-| [任务流程优化](CoreGeek/docs/TASK_OPTIMIZATION.md) | 回放资料审计、只读准备、提示词、结构化答案与预算 |
-| [任务模块接入](CoreGeek/docs/TASK_INTEGRATION.md) | 用户提示词、协议转换、证据历史、诊断、预算和Postman逐轮调试 |
+| [任务流程优化](CoreGeek/docs/TASK_OPTIMIZATION.md) | 新版控制器来源、接入范围及验证入口 |
+| [任务模块接入](CoreGeek/docs/TASK_INTEGRATION.md) | 新版控制器、SOP/Skill、状态与函数参数、预算和Postman逐轮调试 |
 | [实战日志往返修复](CoreGeek/docs/WORKER_PATH_FIX.md) | log1/log2证据、统一路径预留、重建场景与诊断字段 |
 | [昼夜统一调度](CoreGeek/docs/WORKER_SCHEDULE.md) | 跨昼夜任务连续、夜间升级/采购、维修岗位限制与函数参数 |
 | [工人协作与备货](CoreGeek/docs/WORKER_COORDINATION.md) | 单人任务、让行、墙掩护、值守分区及按日备货参数 |
@@ -111,7 +111,9 @@ futurewar/
     │       ├── memory.py             # 额度、新闻、任务、失败反馈和开局布局记忆
     │       ├── llm_service.py        # 构造prompt、消费LLM回复、校验新闻推理结果
     │       ├── task_prompt.py        # 用户提供的自进化prompt生成器
-    │       ├── task_context.py       # 协议适配、证据历史、诊断与预算
+    │       ├── task_controller.py    # 用户控制器：任务推进、SOP/Skill和失败冷却
+    │       ├── task_state.py         # 同局任务状态、点位快照和经验库
+    │       ├── task_context.py       # 任务开始轮、旧协议兼容及辅助工具
     │       └── task_service.py       # 活跃任务期间的答案/沙盒命令处理
     ├── src/
     │   └── agent/
@@ -352,7 +354,7 @@ PYTHON=/usr/bin/python3 bash CoreGeek/run.sh 8080
 | 连接读写超时 | 4.0秒 | `Handler.setup` | socket操作超时，不等于官方完整请求时限 |
 | 会话缓存上限 | 16个 | `TurnService.decide` | 成功处理后按使用顺序淘汰旧会话 |
 | 待解析LLM回复 | 256KiB | `parse_object` | 过长视为无有效结构化回复 |
-| 沙盒命令 / 提交答案大小 | 32KiB / 128KiB | `task_context.normalize_reply` | 本地接受上限，按UTF-8编码字节计 |
+| 沙盒命令 / 提交答案大小 | 32KiB / 128KiB | `task_service.controller_reply` | 本地接受上限，按UTF-8编码字节计 |
 | 方法提示 | 最近8条，每条4000字符 | `TaskService.active` | 控制跨任务提示体积；仍属待验证经验 |
 | 任务历史窗口 | `observe`时保留最近12条 | `GameMemory.observe` | 本轮提交还可能在窗口之后追加一条 |
 | 失败矿点退避 | 3轮 | `GameMemory.observe` | 暂避对应坐标，不断言该矿种永久停产 |
@@ -496,12 +498,12 @@ empty_response() -> dict
 | 宝藏 | `treasure`、`treasure_done`、`treasure_attempt_round`、`failed_treasures` | 当前计划、结束标记、最近尝试回合、失败方案签名 |
 | 矿区 | `mine_closures`、`failed_mines` | 新闻推理的停矿窗口、单个失败矿点的短期退避 |
 | 开局防线 | `defense_layout`、`opening_complete` | 复用选定炮位/共同站位；观测确认三炮及配置墙已建好后标记完成，换日保留、新局重置 |
-| 任务效率状态 | `task_bootstrap_done/task_last_result_hash/task_command_repeats/task_defense_deadline` | 每任务只读准备、无进展重复检测及每轮回防截止 |
+| 任务控制器 | `task_agent` | TaskAgentMemory：任务状态、接受点快照、SOP/Skill、失败冷却、挂起状态 |
 | 工人独立任务 | `worker_tasks` | 按实际工人ID保存任务、目标、目的格、停滞、让路等待及最多4个实际位置的往返诊断 |
 | 维修消耗与阶段 | `repair_usage_today`、`repair_usage_previous`、`dual_repair_active` | 记录确认成功的用包量和曾进入双维修阶段的状态 |
 | 维修与采购工 | `repair_worker_id`、`repair_supplier_id` | 主维修工、完成阶段唯一采购工；采购往返期间保持身份，死亡/消失时接替 |
 | 任务 | `task_description`、`task_started`、`task_history`、`skills` | 活跃任务、开始轮估计、元信息、待验证方法 |
-| 任务证据 | `task_context`、`task_execution`、`task_last_command`、`task_last_command_failed` | 有限长度命令/结果历史、下一轮反馈关联、失败重试约束 |
+| 任务轨迹 | `task_agent.self_evolve_context`、`execution_round` | 控制器轨迹与上一轮命令关联；task_context保留当前轨迹镜像，旧命令诊断字段仅作兼容 |
 | 任务预算 | `task_accept_round`、`task_accept_timeout`、`task_timeout_rounds` | 接任务时捕获的轮次、时长及当前预算 |
 | 上轮动作 | `last_commands`、`last_round` | 把下一轮反馈与本轮输出关联起来 |
 
@@ -511,7 +513,7 @@ empty_response() -> dict
 | `record(turn, plan)` | 当前观测和已完成动作计划 | 返回`None`；写入上轮命令、召唤尝试数、宝藏尝试回合 |
 | `treasure_signature(clue)` | 已具备坐标、items、时间窗口的宝藏字典 | 返回可哈希元组；物品排序后保留重复数量，用于失败方案去重 |
 
-`task_started`在接任务后紧接下一轮出现题目时使用本服务发出acceptTask的轮次，否则使用首次观测轮次估计。时长从接取点timeoutRounds捕获，缺失按15轮估计，不能替代官方计分/超时结算。`skills`是解题建议，当前不包含“已判题通过”的可信标记。所有记忆保存在进程内，没有数据库或磁盘自动恢复。
+`task_started`在接任务后紧接下一轮出现题目时使用本服务发出acceptTask的轮次，否则使用首次观测轮次估计。时长从接取点timeoutRounds捕获，缺失按15轮估计，不能替代官方计分/超时结算。旧`skills`字段仅作兼容，不再注入提示词；当前经验分别在`task_agent.self_evolve_sop/self_evolve_skill`，依据提交反馈归档。所有记忆保存在进程内，没有数据库或磁盘自动恢复。
 
 ### LLM协作：LLMService
 
@@ -521,8 +523,8 @@ empty_response() -> dict
 |---|---|---|---|
 | `parse_object(text)` | LLM文本字符串 | JSON字典；无效为`{}` | 支持完整代码围栏；只解析数据，不执行内容 |
 | `digest(value)` | 可JSON序列化对象 | SHA256十六进制字符串 | 排序字典key后计算，用于请求和新闻去重 |
-| `consume(turn, memory)` | 当前观测与记忆 | `(purpose, reply)` | 清空旧pending；仅接收发送后的紧接下一轮，任务还须匹配原文及开始轮 |
-| `task_prompt(turn, memory)` | 活跃任务、命令结果、历史 | prompt字符串 | 设置task pending；不增加普通LLM额度 |
+| `consume(turn, memory)` | 当前观测与记忆 | `(purpose, reply)` | 清空旧pending；仅接收发送后的紧接下一轮，任务还须匹配原文及开始轮；task返回原始文本，news返回字典 |
+| `register_task_prompt(turn, memory)` | 当前任务、记忆 | None | 只设置task pending；提示词由用户控制器生成，不增加普通LLM额度 |
 | `news_prompt(turn, memory)` | 历史新闻、当前价格、记忆 | prompt或空字符串 | 无新内容或额度用完时不调用；有调用则增加普通计数并记录news pending |
 | `apply_news(turn, memory, data)` | 结构化新闻回复 | `None` | 校验停矿信息与宝藏计划，将接受的结果写入记忆 |
 
@@ -535,19 +537,37 @@ empty_response() -> dict
 位置：[CoreGeek/app/service/task_service.py](CoreGeek/app/service/task_service.py)。
 
 ```text
-TaskService.active(turn, memory, plan, llm, reply: dict, defense_due: bool = False) -> tuple[str, str]
+TaskService.active(turn, memory, plan, llm, reply: str | dict, defense_due: bool = False) -> tuple[str, str]
 ```
 
 | 参数 | 需要提供的对象 | 作用 |
 |---|---|---|
 | `turn` | `Turn` | 判断是否有任务和存活开拓者，读取题目及反馈 |
-| `memory` | 工作副本`GameMemory` | 保存方法提示和提交历史 |
+| `memory` | 工作副本`GameMemory` | 保存TaskAgentMemory中的上下文、成功/失败经验和冷却 |
 | `plan` | 当前`ActionPlan` | 加入submitAnswer，或保留开拓者本轮动作 |
-| `llm` | `LLMService` | 没有可用命令/答案时生成下一次prompt |
-| `reply` | 已通过轮次匹配的任务回复字典 | 读取v2的`action/command/answer`，兼容旧`taskAnswer/executeCmd/skill` |
+| `llm` | `LLMService` | 登记用户控制器生成的prompt所对应的pending |
+| `reply` | 已通过轮次匹配的任务回复原始文本，兼容dict调用 | 用户解析器支持JSON/代码块/说明文字/XML，未识别时兼容旧taskAnswer/executeCmd |
 | `defense_due` | 是否需要开拓者回防，默认False | True时不提交答案、不发任务prompt/命令、不占用开拓者；由Strategy接管防御 |
 
-返回顺序为`(prompt, executeCmd)`。需要回防、无活跃任务或开拓者死亡时返回两个空字符串。其余时候仅接收单一明确分支；答案和命令同时出现会重新请求回复。答案通过`plan.add`提交。剩余≤2轮不再发新命令；原样重复上次已确认失败命令也会重新提示。命令只放入返回值，由判题器在沙盒执行；当前进程不会调用`subprocess`执行它。正常任务分支保留开拓者，避免策略安排第二个动作。回防离开任务范围可能导致任务结束，程序不自行清空官方`phaseTask`。
+返回顺序为`(prompt, executeCmd)`。先结算上次提交再清理旧任务；无需回防且角色存活时由用户控制器接管。命令只返回官方沙盒，答案通过`ActionPlan.add`。回防、死亡或主动退出后释放开拓者，不自行修改官方phaseTask。重复命令和末段是否执行由新版控制器与提示词决定，旧适配器不再硬拦截。
+
+### 用户任务控制器及经验状态
+
+| 位置/函数 | 参数与作用 |
+|---|---|
+| `task_prompt.build_self_evolve_prompt(task_desc, context, steps_used=0, timeout_rounds=0, sop_hint=None, skill_hint=None)` | 题目、轨迹、已用轮数、总预算、SOP与Skill；返回prompt，保留最近20条历史 |
+| `task_controller.SelfEvolveController.decide(role)` | 桥接角色；推进任务，返回是否接管本轮 |
+| `task_controller._parse_llm_response(resp)` | 原始LLM文本；提取v2 JSON或旧XML中的command/answer |
+| `SelfEvolveController._archive_sop/_archive_experience` | 按type、任务名、任务类别保存成功/失败经验；失败不覆盖成功 |
+| `SelfEvolveController._sop_hint/_skill_hint` | 为当前题型选择历史方法，加入prompt，不自动执行或复制旧答案 |
+| `task_state.TaskAgentMemory.accept(task)` | 保存实际接受点位、taskType、timeoutRounds快照 |
+| `task_service.controller_reply(reply)` | 优先采用用户解析器，兼容旧协议并检查大小/NUL/编码 |
+
+三个防卡死参数保留用户值：最多推进30步、连续失败命令4次、退出后冷却25轮。提示词已用轮数按实际roundNo差计算。输出裁剪保留头1600/尾800字符；自动提取缺失参数或认证头格式。Skill首问按类型保存，并已接入提示词。
+
+`TaskAgentMemory`还记录`execution_round`以避免错配沙盒结果，`suspended`避免放弃后下一轮立即重启。同局SOP/Skill跨日保留，换队、换阵营或新局隔离。官方动作合法不等于答题通过：只有上一轮提交合法、任务已结束且无错误才保存成功记录；没有据此推算通过率。
+
+完整持久字段、接入差异、源码位置和Postman逐轮调用见[任务接入与维护](CoreGeek/docs/TASK_INTEGRATION.md)。参考文件中的宝藏辅助类保留，当前宝藏仍由既有新闻策略调度。
 
 <a id="strategy-api"></a>
 
@@ -765,7 +785,7 @@ sequenceDiagram
 
 这是用户模块的v2回复约定，兼容旧executeCmd/taskAnswer格式，未向官方请求增加字段。command映射顶层executeCmd，answer映射角色submitAnswer.taskAnswer。`taskAnswer`仍是字符串，即使任务答案本身是JSON，也要放成字符串。Agent收到命令时先返回命令，等待下一轮结果后再组织新的prompt，不会凭空预测沙盒输出。
 
-任务完成/超时/死亡的真实奖励与最高通过率由判题器维护；程序保存反馈并支持重新作答。需要回防时停止任务输出，允许开拓者离开；离开范围可能结束任务，下一轮以`phaseTask`为准。没有防守责任时继续保持任务站位。题目结束后迟到的LLM命令不会再进入executeCmd。
+任务完成/超时/死亡的真实奖励与最高通过率由判题器维护；程序按用户控制器保存成功或失败经验，判错会退出并冷却，后续任务可复用经验。需要回防时停止任务输出，允许开拓者离开；离开范围可能结束任务，下一轮以`phaseTask`为准。没有防守责任时继续保持任务站位。题目结束后迟到的LLM命令不会再进入executeCmd。
 
 ### 新闻和宝藏
 
@@ -879,7 +899,7 @@ python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v0.3.10
 | `test_http_config.py` | HTTP响应/错误、请求上限、配置文件检查 | 启动入口、网络层、配置变化 |
 | `fixtures.py` | 统一合成数据构造，布局专供测试 | 不能当官方地图坐标或规则来源 |
 
-v0.3.10报告记录206个测试通过、80份合成观测检查通过。数值和源码指纹见[当前验证报告](reports/VALIDATION-v0.3.10.md)及[机器记录](reports/validation-v0.3.10.json)。[原报告](reports/VALIDATION.md)的56个测试属于v0.2.0历史证据；两者均不代表正式比赛通过或胜率。
+v0.3.10报告记录205个测试通过、80份合成观测检查通过。数值和源码指纹见[当前验证报告](reports/VALIDATION-v0.3.10.md)及[机器记录](reports/validation-v0.3.10.json)。[原报告](reports/VALIDATION.md)的56个测试属于v0.2.0历史证据；两者均不代表正式比赛通过或胜率。
 
 `validate.independent_contract(raw, response)`是压力工具中的附加结构断言，检查角色互斥、移动占用和攻击时机等。它不是完整判题器，不能代替官方平台对动作执行结果和比分的裁定。
 
@@ -899,7 +919,7 @@ v0.3.10报告记录206个测试通过、80份合成观测检查通过。数值�
 | 改寻路或拥挤处理 | `grid.Routes`、`Turn.blocked`、`plan.reserved` | 官方八方向及同时结算约束 |
 | 改三炮站位与轮换 | `select_defense_layout`、`control_position/operate_weapons` | 共同邻格、冷却0、每轮一炮、工人不操炮 |
 | 改选敌和火力分配 | `choose_targets/damage_for` | 射程、目标数量、90°、预测HP与真实HP分离 |
-| 改任务解题提示 | `task_prompt.build_self_evolve_prompt`、`LLMService.task_prompt` | reply结构、命令结果语义、不能在本机执行 |
+| 改任务解题提示 | `task_prompt.build_self_evolve_prompt`、`SelfEvolveController._dispatch_prompt` | reply结构、命令结果语义、不能在本机执行 |
 | 改任务动作流程 | `TaskService.active`、`Strategy.task` | 回防优先、离开任务点的代价、过期回复和免费额度 |
 | 改新闻/宝藏推理 | `news_prompt/apply_news`、`Strategy.treasure` | 长期线索、精确物品、时间窗口、失败去重 |
 | 新增跨回合字段 | `GameMemory` | observe/record、深拷贝、换日与新局重置 |

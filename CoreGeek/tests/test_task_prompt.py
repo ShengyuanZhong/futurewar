@@ -124,7 +124,7 @@ class TaskPromptTests(unittest.TestCase):
         self.assertIn('cat task_demo.md', response['prompt'])
         self.assertIn('"records":[1,2,3]', response['prompt'])
 
-    def test_api_error_exit_zero_is_diagnosed_and_failed_repeat_rejected(self):
+    def test_api_error_is_diagnosed_but_supplied_controller_owns_retry(self):
         service, raw, _ = self.start()
         command = 'curl http://localhost/data?city=demo'
         raw.update(roundNo=3, llmResp=json.dumps({'action':'execute_command','command':command}))
@@ -135,8 +135,8 @@ class TaskPromptTests(unittest.TestCase):
         self.assertIn('location', prompt)
         raw.update(roundNo=5, lastCmdResult='', llmResp=json.dumps({'action':'execute_command','command':command}))
         response = service.decide(raw)
-        self.assertEqual(response['executeCmd'], '')
-        self.assertTrue(response['prompt'])
+        self.assertEqual(response['executeCmd'], command)
+        self.assertEqual(response['prompt'], '')
 
     def test_crlf_failure_hint_and_success_token_remain_task_data(self):
         service, raw, _ = self.start()
@@ -160,22 +160,20 @@ class TaskPromptTests(unittest.TestCase):
         self.assertNotIn('old task private answer', prompt)
         self.assertNotIn('cat private_previous_task', prompt)
 
-    def test_tight_budget_reprompts_for_answer_instead_of_late_command(self):
+    def test_budget_advice_does_not_override_supplied_controller_command(self):
         service, raw, _ = self.start()
         raw.update(roundNo=10, llmResp='', lastCmdResult='')
         service.decide(raw)
         raw.update(roundNo=11, llmResp='{"action":"execute_command","command":"expensive_probe"}')
         response = service.decide(raw)
-        self.assertEqual(response['executeCmd'], '')
-        self.assertTrue(response['prompt'])
-        raw.update(roundNo=12, llmResp='{"action":"final_answer","answer":"known-result"}')
+        self.assertEqual(response['executeCmd'], 'expensive_probe')
+        raw.update(roundNo=12, llmResp='', lastCmdResult='[exitCode:0]\nknown-result')
+        self.assertTrue(service.decide(raw)['prompt'])
+        raw.update(roundNo=13, lastCmdResult='', llmResp='{"action":"final_answer","answer":"known-result"}')
         self.assertEqual(service.decide(raw)['roleCommandMap']['502']['taskAnswer'], 'known-result')
 
-    def test_ambiguous_invalid_and_non_string_answers_reprompt(self):
+    def test_invalid_legacy_and_oversized_commands_reprompt(self):
         cases = [
-            {'action':'final_answer','answer':False},
-            {'action':'final_answer','answer':'x','command':'pwd'},
-            {'action':'execute_command','command':'pwd','taskAnswer':'x'},
             {'executeCmd':'pwd','taskAnswer':'x'},
             {'action':'execute_command','command':'bad\u0000cmd'},
             {'action':'execute_command','command':'x'*(32*1024+1)},
@@ -197,7 +195,7 @@ class TaskPromptTests(unittest.TestCase):
         self.assertIn('START-MARKER',prompt)
         self.assertIn('END-MARKER',prompt)
         self.assertIn('[TRUNCATED]',prompt)
-        self.assertIn('[LOCAL_CONTEXT_TRUNCATED]',prompt)
+        self.assertIn('中间省略',prompt)
         self.assertLess(len(prompt),40000)
 
     def test_provisional_skill_not_labelled_successful_sop(self):
@@ -205,5 +203,5 @@ class TaskPromptTests(unittest.TestCase):
         self.memory(service,raw).skills=['unverified prior tactic']
         raw.update(roundNo=3, llmResp='invalid')
         prompt=service.decide(raw)['prompt']
-        self.assertIn('unverified prior tactic',prompt)
+        self.assertNotIn('unverified prior tactic',prompt)
         self.assertNotIn('已知成功流程（SOP',prompt)

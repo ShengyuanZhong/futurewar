@@ -504,6 +504,9 @@ class Strategy:
     def task(self, role: Unit) -> bool:
         if not self.settings.enable_tasks or self.turn.phase_task:
             return False
+        agent = self.memory.task_agent if self.memory else None
+        if agent and self.turn.round_no < agent.self_evolve_abandon_tick:
+            return False
         tasks = [t for t in self.turn.tasks if t.valid and t.cooldown == 0]
         tasks.sort(key=lambda t: (self.cost(role, self.turn.task_cells(t)), -t.gold - t.score, t.pos))
         for task in tasks:
@@ -515,7 +518,10 @@ class Strategy:
             if travel + duration + return_trip + self.settings.return_margin > self.turn.daylight_left:
                 continue
             if self.plan.near(role, cells):
-                return self.plan.add(role.unit_id, {"action": "acceptTask"})
+                accepted = self.plan.add(role.unit_id, {"action": "acceptTask"})
+                if accepted and agent:
+                    agent.accept(task)
+                return accepted
             if self.travel(role, cells):
                 return True
         return False

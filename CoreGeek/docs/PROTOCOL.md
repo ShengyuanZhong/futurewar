@@ -102,7 +102,7 @@ LLM 返回给本程序的约定是内部协作格式，不要求判题器新增�
 {"action": "final_answer", "answer": "{\"answer\": 42}"}
 ```
 
-只接受 JSON 对象，可带完整 JSON 代码围栏；普通自然语言、过期轮次、不同任务的回复被忽略并重新探索。若答案和命令同时给出、协议混用或出现重复JSON键，拒绝并重新请求。旧executeCmd/taskAnswer协议仍接受单一非空分支；v2的command映射顶层executeCmd，answer原样映射submitAnswer.taskAnswer。输出上限为命令32KiB、答案128KiB、待解析LLM回复256KiB，属于工程资源保护值，不是官方新增限制。
+任务回复优先交给用户控制器解析，支持v2 JSON、代码块、对象前后说明文字和旧XML；以action选择命令或答案分支，兼容旧executeCmd/taskAnswer单一非空分支。新闻仍使用独立严格JSON解析。过期轮次或不同任务的回复不消费。v2的command映射顶层executeCmd，answer映射submitAnswer.taskAnswer，沿用用户解析器的字符串处理。输出上限命令32KiB、答案128KiB、LLM回复256KiB；拒绝NUL或非法编码。这些是工程限制，不是官方新增规则。
 
 `lastCmdResult` 保留原文，另外解析为：
 
@@ -114,11 +114,11 @@ LLM 返回给本程序的约定是内部协作格式，不要求判题器新增�
 | [JUDGER_ERROR] | judger_error | None |
 | 未识别头 | unknown | None |
 
-结尾 `[TRUNCATED]` 独立记录，不抹掉退出码。官方超过64KB输出的截断由判题器实施；Agent不会补造被截断的数据或把超时改成成功。`errors=2` 可触发后续修订；判题器以历史最高通过率结算，程序不自行覆盖得分。
+结尾 `[TRUNCATED]` 独立记录，不抹掉退出码。官方超过64KB输出的截断由判题器实施；Agent不会补造被截断的数据或把超时改成成功。收到`errorCode=2`时按用户控制器保存失败经验、退出并冷却；判题器以历史最高通过率结算，程序不自行覆盖得分。
 
 `TaskService.active(..., defense_due=False)`在需要开拓者回防时返回空prompt/executeCmd并不保留角色，允许策略移动或操炮。这可能因离开范围结束任务；程序等待下一轮`phaseTask`，不自行宣告任务结束，也不继续执行已让位任务的LLM命令。
 
-任务开始轮及timeout预算、证据裁剪、api_diag业务错误诊断、末段提交限制与Postman逐轮样例，见[任务模块接入](TASK_INTEGRATION.md)。
+任务开始轮及timeout预算、SOP/Skill、输出裁剪、api_diag诊断、失败冷却与Postman逐轮样例，见[任务模块接入](TASK_INTEGRATION.md)。
 
 ## 4. 普通新闻与宝藏
 

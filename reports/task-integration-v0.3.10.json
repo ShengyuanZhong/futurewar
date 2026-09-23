@@ -1,0 +1,79 @@
+{
+  "scope": "reference provenance and offline parsing; no shell/LLM/game execution",
+  "sources": [
+    {
+      "path": "temp\\task_prompt(1).py",
+      "bytes": 9393,
+      "sha256": "26737477bb0b17381ff3a0621fc161f3018d04d939521ebe37b4fcb7a9023320"
+    },
+    {
+      "path": "temp\\task_controller.py",
+      "bytes": 28551,
+      "sha256": "21f8cdbb7b6ab40be843d7488a7d19e298f050562fe9dc97581199716232f69a"
+    },
+    {
+      "path": "temp\\teamA (2).log",
+      "bytes": 547396,
+      "sha256": "0231f7d25d1b0b9573e05f801dfb8ed3dafef7cf772c793661abb21e79bd0726"
+    }
+  ],
+  "controller_functions": {
+    "unchanged": [
+      "SelfEvolveController.__init__",
+      "SelfEvolveController._archive_sop",
+      "SelfEvolveController._cooling_down",
+      "SelfEvolveController._current_task",
+      "SelfEvolveController._extract_experience",
+      "SelfEvolveController._extract_trace",
+      "SelfEvolveController._find_valid_self_evolve_task",
+      "SelfEvolveController._has_engaged",
+      "SelfEvolveController._skill_hint",
+      "SelfEvolveController._sop_key",
+      "SelfEvolveController._task_category",
+      "SelfEvolveController._task_type_key",
+      "SelfEvolveController._timeout_rounds",
+      "SelfEvolveController._try_start",
+      "SelfEvolveController._was_submitting",
+      "SelfEvolveController.decide",
+      "TreasureController.__init__",
+      "TreasureController._collect_news",
+      "TreasureController._derive_treasure",
+      "TreasureController._fallback_pos",
+      "TreasureController._hint_item_count",
+      "TreasureController._infer_treasure_pos",
+      "TreasureController._mark_failed_combo",
+      "TreasureController._pick_mine_near",
+      "TreasureController._should_summon",
+      "TreasureController.decide",
+      "_clip_cmd_result",
+      "_extract_api_diag",
+      "_extract_json_object",
+      "_neg",
+      "_parse_llm_response"
+    ],
+    "adapted": [
+      "SelfEvolveController._archive_experience",
+      "SelfEvolveController._archive_skill",
+      "SelfEvolveController._continue_agent",
+      "SelfEvolveController._dispatch_prompt",
+      "SelfEvolveController._done_by_result",
+      "SelfEvolveController._handle_tool_response",
+      "SelfEvolveController._reset_agent",
+      "SelfEvolveController._sop_hint",
+      "SelfEvolveController._stalled_by_failed_cmds"
+    ],
+    "added": [
+      "SelfEvolveController._record_command_result"
+    ],
+    "removed": []
+  },
+  "log_parsing": {
+    "nonempty_llm_responses": 28,
+    "accepted_actions": {
+      "execute_command": 23,
+      "final_answer": 5
+    },
+    "unparsed_line_numbers": [],
+    "note": "Parsing success is not answer correctness or this version completing a match."
+  }
+}

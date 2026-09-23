@@ -1,6 +1,6 @@
 # 开发与维护文档
 
-更新日期：2026-09-23，版本0.3.10。本轮优化任务准备、提示词、答案序列化、重复命令与回防预算，见[任务优化](TASK_OPTIMIZATION.md)。战斗、升级、维修和工人代码保持0.3.9基准。
+更新日期：2026-09-23，版本0.3.10。本轮接入用户新版任务控制器与提示词，见[任务接入](TASK_INTEGRATION.md)。战斗、升级、维修和工人策略沿用0.3.9；接取任务增加点位快照与冷却检查。
 
 ## 1. 设计目标与边界
 
@@ -24,7 +24,8 @@ CoreGeek/
 │       ├── memory.py             # 新闻、任务、额度与行为反馈记忆
 │       ├── llm_service.py        # prompt、结构化回复解析与校验
 │       ├── task_prompt.py       # 项目维护的任务prompt
-│       ├── task_bootstrap.py    # 官方沙盒只读准备命令生成
+│       ├── task_controller.py   # 用户控制器：SOP/Skill、任务推进与失败退出
+│       ├── task_state.py        # 同局任务状态和经验库
 │       ├── task_context.py      # 协议适配、证据、诊断与预算
 │       └── task_service.py       # 活跃任务、沙盒与答案协作
 ├── src/agent/
@@ -134,7 +135,7 @@ flowchart LR
 
 ### 任务与新闻
 
-用户prompt生成器在`task_prompt.py`，项目附加约束在`llm_service.py`；协议规范化、上下文和预算在`task_context.py`；任务推进在`task_service.py`；新闻、额度、失败献祭缓存放在`memory.py`。`TaskService.active`新增默认False的`defense_due`参数：需要回防时停止任务输出并释放开拓者。离开任务范围可能导致任务结束，仍由官方下一轮`phaseTask`反映，不自行改写题目状态。没有武器/防守责任时，活跃任务可以继续保持站位。
+用户生成器在`task_prompt.py`，由`task_controller.SelfEvolveController`直接调用，SOP/Skill同时注入；状态存于`task_state.TaskAgentMemory`，通过GameMemory进入每队事务。`task_service.py`将Turn字段映射到用户控制器，再映射回ActionPlan/executeCmd；先处理旧任务结果再切换新题目，避免成功归档丢失。`llm_service.py`只登记和匹配task pending，将原始回复交给用户解析器；新闻流程仍独立。需要回防、死亡或失败退出时释放开拓者，同题目保持挂起直到官方状态变化；离开范围是否结束由官方反馈决定。TaskService的`defense_due=False`参数沿用。字段与阈值详见[任务接入文档](TASK_INTEGRATION.md)。
 
 `skill` 内容最多保存最近8条，每条4000字符，是待验证的解题方法。没有通过率字段时，不擅自将其标记为成功经验。任务完成、超时、最高通过率奖励均由判题器决定。
 

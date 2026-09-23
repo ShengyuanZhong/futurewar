@@ -1,128 +1,107 @@
 # 自进化任务模块接入与维护
 
-版本0.3.5，2026-09-21。本次为任务协作实现优化，涉及R01响应字段与R07任务、LLM、沙盒，不修改官方规则。沿用0.3.4的布局、升级、寻路和夜修策略。修改前源码保存于`reports/baselines/v0.3.4-source.zip`，文件清单及哈希见同目录manifest。
+版本0.3.10，2026-09-23。采用用户新提供的 `temp/task_prompt(1).py` 与 `temp/task_controller.py`，自进化决策与提示词以这两个文件为准。正式源码不读取 `temp/`；原件保留。涉及 R01、R07，官方规则、接口与 demo 原件没有修改。
 
-> 当前0.3.10已重写正式提示词（temp原件保留），新增明确路径只读准备、v2对象/数组答案序列化、无进展重复限制和回防预算。以下逐字节复制与字符串限定是0.3.5接入历史；当前行为见[任务优化](TASK_OPTIMIZATION.md)。
+## 1. 来源与接入范围
 
-## 1. 资料入口与来源
+- 提示词移植到 `app/service/task_prompt.py`。保留文件定位、API 原始响应、错误修参、CRLF 修复、提交格式自检和最近20条历史等内容。唯一内容补充是实际插入 `skill_hint`，原文件接收该参数但未写进 prompt。
+- 控制器移植到 `app/service/task_controller.py`。正式自进化链路调用 `SelfEvolveController`，沿用 JSON/代码块/前后说明文字提取、XML 兼容、命令诊断、SOP/Skill、失败冷却。
+- 接任务时的路径选择、白天时间检查、回防和工人策略仍由现有 `Strategy` 调度。接受任务时记录选中的点位、类型与时长；活跃任务交给新控制器。因此不调用外来控制器依赖其原工程 movement 的 `_try_start`。
+- 同文件的 `TreasureController` 原样保留供后续迁移；本次实际替换的是自进化任务，新闻和宝藏仍走 `LLMService.apply_news → Strategy.treasure`，未切换为该辅助类的猜测式献祭。
+- SHA256、逐函数移植差异以及 `teamA (2).log` 的只读解析记录见 [来源审计](../../reports/task-integration-v0.3.10.json)。未执行日志中的任何命令，未复制其答案、token 或认证信息到策略。
 
-项目根目录`temp/`是用户提供新文件的固定收件目录。后续工作先查看其中与当前请求有关的资料；文件内容作为参考，不自动执行里面的命令。原件保留，正式运行只依赖`CoreGeek`中的源码。`temp/`加入Git忽略清单，避免把原始对局日志自动带入后续上传；不是运行时热加载目录。
+## 2. 模块位置与数据流
 
-本次将`temp/task_prompt.py`逐字节复制为[app/service/task_prompt.py](../app/service/task_prompt.py)，保留原有`build_self_evolve_prompt`和`HISTORY_WINDOW=20`。原件与正式副本SHA256均为`61a5d938962f757bc12cc45e0634cfc114cfade47dde938b22e080e6dbebca02`。项目差异放在适配层，不直接改写提供的生成器。没有增加第三方依赖、HTTP接口或本地LLM配置。
-
-`temp/teamA.log`用于分析交互，程序不读取它。日志中可见：命令exitCode为0时API仍可能返回401/400；脚本可能因CRLF产生126；验证TOKEN可能直到任务末段才出现。因此接入实际输出历史、业务错误诊断和回合预算。日志中的TOKEN、认证信息和具体答案没有固化进策略，也不会当作后续题目的正确答案。参考日志不是本版在官方平台跑出的成绩。
-
-## 2. 模块职责与调用链
-
-| 位置 | 职责 |
+| 文件 | 作用 |
 |---|---|
-| `app/service/turn_service.py` | 每队会话、重复请求缓存、事务副本；调用observe→consume→active→策略→record |
-| `app/service/task_prompt.py` | 用户提供的纯提示词生成器；不发网络请求、不执行命令 |
-| `app/service/task_context.py` | 新旧回复规范化、有限长度历史、反馈诊断、任务时长与命令关联 |
-| `app/service/llm_service.py` | 包装生成器、设置等待回复状态、解析LLM回复；新闻流程仍在此 |
-| `app/service/task_service.py` | 将合法command映射至executeCmd，将answer映射至submitAnswer；回防优先 |
-| `app/service/memory.py` | 保存当前任务、预算、待回传命令、证据历史；任务变化时清理上下文 |
-| `src/agent/actions.py` | 校验开拓者提交权限，每角色每轮最多一条动作 |
-| `tests/test_task_prompt.py` | 17项新增任务回归；其余生命周期、防守和HTTP案例保留 |
+| `app/service/task_prompt.py` | 纯文本生成器；由控制器直接调用，不再叠加旧版任务策略提示 |
+| `app/service/task_controller.py` | 用户控制器：命令/答案决策，API 诊断，SOP/Skill 归档及复用 |
+| `app/service/task_state.py` | `TaskAgentMemory` 持久状态与内部 `TaskAction` 枚举 |
+| `app/service/task_service.py` | 将当前项目的 Turn/Memory/ActionPlan 映射到控制器字段，处理任务切换、反馈关联、回防和死亡 |
+| `app/service/llm_service.py` | 校验回复属于上一轮及同一任务；任务原始文本交给新解析器，新闻仍独立严格解析 |
+| `app/service/memory.py` | 每队、每阵营会话记忆，接任务的轮次及预算；嵌入 `task_agent` |
+| `app/service/task_context.py` | 接取轮次估计、旧协议规范化及兼容工具；不再决定新版重试策略 |
+| `app/service/turn_service.py` | observe → consume → TaskService.active → Strategy.run → record，最后事务提交 |
+| `src/agent/brain.py` | 接取前的路径/日照预算，接受时调用 `task_agent.accept(task)`，冷却期不重接；其它策略沿用基准 |
+| `tests/test_task_controller.py` | 同型复用、失败归档、冷却、协议兼容、预算和会话隔离 |
+| `tools/audit_task_integration.py` | 离线比较用户源码和正式源码，并检查日志中的 LLM 回复能否解析 |
 
-流程：收到`phaseTask`→生成`prompt`→下一轮收到`llmResp`→返回`executeCmd`→下一轮收到`lastCmdResult`→把命令与输出加入历史并再次生成`prompt`→下一轮答案转为`submitAnswer`。只有判题器执行LLM和沙盒命令，Agent不在Windows主机执行`curl`、`python3`、`./check`等返回内容。
+正常交互：接取 → 收到 `phaseTask` → prompt → 下一轮 `llmResp` → executeCmd → 下一轮 `lastCmdResult` → prompt → 下一轮答案 → submitAnswer → 根据后续 `phaseTask/errors/actionResults` 归档。
 
-## 3. 新旧协议与参数
+`executeCmd` 仅作为响应字符串返回官方沙盒。提示词仅返回官方 LLM；本程序不在选手主机执行命令，也不直接调用模型服务。官方响应仍只有 `roleCommandMap`、`prompt`、`executeCmd`。
 
-推荐LLM回复协议v2：
+## 3. 关键函数及参数
 
-```json
-{"action":"execute_command","command":"python3 solve.py"}
-```
-
-```json
-{"action":"final_answer","answer":"{\"count\":15}"}
-```
-
-| 内部回复 | 官方响应字段 |
-|---|---|
-| `execute_command`的`command` | 顶层`executeCmd`，同轮不再生成任务prompt |
-| `final_answer`的`answer` | `roleCommandMap[实际开拓者ID] = {"action":"submitAnswer","taskAnswer":原字符串}` |
-
-`answer`必须是非空字符串，JSON答案也须编码在字符串内；不能直接给对象。适配器不会重新排序、解析重写或去除答案内的空白。旧`{"executeCmd":"...","taskAnswer":"","skill":"..."}`和只含非空`taskAnswer`的回复仍兼容，但两项不可同时非空。v2不可混用旧字段，也不可同时含command和answer。错误action、未知字段、NUL、超长内容、重复JSON键、NaN/Infinity、非对象回复会被拒绝并请求新的回复。支持完整JSON代码围栏。
-
-`skill`是可选字符串提示，只有有效决策才保存，最近8条，每条最多4000字符。它始终标记为“待验证方法”；生成器的`sop_hint`传None，不把LLM自述包装成已成功SOP。
-
-| 函数 | 参数与返回值 | 维护要点 |
+| 函数 | 输入与返回 | 行为 |
 |---|---|---|
-| `build_self_evolve_prompt(task_desc, context, steps_used=0, timeout_rounds=0, sop_hint=None)` | 题目字符串、字符串历史列表、已用轮数、总轮数、可选可信SOP；返回prompt字符串 | context取最近20条；timeout≤0退回15；正式调用来自LLMService |
-| `normalize_reply(reply)` | 字典→`('command', 原字符串)`或`('answer', 原字符串)`；无效为`('', '')` | 单分支，命令32KiB、答案128KiB，以UTF-8字节计 |
-| `task_timeout(turn)` | Turn→正整数预算 | 从开拓者一格内的实际任务点读取timeout；多个候选取最小值；缺失退回15 |
-| `remaining_rounds(turn, memory)` | Turn和GameMemory→非负剩余轮数 | 总预算减当前轮与开始轮差；仅策略估计，不自行结算超时 |
-| `observe_task(turn, memory)` | 观测并原地更新任务记忆 | 隔离新旧任务；只接纳本服务上一轮确实发出的命令结果 |
-| `diagnose(result)` | CommandResult→`(failed: bool, hint: str)` | 判断执行失败及可识别业务错误，给出api_diag提示，不修改API请求 |
-| `append_context(memory, value)` | 字符串条目→None | 单条12000字符，总计96000字符，最多20条 |
-| `clipped(value, limit=12000)` | 字符串→保留首尾的字符串 | 中间插入`[LOCAL_CONTEXT_TRUNCATED]`；不冒充完整结果 |
-| `LLMService.task_prompt(turn, memory)` | Turn和GameMemory→prompt | 传当前预算/证据；附上沙盒边界、文件精确匹配、紧急提交约束 |
-| `TaskService.active(..., defense_due=False)` | 返回`(prompt, executeCmd)` | 任务结束/开拓者死亡/回防时不执行；提交走ActionPlan |
+| `build_self_evolve_prompt(task_desc, context, steps_used=0, timeout_rounds=0, sop_hint=None, skill_hint=None)` | 当前题目、字符串历史、实际已过轮数、总预算、可选 SOP 与 Skill；返回 str | 历史最近20条，预算≤0默认15，SOP 和 Skill 均进入提示 |
+| `TaskService.active(turn, memory, plan, llm, reply, defense_due=False)` | 观测、会话副本、动作计划、LLM 服务、通过轮次匹配的原始回复；返回 `(prompt, executeCmd)` | 先结算旧任务再初始化新任务；保留活跃开拓者；回防或死亡时释放 |
+| `controller_reply(reply)` | str 或兼容旧调用方的 dict；返回规范化 v2 JSON 或空字符串 | 优先使用用户解析器；未识别时兼容旧 `executeCmd/taskAnswer`；不执行内容 |
+| `SelfEvolveController.decide(role)` | 桥接角色；返回是否接管本轮 | 活跃任务调用 `_continue_agent`；结果写到状态的 response 字段或角色的 task_answer |
+| `_record_command_result()` | 经过上一轮命令关联校验的原始结果 | 先保留结果再检查终止条件，避免最后一次失败被漏归档；同轮仅记录一次 |
+| `_parse_llm_response(resp)` | 原始 LLM 字符串；返回 `(action, payload)` | 支持 v2 JSON、代码块、对象前后文本、XML；沿用用户实现，以 action 决定分支 |
+| `_extract_api_diag(cmd_result)` | 沙盒原始输出；返回提示或 None | 提取缺参名称、认证头格式；按集合去重，不猜新的 API 字段 |
+| `_timeout_rounds()` | 已接受坐标及任务表 | 优先使用接受时捕获的点位预算；无法定位时按有效任务最大值兜底，再默认15 |
+| `_archive_sop()` / `_archive_experience()` | 当前命令结果轨迹 | 成功与失败分别保存，失败条目不会覆盖成功条目 |
+| `_sop_hint()` / `_skill_hint()` | 同局经验库及当前任务类型 | 选择匹配的方法加入 prompt，不自动执行历史命令，也不直接提交旧答案 |
+| `TaskAgentMemory.accept(task)` | 实际选中的 `PlayerTask` | 捕获坐标、taskType、timeoutRounds；避免其它点位或刷新后的预算串入 |
+| `LLMService.register_task_prompt(turn, memory)` | 当前任务与会话 | 只记录 pending，不修改控制器 prompt、不计普通新闻额度 |
 
-以上大小、缺省轮数和重试限制是工程策略，不能当作官方新增规则。参数常量集中于`task_context.py`，历史窗口源于`task_prompt.py`。
+命令上限32KiB、答案128KiB、待解析 LLM 文本256KiB；拒绝空值、NUL、无法编码的字符串。这些是本地资源限制。内部 `TaskAction.NOTHING` 为等待标记，响应不输出非法 nothing 动作。
 
-## 4. 状态与回合预算
+## 4. 状态、经验库与退出
 
-| GameMemory字段 | 内容 |
+`GameMemory.task_agent` 保存以下字段。它在当前队伍/阵营、当前进程的一局内复用；日切换保留，重开局或不同会话隔离。没有磁盘恢复。
+
+| 字段 | 含义 |
 |---|---|
-| `task_description` / `task_started` | 当前题目及开始轮估计 |
-| `task_accept_round` / `task_accept_timeout` | 输出acceptTask时捕获的轮次与任务点timeout |
-| `task_timeout_rounds` | 当前任务使用的总预算 |
-| `task_execution` | 上一次发出的命令、发送轮、题目、开始轮，用于关联反馈 |
-| `task_context` | 命令与实际输出、诊断、提交答案、官方错误组成的证据历史 |
-| `task_last_command` / `task_last_command_failed` | 最近命令及是否已确认失败，用于防止立即原样重试 |
-| `task_history` | 最近12条任务元信息；不是完整上下文的替代品 |
-| `pending` | 等待LLM的purpose、发出轮、题目及started；只接收紧接下一轮的回复 |
+| `self_evolve_active/steps/context` | 活跃状态、控制器推进次数、完整当前轨迹；prompt 仅取最近20条 |
+| `self_evolve_task_desc/first_question/started_round` | 任务描述、当前首问和开始回合；任务切换时重新初始化 |
+| `self_evolve_pending_pos/accepted_task` | 接受点位及类型/预算快照，用于精准分库和时限 |
+| `self_evolve_sop` | type、任务名或类别索引的经验；包含 steps、answer、ok，失败时还有 fail_steps、diags |
+| `self_evolve_skill` | 按 taskType 保存首次成功题目和成功步骤；后续更新解法时保留已存首问 |
+| `_self_evolve_diags/_self_evolve_fail_streak` | 当前诊断去重及连续失败命令计数 |
+| `self_evolve_abandon_tick` | 重新接取的最早轮次 |
+| `execution_round/observed_description/suspended` | 上次发命令轮次、已观察题目、已释放任务标记，防止放弃后下一轮立即重启 |
 
-acceptTask后紧接下一轮出现题目，使用发出acceptTask的轮次为开始轮，并沿用当时timeout；任务点后续显示的时长不会覆盖它。如果进程从任务中途启动，则只能从首次观测估计开始轮，此时无法还原已消耗轮数。缺少timeout默认15轮，与原先接任务策略的缺省一致。
+用户提供的常量保持：`MAX_STEPS=30`，`MAX_CONSECUTIVE_FAIL_CMD=4`，`ABANDON_COOLDOWN=25`。推进次数用于防卡死，提示词的已用轮数使用 `roundNo - started_round`，含跳轮，不能用提示调用次数代替真实时间。命令结果保留头1600、尾800字符。
 
-一次命令还需要后续“回传结果→LLM回复→提交”，所以prompt生成时剩余≤3轮会要求尽快给答案，收到command时剩余≤2轮不再执行，而是请求基于已有证据提交。仍接受合法答案，不自行清空phaseTask。这个保守策略不能保证官方时限边界，也不会编造尚未获得的答案。
+SOP 主要按 `type::<taskType>` 分库，其次按 ws/task 名称、`cat::<类别>` 匹配，优先选择成功条目。失败记录包含已执行成功步骤、失败步骤、诊断和错误答案；即使只有失败命令也保留。Skill 的首问、答案、步骤仅用于当前任务的解法参考。
 
-题目变化或变为空时清空当前证据和待回传命令；上一任务结果不会进入新题。相同题目在观察到空phase之后重新出现也会重置。若平台不提供空phase或不同题目，又连续出现完全相同原文，现有接口没有任务ID，无法可靠区分两次任务。跳过回合的结果也不猜测关联到旧命令。所有记忆仅在进程内保存，服务重启不恢复。
+官方 `lastRoundRoleActionResults=true` 只表示动作合法。本项目因此要求：上一轮确为提交、动作合法、当前任务已结束或更换、且无官方错误，才归档成功。任务仍在继续时不会提前宣布成功；超时或判错保存失败经验。缺少反馈只按未确认结束处理。这仍不是对100%通过率或官方得分的测量。
 
-## 5. 输出与失败处理
+四次非零退出码/超时/判题器命令异常、推进上限、判错或额度错误触发退出；当前相同题目保持 suspended，避免反复抢回开拓者。重新接取仍受25轮冷却约束。回防或死亡也释放任务并保留已有探索；官方决定离开范围/死亡后的结束状态。
 
-命令反馈保留`[exitCode:N]`、`[TIMEOUT]`、`[JUDGER_ERROR]`及末尾`[TRUNCATED]`语义。上下文过长时保留首尾，便于保留错误开头及验证结尾；更早条目可能被淘汰，缺失信息需要定向补读。命令本身在历史展示时上限2000字符，不改变实际发送的command。
+为遵循用户控制器，当前不再由旧适配器硬拦截重复命令或预算末尾命令；是否重试、如何合并步骤由提供的 prompt 与控制器决定。超时最终以官方反馈为准。
 
-`diagnose`识别非零退出码、超时、判题错误、`[FAIL]`，以及完整JSON或末尾30行中的JSON业务错误（code/statusCode/数值status为400–599，status为error/failed/failure，或success=false）。exitCode=0只是进程正常退出，不代表业务成功。认证头和参数建议以实际错误及当前任务说明为依据，适配器不会把日志中的location或Bearer强制写入其他题目。
+## 5. Postman 本地联调
 
-126且包含`^M`或`bad interpreter`时提示检查CRLF/解释器。未知错误仍原样进入证据；启发式诊断不是通用API验证器，嵌套错误或任意文本可能识别不到。看到TOKEN仅保留给LLM结合任务格式提交，不自动提取并提交任意字符串。
+启动 `python CoreGeek/main3.py 8080`。
 
-已确认失败后，紧接着请求完全相同命令（去除首尾空白比较）会被拒绝并重新提示。修正命令后可以继续，成功命令不受此限制；实际收到新结果后更新失败状态。此处不进行shell语法等价判断，也不将重试视为已经成功。
+- 健康检查：`GET http://127.0.0.1:8080/health`。
+- 回合调用：`POST http://127.0.0.1:8080/`，`Content-Type: application/json`，Body → raw → JSON，发送完整官方观测。`/decision` 等其它 POST 路径也由同一处理器接收。
+- 连续回合保持同一 teamId/type，每次增加 roundNo；同回合相同报文返回缓存，同回合改内容会被拒绝。
 
-## 6. 本地Postman调试
+下面仅列每轮需要修改的字段，其它地图和角色字段仍须保留：
 
-仍用`POST http://127.0.0.1:8000/`，Body选择raw/JSON，`Content-Type: application/json`，提交完整回合报文；健康检查用`GET /health`。Task模块没有新增router。启动方式见[主README](../../README.md)。需要同一个服务进程、同一teamId/type、递增roundNo，不能只发送下面局部字段。
-
-例如用第10轮完整观测启动一个正在进行的任务，在有存活开拓者且没有回防冲突的前提下：
-
-| 回合 | 本轮完整报文中替换的字段 | 预期响应 |
+| 轮次 | 请求变化 | 预期响应 |
 |---|---|---|
-| 10 | `phaseTask`为真实题目，`llmResp=""`，`lastCmdResult=""` | 非空prompt |
-| 11 | phaseTask相同，`llmResp`填下例命令字符串 | executeCmd，不在本机执行 |
-| 12 | llmResp清空，lastCmdResult填官方或手动构造的测试结果 | 含实际结果的新prompt |
-| 13 | lastCmdResult清空，llmResp填下例答案字符串 | submitAnswer |
+| N | `phaseTask="Read task_demo.md"`，LLM/命令结果为空 | 返回用户新版 prompt |
+| N+1 | `llmResp` 填字符串 `{"action":"execute_command","command":"printf fixture"}` | 顶层 executeCmd；本机不执行 |
+| N+2 | 清空 llmResp，`lastCmdResult="[exitCode:0]\nfixture"` | 含 `cmd:`/`cmd_result:` 的下一份 prompt |
+| N+3 | 清空 lastCmdResult，llmResp 填 `{"action":"final_answer","answer":"fixture"}` | 开拓者 submitAnswer，taskAnswer 为字符串 |
+| N+4 | 清空 phaseTask/llmResp；上一轮开拓者结果 true、errors 空 | 归档经验；当前地图策略继续运行 |
 
-外层请求中的`llmResp`也是字符串，填写示例：
+LLM 回复与命令结果都需要你手动填写或由官方平台产生。本地 HTTP 只验证流转，示例 fixture 不是任务答案。回防场景需要先满足防守策略，否则系统会正常释放任务。
 
-```json
-"llmResp": "{\"action\":\"execute_command\",\"command\":\"python3 solve.py\"}"
+## 6. 修改与验证
+
+调整任务提示：改 task_prompt.py；调整解析/经验选择：改 task_controller.py；调整回合、反馈或回防边界：改 task_service.py；新增持久字段：改 task_state.py 并检查会话隔离。不要把原始 temp 文件作为运行依赖。
+
+运行 `python CoreGeek/run_tests.py`。来源/日志解析可重现：
+
+```powershell
+python CoreGeek/tools/audit_task_integration.py --prompt 'temp/task_prompt(1).py' --controller temp/task_controller.py --log 'temp/teamA (2).log' --output reports/task-integration-v0.3.10.json
 ```
 
-```json
-"lastCmdResult": "[exitCode:0]\n{\"count\":15}"
-```
-
-```json
-"llmResp": "{\"action\":\"final_answer\",\"answer\":\"{\\\"count\\\":15}\"}"
-```
-
-本地服务不会自动运行LLM或产生沙盒结果，需要平台反馈或手动填写合成测试数据。相同回合相同请求会命中缓存，同轮改报文会被拒绝；迟到两轮的LLM回复不会补用。手工回放只证明数据流，不能证明题目解答正确。
-
-## 7. 验证与后续修改
-
-运行`python CoreGeek/run_tests.py`可执行全部回归；本次新增17项覆盖v2/旧协议、原样答案、上下文连续性与上限、401/400、CRLF、TOKEN、时限捕获与缺省、末段提交、不同/相同题目重新开启、回合跳跃、歧义字段、重复JSON键等。命令输出使用人工构造的最小案例，不执行日志中的命令。
-
-完整测试、合成观测、真实服务HTTP和源码哈希见[0.3.5报告](../../reports/VALIDATION-v0.3.5.md)。尚未运行官方LLM/沙盒/判题器对局，不宣称提高了任务得分。后续如提供新`teamA.log`，应检查最终submitAnswer是否及时发出、phaseTask何时清空，以及任务分/奖励实际变化。
+正式源码回归、HTTP 与验证范围见 [本版验证报告](../../reports/VALIDATION-v0.3.10.md)。参考日志中28条非空LLM回复全部可解析（23命令、5答案），不代表本版本已经完成对应官方对局。

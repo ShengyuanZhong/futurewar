@@ -18,7 +18,7 @@ class ServiceTests(unittest.TestCase):
     def memory(self, service, raw):
         return service.sessions[(raw["teamOur"]["teamId"], raw["teamOur"]["type"])].memory
 
-    def test_task_sandbox_answer_correction_and_end_lifecycle(self):
+    def test_task_sandbox_wrong_answer_archives_experience_and_releases_pioneer(self):
         service = self.service()
         raw = request()
         self.assertEqual(service.decide(raw)["roleCommandMap"]["502"]["action"], "acceptTask")
@@ -35,15 +35,20 @@ class ServiceTests(unittest.TestCase):
         raw.update(roundNo=5, llmResp=json.dumps({"taskAnswer": '{"answer":41}'}), lastCmdResult="")
         self.assertEqual(service.decide(raw)["roleCommandMap"]["502"]["taskAnswer"], '{"answer":41}')
         raw.update(roundNo=6, llmResp="", errors=[{"errorCode": 2, "description": "partial answer"}])
-        self.assertIn("partial answer", service.decide(raw)["prompt"])
+        self.assertEqual(service.decide(raw)["prompt"], '')
+        agent = self.memory(service, raw).task_agent
+        self.assertTrue(agent.suspended)
+        entry = agent.self_evolve_sop['type::' + raw['teamOur']['playerTasks'][0]['taskType']]
+        self.assertFalse(entry['ok'])
+        self.assertEqual(entry['answer'], '{"answer":41}')
         raw.update(roundNo=7, llmResp=json.dumps({"taskAnswer": '{"answer":42}'}), errors=[])
-        self.assertEqual(service.decide(raw)["roleCommandMap"]["502"]["taskAnswer"], '{"answer":42}')
+        self.assertNotEqual(service.decide(raw)['roleCommandMap'].get('502', {}).get('action'), 'submitAnswer')
         raw.update(roundNo=8, phaseTask="", llmResp="")
         result = service.decide(raw)
         self.assertEqual((result["prompt"], result["executeCmd"]), ("", ""))
         memory = self.memory(service, raw)
         self.assertEqual(memory.ordinary_llm_calls, 0)
-        self.assertEqual(memory.skills, ["Inspect schema first"])
+        self.assertEqual(memory.skills, [])  # Free-form LLM claims are not successful controller experience.
 
     def test_active_task_anchor_survives_night_transition(self):
         raw = request(70)

@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import Any
 from agent.construction import DefenseLayout
 from .task_context import DEFAULT_TIMEOUT, observe_task, task_timeout
+from .task_state import TaskAgentMemory
 
 
 def treasure_signature(clue: dict) -> tuple:
@@ -10,6 +11,7 @@ def treasure_signature(clue: dict) -> tuple:
 
 @dataclass
 class GameMemory:
+    task_agent: TaskAgentMemory = field(default_factory=TaskAgentMemory)
     day: int = 0
     ordinary_llm_calls: int = 0
     summon_attempts: int = 0
@@ -30,10 +32,6 @@ class GameMemory:
     task_execution: dict[str, Any] | None = None
     task_last_command: str = ""
     task_last_command_failed: bool = False
-    task_bootstrap_done: bool = False
-    task_last_result_hash: str = ''
-    task_command_repeats: int = 0
-    task_defense_deadline: int | None = None
     task_history: list[dict[str, Any]] = field(default_factory=list)
     skills: list[str] = field(default_factory=list)
     failed_mines: dict[str, int] = field(default_factory=dict)
@@ -97,6 +95,7 @@ class GameMemory:
         self.summon_attempts = plan.summon_used
         if any(c["action"] == "acceptTask" for c in plan.commands.values()):
             self.task_accept_round = turn.round_no
-            self.task_accept_timeout = task_timeout(turn)
+            selected = self.task_agent.accepted_task
+            self.task_accept_timeout = (selected.get('timeout_rounds', 0) or DEFAULT_TIMEOUT) if selected else task_timeout(turn)
         if any(c["action"] == "summonTreasure" for c in plan.commands.values()):
             self.treasure_attempt_round = turn.round_no

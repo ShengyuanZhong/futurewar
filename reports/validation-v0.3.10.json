@@ -1,10 +1,10 @@
 {
-  "created_utc": "2026-09-23T03:16:24.846159+00:00",
+  "created_utc": "2026-09-23T07:07:28.888664+00:00",
   "python": "3.10.6",
   "platform": "Windows-10-10.0.26200-SP0",
   "rules_baseline": "local v1.0 2026-09-09; upstream commit recorded in DEVELOPMENT_RULES.md",
   "tests": {
-    "run": 206,
+    "run": 205,
     "failures": 0,
     "errors": 0
   },
@@ -24,26 +24,27 @@
       "three_rockets": 40,
       "mixed_compatibility": 40
     },
-    "median_ms": 21.325,
-    "max_ms": 828.21
+    "median_ms": 21.607,
+    "max_ms": 831.93
   },
   "source_hashes": {
     "CoreGeek/app/__init__.py": "ac90658d59e0bdb5068ff620f3b2b1cbc9339df0b59a33264cd4dc2326b6a9ff",
     "CoreGeek/app/config.py": "5c7784295362a3ac96bb70c421cddb2676f63a5c5f06db62b1e82ba4570f9a2b",
     "CoreGeek/app/server.py": "a08b22d2e90b0b2e4af8183d53f6ad4e946b853a6b14df276e34dc6cefdd491d",
     "CoreGeek/app/service/__init__.py": "3703fd280555c674cdc2ffc883472ff4b8696d9a8919b0bcb69c2507445ad5a3",
-    "CoreGeek/app/service/llm_service.py": "e52d7ec66778f2d0ab1a1cdf17747a31c53cd124d0871368d0fe68af6f59d8f0",
-    "CoreGeek/app/service/memory.py": "59b0c60d5491de8f548cfbf87a221bbbc272375c6c626c41b0a8d89f34e8980a",
-    "CoreGeek/app/service/task_bootstrap.py": "dda39e09b9750be80f422205654839ee8f3269b5900f091ae02d48245fdc9b49",
-    "CoreGeek/app/service/task_context.py": "5063ac1a22c9e50b8b1d801ee8a2fe8ff8e289cd30321524c2567f65b9f041f8",
-    "CoreGeek/app/service/task_prompt.py": "3683092b5c883309eb016d3cc21040b94b63e202dbfe5cd136ca2d60f8fde57f",
-    "CoreGeek/app/service/task_service.py": "6e935be6476c655321e86f0edd9a476ec8fade99d0aeeaa62b9dc225081e80dc",
-    "CoreGeek/app/service/turn_service.py": "9863c1ba6ab0a3ecf8b3efc677d193d362e458280da9484bdbf9cb2b1a6060c2",
+    "CoreGeek/app/service/llm_service.py": "60b9b14ba17ba3438ffa296e0a28bebd818511736a9a118d459f9e311a663968",
+    "CoreGeek/app/service/memory.py": "e603c81e435b65ab7556fdc0071bdb0f15a45360e8f067335b96ebd46e248fbd",
+    "CoreGeek/app/service/task_context.py": "e75d0b3c7ae28489e0cd8ce9e732b9941585155b611293fd9bf3a4b4defb4e9f",
+    "CoreGeek/app/service/task_controller.py": "029671eea19454be59edd6ba851107060613bcdc6967754651e425082917bc3c",
+    "CoreGeek/app/service/task_prompt.py": "256d5da53b381ad90403e1598c302cff27fd2b0f96469476044c874cf4ea379e",
+    "CoreGeek/app/service/task_service.py": "81b70dabd0a0e8c5f2da07e4df42c6612012d38a41083c118e147d09794195db",
+    "CoreGeek/app/service/task_state.py": "158a2eaca428585dfb0ee3983563b9a2054a9b032337a522bb5f17320e8c76e9",
+    "CoreGeek/app/service/turn_service.py": "d97a871e0291c744ade641818b79948ebf8e44e6d76acbbd5abae9a511f9f33a",
     "CoreGeek/main3.py": "977ebaacf991af1927ab75cb88698a1eca7c494d153851c5650cbcef67cbec80",
     "CoreGeek/run_tests.py": "df960cddccd5a7ec3012b873aaf6580e36cb2c9124259322ed45e5a04329d60a",
     "CoreGeek/src/agent/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "CoreGeek/src/agent/actions.py": "b610c460e1ca95eaf43c253063a3cdfd8282f83f477dac0b92e76057a75a77e7",
-    "CoreGeek/src/agent/brain.py": "c209054d9dc00a42ae864df0047589e6a784d3570e654e3c1e9465cc2a4e1ae0",
+    "CoreGeek/src/agent/brain.py": "024974a1a55d7ab26595be704fe9c91da46801c63c6ed2e6f55b74a9e2022d88",
     "CoreGeek/src/agent/combat.py": "ea0fd2f563ea5f813ff552424bd9a5c81ddb999a37708b565e494286f382273e",
     "CoreGeek/src/agent/construction.py": "6ab5dea018cb4c614b2d0c74b149725a795ec8ae892558d686f6b457bfd98429",
     "CoreGeek/src/agent/grid.py": "0ea7548d791d397f34269ef6cfa3f6db801950e6a638163dbabf0b2ff93d4820",
@@ -63,14 +64,15 @@
     "CoreGeek/tests/test_maintenance.py": "7a02cdccf9dc857177da80f6462c38217d59c68a7604f55fb806b812e1cdbc57",
     "CoreGeek/tests/test_opening_defense.py": "ce57810428ae8af491d0508bcdfb18770808d0a0a10394915cfe9a4c78463e66",
     "CoreGeek/tests/test_protocol.py": "8face6ac1cf67dc4640a711874c3ab0687c6d3735cc37f7b403fa2ccdb419ef9",
-    "CoreGeek/tests/test_services.py": "5c1e734e176c6916efe6faf5385be78e918aeec9ee303e51bd9bb6c2eeb5bad4",
-    "CoreGeek/tests/test_task_efficiency.py": "57b669556f9d038e9d281ab28a34baae0c7a8b539ef7af17aead5911dde31662",
-    "CoreGeek/tests/test_task_prompt.py": "17d4537f21994e0a6a9ebc398f77df7dde782f5279b5579307d367831c5d6af6",
+    "CoreGeek/tests/test_services.py": "c12b528fc95e1b38eab347e1fbc31c5303d46a3bd9b2724be4ca3c75bc742546",
+    "CoreGeek/tests/test_task_controller.py": "de42aaac7ec9ae1bc851a492a55f450366ce4abd95db2ca6257f85e1e52b475b",
+    "CoreGeek/tests/test_task_prompt.py": "03d6d77cdad0b15a7942477f09be0ddc5f90d87da0c5aecf449ef972a0caf681",
     "CoreGeek/tests/test_u_layout.py": "b2a258a13bcc220d60e1e9b645c5e33c5739a5e7cee38bb41ec31618ddab723d",
     "CoreGeek/tests/test_worker_coordination.py": "901bd0ecd21e04e38a6e485a7df1ef1e010d2aa985f066205eafd81b388a5198",
     "CoreGeek/tests/test_worker_log_regressions.py": "8651c65fa6c597e588943ec4fd83b68a6a0019e36d7b8a49aa873ec4b7b2ed3b",
     "CoreGeek/tests/test_worker_safety.py": "07882fcfbac22abb078c0844b5b048167b355197f15a2c9ad5ebffec5bceb58c",
     "CoreGeek/tests/test_worker_schedule.py": "7e44f9c641e0086d580aae626ced3f272e4ba00069e989e973761306d7b2c13c",
+    "CoreGeek/tools/audit_task_integration.py": "228b528aac60eb28436c68ae5b404ce6c683422988f71386005a1d50e4709e93",
     "CoreGeek/tools/replay.py": "7a75d81b744d97de6255a9f7bcc451ab1c964de8e8fd7f6f1ba54d89f221f5d9",
     "CoreGeek/tools/smoke_server.py": "706ac25d78d5c2663243ff5e55a69788c5aa42cdeb1d957e0fd0509d3f6cf435",
     "CoreGeek/tools/validate.py": "5b4661cefbb11f4d8b0e7144569f86dc9471bb1ddd4a0e9bbc5fa2953ee660f2",
@@ -94,5 +96,6 @@
     "official LLM/sandbox/judger integration",
     "Linux bash entry on target runtime"
   ],
-  "scope": "protocol and rule regression plus synthetic observation stress; not official certification or win rate"
+  "scope": "protocol and rule regression plus synthetic observation stress; not official certification or win rate",
+  "post_validation_non_runtime_change": "Only audit_task_integration.py class-qualified AST report keys changed after validation; audit re-run; runtime and test source hashes unchanged."
 }

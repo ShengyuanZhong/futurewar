@@ -61,7 +61,7 @@ python main3.py 8080 --config config.local.json
 - 开局75金币先建三火箭，再攒够石头建墙；后续按实时价格卖矿、购买与使用升级券。
 - 规划三炮共同操控格，黄昏开拓者回防，夜间每轮选一座冷却完成的炮发射；普通工人昼夜按相同经济优先级工作，夜间避险且禁建；第三天起维修工黄昏回到墙内，夜间维修优先并可沿内侧升级。
 - 防御优先于活跃任务与宝藏；保留射程、目标数量、伤害估值和角色互斥检查。
-- 开拓者接任务，官方 LLM / 沙盒探索，提交与修订答案，保存跨任务方法提示。
+- 开拓者接任务，官方 LLM / 沙盒探索，提交答案，按类型保存成功/失败经验并复用SOP/Skill。
 - 跨日新闻积累、停矿信息推理、宝藏购买与定时献祭、失败方案去重。
 - 十二种动作都提供统一校验。`remove` / `drop`可供扩展策略调用；当前基线不会主动拆墙或丢物品。普通物品使用受开局、夜采与防御优先级限制，不会自动采购召唤令、炸弹、眩晕法宝。
 
@@ -178,7 +178,7 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 
 新增参数`repair_start_day=3`、`repair_stock=5`、`repair_threshold_percent=30`见[参数说明](docs/WORKER_SAFETY.md)。
 
-任务模块新增`app/service/task_prompt.py`（用户提供的纯提示生成器）与`task_context.py`（回复校验、证据裁剪、诊断和预算）。`temp/`是资料入口，不参与运行/打包。详细函数参数及Postman联调见[任务文档](docs/TASK_INTEGRATION.md)。
+任务模块采用`app/service/task_prompt.py`与`task_controller.py`中的用户新版提示词/控制器，状态在`task_state.py`，项目适配在`task_service.py`。`temp/`是资料入口，不参与运行/打包。详细函数参数及Postman联调见[任务文档](docs/TASK_INTEGRATION.md)。
 
 升级目标集中于[src/agent/upgrade_policy.py](src/agent/upgrade_policy.py)，由`wall_group/wall_target_level/upgrade_candidates/purchase_needs/upgrades_complete`计算；具体参数见[维护开发文档](docs/MAINTENANCE.md#6-关键模块函数与参数)。
 
@@ -188,4 +188,4 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 
 0.3.9修复待建/缺墙格造成的寻路与清理往返冲突，新增实际位置/动作诊断；日志证据及函数见[往返修复](docs/WORKER_PATH_FIX.md)。
 
-0.3.10优化任务模块：明确路径先读资料、统一提示词、支持结构化答案、限制重复命令并考虑回防预算；回放资料边界及函数见[任务优化](docs/TASK_OPTIMIZATION.md)。
+0.3.10接入用户实战任务控制器：SOP/Skill分库复用、失败经验、API诊断、JSON/XML兼容、4次连续失败退出及25轮冷却；详细函数和状态见[任务接入](docs/TASK_INTEGRATION.md)。
