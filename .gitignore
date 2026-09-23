@@ -5,3 +5,4 @@ build/
 dist/
 *.egg-info/
 CoreGeek/config.local.json
+replay_crawler/logs
