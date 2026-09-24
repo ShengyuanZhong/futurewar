@@ -28,6 +28,8 @@ class GameMemory:
     task_timeout_rounds: int = DEFAULT_TIMEOUT
     task_accept_round: int = 0
     task_accept_timeout: int = DEFAULT_TIMEOUT
+    last_task_point: tuple[int, int] | None = None
+    task_points_attempted: set[tuple[int, int, int]] = field(default_factory=set)
     task_context: list[str] = field(default_factory=list)
     task_execution: dict[str, Any] | None = None
     task_last_command: str = ""
@@ -47,6 +49,13 @@ class GameMemory:
     repair_usage_previous: dict[int, int] = field(default_factory=dict)
 
     def observe(self, turn) -> None:
+        if self.task_accept_round == turn.round_no - 1 and self.last_task_point:
+            accepted = bool(turn.phase_task) or any(
+                command.get("action") == "acceptTask" and turn.action_results.get(actor) is True
+                for actor, command in self.last_commands.items())
+            if accepted:
+                day = (self.task_accept_round - 1) // 130 + 1
+                self.task_points_attempted.add((day, *self.last_task_point))
         if self.last_round == turn.round_no - 1:
             for actor, command in self.last_commands.items():
                 if (command.get("action") == "use" and command.get("name") == "WallFixer"
@@ -96,6 +105,7 @@ class GameMemory:
         if any(c["action"] == "acceptTask" for c in plan.commands.values()):
             self.task_accept_round = turn.round_no
             selected = self.task_agent.accepted_task
+            self.last_task_point = tuple(selected['task_position']) if selected else None
             self.task_accept_timeout = (selected.get('timeout_rounds', 0) or DEFAULT_TIMEOUT) if selected else task_timeout(turn)
         if any(c["action"] == "summonTreasure" for c in plan.commands.values()):
             self.treasure_attempt_round = turn.round_no

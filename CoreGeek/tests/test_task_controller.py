@@ -107,8 +107,12 @@ class ControllerIntegrationTests(unittest.TestCase):
                 response = self.step()
                 self.assertEqual(response['prompt'], '')
                 response = self.step(phaseTask='')
-                self.assertNotEqual(response['roleCommandMap'].get('502', {}).get('action'), 'acceptTask')
+                self.assertEqual(response['roleCommandMap']['502']['action'], 'move')
+                # The failed point cools down, while the other point remains available.
                 response = self.step(roundNo=until)
+                self.assertEqual(response['roleCommandMap']['502']['action'], 'move')
+                # A new day permits another attempt at the original point.
+                response = self.step(roundNo=131)
                 self.assertEqual(response['roleCommandMap']['502']['action'], 'acceptTask')
 
     def test_max_steps_release_and_api_diagnostics_are_deduplicated(self):

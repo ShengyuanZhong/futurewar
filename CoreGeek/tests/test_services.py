@@ -18,6 +18,31 @@ class ServiceTests(unittest.TestCase):
     def memory(self, service, raw):
         return service.sessions[(raw["teamOur"]["teamId"], raw["teamOur"]["type"])].memory
 
+    def test_pioneer_visits_both_task_points_after_first_task_ends(self):
+        for failed in (False, True):
+            with self.subTest(first_task_failed=failed):
+                service = self.service()
+                raw = request()
+                first = service.decide(raw)
+                self.assertEqual(first["roleCommandMap"]["502"]["action"], "acceptTask")
+                raw.update(roundNo=2, phaseTask="First task", lastRoundRoleActionResults={"502": True})
+                service.decide(raw)
+                raw.update(roundNo=3, phaseTask="", lastRoundRoleActionResults={},
+                           errors=[{"errorCode": 2}] if failed else [])
+                accepted_second = False
+                for number in range(3, 12):
+                    raw["roundNo"] = number
+                    response = service.decide(raw)
+                    command = response["roleCommandMap"].get("502", {})
+                    if command.get("action") == "acceptTask":
+                        accepted_second = True
+                        break
+                    if command.get("action") == "move":
+                        raw["teamOur"]["roles"][2]["pos"] = command["targetPos"][0]
+                    raw["errors"] = []
+                self.assertTrue(accepted_second)
+                self.assertIn((1, 14, 14), self.memory(service, raw).task_points_attempted)
+
     def test_task_sandbox_wrong_answer_archives_experience_and_releases_pioneer(self):
         service = self.service()
         raw = request()

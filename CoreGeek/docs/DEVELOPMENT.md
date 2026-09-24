@@ -139,6 +139,8 @@ flowchart LR
 
 用户生成器在`task_prompt.py`，由`task_controller.SelfEvolveController`直接调用，SOP/Skill同时注入；状态存于`task_state.TaskAgentMemory`，通过GameMemory进入每队事务。`task_service.py`将Turn字段映射到用户控制器，再映射回ActionPlan/executeCmd；先处理旧任务结果再切换新题目，避免成功归档丢失。`llm_service.py`只登记和匹配task pending，将原始回复交给用户解析器；新闻流程仍独立。需要回防、死亡或失败退出时释放开拓者，同题目保持挂起直到官方状态变化；离开范围是否结束由官方反馈决定。TaskService的`defense_due=False`参数沿用。字段与阈值详见[任务接入文档](TASK_INTEGRATION.md)。
 
+开拓者接取任务时，`GameMemory.last_task_point`保留点位；下一轮以活跃任务或官方成功反馈确认后，将 `(接取日,x,y)` 记录到`task_points_attempted`。`Strategy.task`仅排除当天已经尝试的点；控制器失败冷却仅绑定原点位，不会阻止开拓者前往另一任务点。每日日照预算、黄昏回防与官方点位有效性仍决定能否实际完成两题。
+
 `skill` 内容最多保存最近8条，每条4000字符，是待验证的解题方法。没有通过率字段时，不擅自将其标记为成功经验。任务完成、超时、最高通过率奖励均由判题器决定。
 
 宝藏仅在结构化高置信方案通过本地形状/商品校验后尝试；LLM的高置信度不等于官方确认。开局完成或未配置区域时才考虑宝藏，有炮回防优先于宝藏时间窗口。失败码2/3清理计划并记住目标/物品/窗口，避免重复相同消耗；1/4停止继续寻找。普通LLM额度按发送尝试保守计数，错误不会返还额度。

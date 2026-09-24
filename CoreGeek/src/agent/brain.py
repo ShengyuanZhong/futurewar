@@ -505,9 +505,12 @@ class Strategy:
         if not self.settings.enable_tasks or self.turn.phase_task:
             return False
         agent = self.memory.task_agent if self.memory else None
-        if agent and self.turn.round_no < agent.self_evolve_abandon_tick:
-            return False
-        tasks = [t for t in self.turn.tasks if t.valid and t.cooldown == 0]
+        cooling_point = (self.memory.last_task_point if agent and
+                         self.turn.round_no < agent.self_evolve_abandon_tick else None)
+        attempted = self.memory.task_points_attempted if self.memory else set()
+        tasks = [t for t in self.turn.tasks if t.valid and t.cooldown == 0
+                 and (self.turn.day, t.pos.x, t.pos.y) not in attempted
+                 and (t.pos.x, t.pos.y) != cooling_point]
         tasks.sort(key=lambda t: (self.cost(role, self.turn.task_cells(t)), -t.gold - t.score, t.pos))
         for task in tasks:
             cells = self.turn.task_cells(task)

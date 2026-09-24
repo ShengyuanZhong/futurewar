@@ -23,11 +23,13 @@
 | `app/service/memory.py` | 每队、每阵营会话记忆，接任务的轮次及预算；嵌入 `task_agent` |
 | `app/service/task_context.py` | 接取轮次估计、旧协议规范化及兼容工具；不再决定新版重试策略 |
 | `app/service/turn_service.py` | observe → consume → TaskService.active → Strategy.run → record，最后事务提交及[TASK-DEBUG日志](TASK_LOGGING.md) |
-| `src/agent/brain.py` | 接取前的路径/日照预算，接受时调用 `task_agent.accept(task)`，冷却期不重接；其它策略沿用基准 |
+| `src/agent/brain.py` | 接取前的路径/日照预算，接受时调用 `task_agent.accept(task)`；同点冷却不妨碍转往另一任务点 |
 | `tests/test_task_controller.py` | 同型复用、失败归档、冷却、协议兼容、预算和会话隔离 |
 | `tools/audit_task_integration.py` | 离线比较用户源码和正式源码，并检查日志中的 LLM 回复能否解析 |
 
 正常交互：接取 → 收到 `phaseTask` → prompt → 下一轮 `llmResp` → executeCmd → 下一轮 `lastCmdResult` → prompt → 下一轮答案 → submitAnswer → 根据后续 `phaseTask/errors/actionResults` 归档。
+
+两个任务点分别调度：`GameMemory.record`保存本轮拟接取的点位；下一轮观测到活跃任务或成功反馈后，`GameMemory.observe`把 `(接取日, x, y)` 加入 `task_points_attempted`。`Strategy.task`当天排除已尝试点，控制器的失败冷却只阻止刚结束的那个点，另一个有效任务点仍可立即前往。成功、失败、超时都按官方结束反馈推进；当天不反复抢同点刷新任务，次日重新允许尝试。接取失败且无活跃任务/成功反馈时不记为已尝试，以便重试。日照预算与黄昏回防约束仍保留，因此这是“在两点有效且时间充足时争取每天两题”的策略，不保证官方每一天必有两题可做。
 
 `executeCmd` 仅作为响应字符串返回官方沙盒。提示词仅返回官方 LLM；本程序不在选手主机执行命令，也不直接调用模型服务。官方响应仍只有 `roleCommandMap`、`prompt`、`executeCmd`。
 

@@ -509,6 +509,7 @@ empty_response() -> dict
 | 任务 | `task_description`、`task_started`、`task_history`、`skills` | 活跃任务、开始轮估计、元信息、待验证方法 |
 | 任务轨迹 | `task_agent.self_evolve_context/self_evolve_command_trace`、`execution_round` | 文本/结构化轨迹与上一轮命令关联；task_context保留当前轨迹镜像，旧命令诊断字段仅作兼容 |
 | 任务预算 | `task_accept_round`、`task_accept_timeout`、`task_timeout_rounds` | 接任务时捕获的轮次、时长及当前预算 |
+| 双点任务记录 | `last_task_point`、`task_points_attempted` | 上次接取点坐标与 `(日,x,y)` 已尝试集合；仅正式接取反馈后记入，防止当天重复同点并允许转往另一点 |
 | 上轮动作 | `last_commands`、`last_round` | 把下一轮反馈与本轮输出关联起来 |
 
 | 函数 | 参数 | 返回与副作用 |
@@ -710,7 +711,7 @@ Strategy.run() -> None
 | `upgrade_candidates()` / `upgrades_complete()` | 无 | 委托upgrade_policy返回当前阶段/完成状态，详见[维护文档](CoreGeek/docs/MAINTENANCE.md) |
 | `buy_upgrade(role)` | 角色 | `bool`；按purchase_needs批量购券，可预购当前火箭的2→3券；扣全队库存/本轮买用，受金币/容量和维修预算限制 |
 | `mine(role, need_stone=False)` | 工人、是否仅考虑石矿 | `bool`；按当前价格与路程评分，避开停工/失败退避矿点，采集或靠近 |
-| `task(role)` | 开拓者 | `bool`；寻找有效己方任务点，检查剩余日照预算，接取或靠近 |
+| `task(role)` | 开拓者 | `bool`；寻找当天未尝试的有效己方任务点，检查剩余日照预算，接取或靠近；一个点的失败冷却不阻挡另一个点 |
 | `treasure(role)` | 开拓者 | `bool`；按计划采购、移动、等待或献祭；等待时可仅加入used而不输出动作 |
 
 策略中`True`通常表示已安排当前角色，但不总等同于已经提交交互动作：例如`interact`可能只是移动一步，`treasure`可能是原地等候。后续新策略不要在返回True后继续给同一角色发第二条指令。
