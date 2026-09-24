@@ -36,6 +36,7 @@ class TaskFailureLearningTests(unittest.TestCase):
 
     def finish(self):
         self.step(llmResp='{"action":"final_answer","answer":"fixture-answer"}')
+        self.raw['teamOur']['totalScore'] = self.raw['teamOur'].get('totalScore', 0) + 10
         self.step(phaseTask='', lastRoundRoleActionResults={'502': True})
 
     def test_api_errors_with_zero_exit_are_excluded_from_successful_sop_and_skill(self):
@@ -110,10 +111,10 @@ class TaskFailureLearningTests(unittest.TestCase):
     def test_prompt_command_budget_scales_with_time_left(self):
         ample = build_self_evolve_prompt('task', [], steps_used=1, timeout_rounds=10)
         tight = build_self_evolve_prompt('task', ['known evidence'], steps_used=7, timeout_rounds=10)
-        self.assertIn('最多约 3 条', ample)
-        self.assertIn('最多约 0 条', tight)
+        self.assertIn('最多约 4 条', ample)
+        self.assertIn('最多约 1 条', tight)
         self.assertNotIn('5~7', tight)
-        self.assertIn('优先提交', tight)
+        self.assertIn('剩余约 3 回合', tight)
 
     def test_prompt_preserves_successful_engineering_path_and_adds_safe_python_usage(self):
         prompt = build_self_evolve_prompt('task', [])

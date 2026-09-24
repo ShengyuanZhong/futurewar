@@ -2,7 +2,7 @@
 
 基于本目录《未来战争》v1.0 任务书、接口文档和 `DEVELOPMENT_RULES.md` 实现的参赛 HTTP Agent。保留 CoreGeek 的 `main3.py → src/agent` 基础结构，新增 `CoreGeek/app` 应用层。运行仅依赖 Python 标准库，Python 3.10 及以上。
 
-当前程序版本为 `0.4.2`，基于用户确认的v0.4基准，声明位置是 [CoreGeek/pyproject.toml](CoreGeek/pyproject.toml)。开局仍为三火箭→采石→U形墙，随后集中升满一台火箭；第二天起依次强化正中两墙3级、第二台火箭2级、正面其余四墙2→3级、所有火箭3级，最后把两翼六墙升2级；不升级基地。全部目标达成后，两名工人全天墙内维修，白天轮流采购，后续金币用于修复包。阈值仍为严格低于30%。详细坐标、镜像、购买规则和关键函数见[建筑维护](CoreGeek/docs/MAINTENANCE.md)。沿用工人独立任务、让行、城墙掩护与动态备货，见[工人协作](CoreGeek/docs/WORKER_COORDINATION.md)。沿用昼夜统一工人经济流程，夜间可继续采购与配送升级券，维修工可在内侧兼顾升级，详见[昼夜统一调度](CoreGeek/docs/WORKER_SCHEDULE.md)。沿用根据log1/log2统一寻路与建筑位清理的预留集合，修复待建/缺墙位置造成的往返循环，详见[日志定位与修复](CoreGeek/docs/WORKER_PATH_FIX.md)。v0.4基准已[归档](reports/BASELINE-v0.4.md)。0.4.1根据teamA(2)失败记录修正任务经验：过滤退出码0的业务/脚本失败、保留真实JSON层级及字段、补充解析/引号诊断并压缩短任务步骤；详见[失败任务修正](CoreGeek/docs/TASK_FAILURE_LEARNING.md)。战斗和工人策略沿用基准。0.4.2接入用户提供的任务交互日志格式，见[日志开发文档](CoreGeek/docs/TASK_LOGGING.md)。
+当前程序版本为 `0.4.3`，基于用户确认的v0.4基准，声明位置是 [CoreGeek/pyproject.toml](CoreGeek/pyproject.toml)。开局仍为三火箭→采石→U形墙，随后集中升满一台火箭；第二天起依次强化正中两墙3级、第二台火箭2级、正面其余四墙2→3级、所有火箭3级，最后把两翼六墙升2级；不升级基地。全部目标达成后，两名工人全天墙内维修，白天轮流采购，后续金币用于修复包。阈值仍为严格低于30%。详细坐标、镜像、购买规则和关键函数见[建筑维护](CoreGeek/docs/MAINTENANCE.md)。沿用工人独立任务、让行、城墙掩护与动态备货，见[工人协作](CoreGeek/docs/WORKER_COORDINATION.md)。沿用昼夜统一工人经济流程，夜间可继续采购与配送升级券，维修工可在内侧兼顾升级，详见[昼夜统一调度](CoreGeek/docs/WORKER_SCHEDULE.md)。沿用根据log1/log2统一寻路与建筑位清理的预留集合，修复待建/缺墙位置造成的往返循环，详见[日志定位与修复](CoreGeek/docs/WORKER_PATH_FIX.md)。v0.4基准已[归档](reports/BASELINE-v0.4.md)。0.4.1根据teamA(2)失败记录修正任务经验：过滤退出码0的业务/脚本失败、保留真实JSON层级及字段、补充解析/引号诊断并压缩短任务步骤；详见[失败任务修正](CoreGeek/docs/TASK_FAILURE_LEARNING.md)。战斗和工人策略沿用基准。0.4.2接入用户提供的任务交互日志格式，见[日志开发文档](CoreGeek/docs/TASK_LOGGING.md)。0.4.3整合新版任务控制器与提示词，包含分类经验、临期预算、占位答案拦截和按奖励增量判定成功；双任务点调度沿用上一版，详见[任务模块接入](CoreGeek/docs/TASK_INTEGRATION.md)。
 
 ## 阅读导航
 
@@ -56,7 +56,7 @@ bash run.sh 8080
 | [实战日志往返修复](CoreGeek/docs/WORKER_PATH_FIX.md) | log1/log2证据、统一路径预留、重建场景与诊断字段 |
 | [昼夜统一调度](CoreGeek/docs/WORKER_SCHEDULE.md) | 跨昼夜任务连续、夜间升级/采购、维修岗位限制与函数参数 |
 | [工人协作与备货](CoreGeek/docs/WORKER_COORDINATION.md) | 单人任务、让行、墙掩护、值守分区及按日备货参数 |
-| [v0.4.2验证报告](reports/VALIDATION-v0.4.2.md) | 当前源码测试证据、哈希、验证边界；旧报告独立保留 |
+| [v0.4.3验证报告](reports/VALIDATION-v0.4.3.md) | 当前源码测试证据、哈希、验证边界；旧报告独立保留 |
 | [开发规则](DEVELOPMENT_RULES.md) | 本地开发约束与官方规则索引，原文保留 |
 | [任务书](任务书.md) / [接口文档](接口文档.md) | 原始比赛规则与接口定义，原文保留 |
 
@@ -64,9 +64,9 @@ bash run.sh 8080
 
 ```powershell
 python CoreGeek/run_tests.py
-python CoreGeek/tools/smoke_server.py --output reports/http-smoke-v0.4.2.json
-python CoreGeek/tools/replay.py request.txt --output reports/sample-response-v0.4.2.json
-python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v0.4.2.json
+python CoreGeek/tools/smoke_server.py --output reports/http-smoke-v0.4.3.json
+python CoreGeek/tools/replay.py request.txt --output reports/sample-response-v0.4.3.json
+python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v0.4.3.json
 ```
 
 `replay.py` 只计算响应，不执行响应中的沙盒命令或 LLM 请求。验证脚本生成的压力结果是合成观测检查，不是比赛模拟、官方难度或胜率。
@@ -88,10 +88,10 @@ futurewar/
 ├── .gitignore                        # 忽略缓存、构建中间文件和本地配置
 ├── reports/
 │   ├── VALIDATION.md                 # 人类可读的历史验证报告
-│   ├── VALIDATION-v0.4.2.md          # 任务交互日志验证报告
-│   ├── validation-v0.4.2.json        # 本版测试、压力、环境与源码哈希
-│   ├── http-smoke-v0.4.2.json        # 本版真实进程HTTP验证
-│   ├── sample-response-v0.4.2.json   # 本版对原样例的响应
+│   ├── VALIDATION-v0.4.3.md          # 本版任务模块验证报告
+│   ├── validation-v0.4.3.json        # 本版测试、压力、环境与源码哈希
+│   ├── http-smoke-v0.4.3.json        # 本版真实进程HTTP验证
+│   ├── sample-response-v0.4.3.json   # 本版对原样例的响应
 │   ├── validation.json               # 测试/压力结果、环境、源码和规则文件SHA256
 │   ├── http-smoke.json               # 实际启动进程后的HTTP检查结果
 │   └── sample-response.json          # 原请求样例生成的离线响应
@@ -560,7 +560,7 @@ TaskService.active(turn, memory, plan, llm, reply: str | dict, defense_due: bool
 
 | 位置/函数 | 参数与作用 |
 |---|---|
-| `task_prompt.build_self_evolve_prompt(task_desc, context, steps_used=0, timeout_rounds=0, sop_hint=None, skill_hint=None)` | 题目、轨迹、已用轮数、总预算、SOP与Skill；返回prompt，保留最近20条历史 |
+| `task_prompt.build_self_evolve_prompt(task_desc, context, steps_used=0, timeout_rounds=0, sop_hint=None, skill_hint=None, category=None)` | 题目、轨迹、已用轮数、总预算、SOP、Skill与任务类别；返回prompt，保留最近20条历史；经验优先级为Skill→SOP→内置类别 |
 | `task_controller.SelfEvolveController.decide(role)` | 桥接角色；推进任务，返回是否接管本轮 |
 | `task_controller._parse_llm_response(resp)` | 原始LLM文本；提取v2 JSON或旧XML中的command/answer |
 | `SelfEvolveController._archive_sop/_archive_experience` | 按type、任务名、任务类别保存成功/失败经验；失败教训可追加，但不替换已有成功步骤 |
@@ -569,7 +569,7 @@ TaskService.active(turn, memory, plan, llm, reply: str | dict, defense_due: bool
 | `task_evidence.inspect_result(raw)` | 完整lastCmdResult；裁剪前判断进程/业务错误、提取JSON层级和字段，返回ResultEvidence |
 | `task_service.controller_reply(reply)` | 优先采用用户解析器，兼容旧协议并检查大小/NUL/编码 |
 
-失败结果不会再仅凭exitCode 0进入成功经验；新的SOP保存失败命令、纠错信息和JSON结构（不保存记录值）。同服务任务读取本题后复用已验证接口，按真实响应确认数组和字段；短预算使用`max(0,(剩余回合-2)//2)`提示剩余命令数。
+失败结果不会再仅凭exitCode 0进入成功经验；新的SOP保存失败命令、纠错信息和JSON结构（不保存记录值）。同服务任务读取本题后复用已验证接口，按真实响应确认数组和字段。新版提示词按剩余回合估算可执行命令数；仅余约1回合时控制器阻止普通新命令，但上一结果失败可作最后修复尝试。`submitAnswer`动作合法不等于答对，控制器以提交后金币或总分增长固化成功经验；否则保存失败经验。
 
 三个防卡死参数保留用户值：最多推进30步、连续失败命令4次、退出后冷却25轮。提示词已用轮数按实际roundNo差计算。输出裁剪保留头1600/尾800字符；自动提取缺失参数或认证头格式。Skill首问按类型保存，并已接入提示词。
 
@@ -886,10 +886,10 @@ if step is not None:
 
 ```powershell
 python CoreGeek/run_tests.py
-python CoreGeek/tools/replay.py request.txt --output reports/sample-response-v0.4.2.json
+python CoreGeek/tools/replay.py request.txt --output reports/sample-response-v0.4.3.json
 python CoreGeek/tools/replay.py observations.jsonl --output reports/replayed-responses.json --config CoreGeek/config.local.json
-python CoreGeek/tools/smoke_server.py --output reports/http-smoke-v0.4.2.json
-python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v0.4.2.json
+python CoreGeek/tools/smoke_server.py --output reports/http-smoke-v0.4.3.json
+python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v0.4.3.json
 ```
 
 上述JSONL命令需要先准备`observations.jsonl`。工具会覆盖指定的同名输出；新版本应另取报告文件名，保留历史证据。`validate.py`不会自动重写人工说明，修改代码后需另存对应版本的说明。本版压力观测同时覆盖三火箭和混合旧炮，增加“仅开拓者攻击”和输入冷却为0的断言。
@@ -907,7 +907,7 @@ python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v0.4.2.
 | `test_http_config.py` | HTTP响应/错误、请求上限、配置文件检查 | 启动入口、网络层、配置变化 |
 | `fixtures.py` | 统一合成数据构造，布局专供测试 | 不能当官方地图坐标或规则来源 |
 
-v0.4.2报告记录219个测试通过、80份合成观测检查通过。数值和源码指纹见[当前验证报告](reports/VALIDATION-v0.4.2.md)及[机器记录](reports/validation-v0.4.2.json)。[原报告](reports/VALIDATION.md)的56个测试属于v0.2.0历史证据；两者均不代表正式比赛通过或胜率。
+v0.4.3报告记录222个测试通过、80份合成观测检查通过。数值和源码指纹见[当前验证报告](reports/VALIDATION-v0.4.3.md)及[机器记录](reports/validation-v0.4.3.json)。[原报告](reports/VALIDATION.md)的56个测试属于v0.2.0历史证据；两者均不代表正式比赛通过或胜率。
 
 `validate.independent_contract(raw, response)`是压力工具中的附加结构断言，检查角色互斥、移动占用和攻击时机等。它不是完整判题器，不能代替官方平台对动作执行结果和比分的裁定。
 

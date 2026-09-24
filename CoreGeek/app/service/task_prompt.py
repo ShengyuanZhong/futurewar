@@ -9,100 +9,126 @@
 HISTORY_WINDOW = 20
 
 
-def build_self_evolve_prompt(task_desc: str, context, steps_used: int = 0, timeout_rounds: int = 0, sop_hint: str = None, skill_hint: str = None) -> str:
+# 内置分类经验：命中任务大类时无需会话内已沉淀经验也能快速上手的通用解法。
+# 各条目自带标题段，注入后直接作为独立提示块。
+_BUILTIN_CATEGORY_EXP = {
+    "unknown-api": (
+        "# 已有成功经验（unknown-api 查询统计类，按此流程可少走弯路）\n"
+        "1. 读任务书确定统计口径与提交格式（total_count/world_heritage_count/types/oldest_era 等），"
+        "字段名、顺序、类型必须在最终答案中原样保留。\n"
+        "2. 读 `API_DOCS.md` 了解接口，但**文档可能过时**：认证头格式与参数名一律以服务端实际返回的"
+        "4xx `message` 为准——`Missing 'Authorization' header. Expected format: ...` 说明要改认证头"
+        "（如 `Authorization: Bearer <key>`）；`Missing required parameter: X` 说明参数名要用 `X`。\n"
+        "3. 首次请求务必直接输出完整原始响应体（不要接 `python3 -c` 过滤），4xx 时按 `api_diag`/message 修正后立即重试。\n"
+        "4. 检查分页：响应含 `pagination.total_count` 时，用显式 `offset/limit`（或一次大 limit）把记录拉全，"
+        "以实际条数 == total_count 校验，缺则继续翻页，**禁止拿部分数据统计**。\n"
+        "5. 统计要点：`world_heritage_count` 按保护级别字段（如 `protected_level == \"世界遗产\"`）计数；"
+        "`types` 用所有不重复值；`oldest_era` 若语义为“年代最早的遗产**名称**”，提交的是名字、不要提交年代值。\n"
+        "6. 统计计算勿用`python3 -c`内联多行脚本：f-string 里出现 `\"` 反斜杠转义会直接抛 "
+        "`SyntaxError: f-string expression part cannot include a backslash`，整条命令报废白耗两回合。"
+        "应改用 `cat > /tmp/s.py << 'EOF'` 原样写入脚本，再 `python3 /tmp/s.py` 执行；"
+        "python 内访问字典键统一用单引号（`r['name']`），不出现任何 `\"`；"
+        "拉全数据后一次算清并 `print(json.dumps(ans))` 输出，保证数字字段保持数字类型。\n"
+        "7. 数字字段保持数字（0 不写成 \"0\"），对照任务书提交示例逐字段核对后，把 JSON 字符串作为答案返回 final_answer。"
+    ),
+    "engineering-fix": (
+        "# 已有成功经验（engineering-fix 工程修复部署类，按此流程可少走弯路）\n"
+        "1. 读任务书确认工作区路径（`ws_N/` 在任务书同目录）与提交格式（多为 `{\"token\": \"xxx\"}`，"
+        "以任务书【提交规则】为准，token 值为 `./check` 输出的 `TOKEN: xxx` 原样内容）。\n"
+        "2. `cd <工作区> && cat spec.md` 读规范，明确修复后的正确状态：目录必须存在及其权限、"
+        "配置文件每行内容、脚本是否可执行，逐项对照再动手。\n"
+        "3. 用一条命令批量修复：`mkdir -p` 补缺失目录 + `chmod 755` 校准目录/脚本权限 + "
+        "`cat > 文件 << 'EOF'` 写配置/脚本，最后 `chmod +x` 脚本，减少回合消耗。\n"
+        "4. 跑 `./check` 验证：若 exitCode 126 报 `bad interpreter`（CRLF 行尾问题），"
+        "先 `sed -i 's/\\r$//' check` + `chmod +x check` 再重跑；没通过时按 `./check` 输出的失败项逐个补齐。\n"
+        "5. 输出`全部通过`/`TOKEN: xxx`后立即提交答案，不要再改文件、不要重复验证，避免超时。"
+    ),
+}
+
+
+def build_self_evolve_prompt(
+    task_desc: str,
+    context,
+    steps_used: int = 0,
+    timeout_rounds: int = 0,
+    sop_hint: str = None,
+    skill_hint: str = None,
+    category: str = None,
+) -> str:
     history = "\n".join(context[-HISTORY_WINDOW:]) if context else "（暂无历史）"
     step = "阅读理解" if not context else "继续推进"
     if timeout_rounds <= 0:
         timeout_rounds = 15
     rounds_left = max(timeout_rounds - steps_used, 0)
-    command_budget = max(0, (rounds_left - 2) // 2)
-    urgent = ('- 当前已接近截止：有已验证结果时优先提交，不再重读资料或展开长脚本；'
-              '缺少的数据不能编造。\n' if rounds_left <= 3 else '')
-    skill_block = f"{skill_hint}\n\n" if skill_hint else ""
-    sop_block = f"{sop_hint}\n\n" if sop_hint else ""
+    # 经验块优先级：Skill（同型已掌握）> SOP（动态成败经验）> 内置分类经验
+    hint = skill_hint or sop_hint
+    if not hint and category:
+        hint = _BUILTIN_CATEGORY_EXP.get(category)
+    hint_block = f"{hint}\n\n" if hint else ""
+    # 剩余 ≤2 回合时命令全流程（执行+结果返回至少 2 回合）必然超出预算，
+    # 必须强制直接提交，避免 LLM 仍执行命令导致 final_answer 落在预算外被丢弃
+    if rounds_left <= 2:
+        budget_block = (
+            f"- 剩余约 {rounds_left} 回合，已不足以再执行命令"
+            "（每轮一条命令、结果次轮返回，至少占 2 回合）："
+            "本回合必须直接提交 final_answer，禁止再执行任何命令。\n\n"
+        )
+    else:
+        budget_block = (
+            "- 每轮一条命令且结果次轮返回（约 2 回合/条），剩余约 "
+            f"{rounds_left} 回合最多约 {(rounds_left - 1) // 2} 条命令；"
+            "用 `&&`/shell 变量/内联脚本合并操作，命令越少越早提交。\n\n"
+        )
     return (
         "# 角色\n"
-        "你是一名在隔离沙盒中工作的任务 Agent。你需要在沙盒中通过 shell/python 探索并完成给定的任务，"
+        "你是一名在隔离沙盒中工作的任务 Agent。你需要通过 shell/python 探索并完成给定任务，"
         "最后输出任务书要求的最终答案。\n\n"
         "# 任务描述\n"
         f"{task_desc}\n\n"
         "# 历史交互记录\n"
         f"{history}\n\n"
         "# 沙盒能力说明\n"
-        "- 沙盒可执行常见 shell 指令与 python3，无法访问互联网，但可以访问沙盒内 localhost 提供的服务（如 HTTP API）。\n"
-        "- 每轮只能请求执行一条命令；命令执行结果会在下一轮以 `cmd_result:` 的形式返回给你。\n"
-        "- 命令输出可能被截断展示：若看到截断标记（如 `...[中间省略]...`），请用 `head -n / tail -n / grep` 精确定位所需内容。\n"
-        "- 不要重复执行已经执行过且结果已知的命令，不要原地空转；每一步都应为推进任务服务。\n"
-        "- 已读过的文件内容会保留在历史中，请从历史中回忆已掌握的信息（如提交格式）；如需确认可用 `grep -n` 精准提取小节，不要整篇重新读取已读过的长文件。\n\n"
-        f"{sop_block}{skill_block}"
+        "- 沙盒可执行常见 shell 指令与 python3，无外网，可访问沙盒内 localhost 提供的 HTTP 服务。\n"
+        "- 每轮只能请求一条命令，结果下一轮以 `cmd_result:` 返回；输出可能被截断，用 `head/tail/grep` 精确定位。\n"
+        "- 命令结果与已读文件会保留在历史中，不要重复执行已知结果命令、不要整篇重读已读文件（可用 `grep -n` 提取小节）。\n\n"
+        f"{hint_block}"
         "# 回合预算（关键约束）\n"
-        f"- 任务有限时约 {timeout_rounds} 回合：目前已用 {steps_used} 回合，剩余约 {rounds_left} 回合。\n"
-        "- 一次命令需要经历LLM回复、命令结果返回，再由LLM生成答案并提交；"
-        "预留最终答案及提交余量2回合。\n"
-        f"- 按当前剩余预算，后续命令最多约 {command_budget} 条；这不是固定5到7条，短任务必须压缩步骤。\n"
-        f"{urgent}"
-        "- 必须把能合并的操作压进同一条命令（用 `&&`、shell 变量与内联脚本），命令数越少，越早进入提交。\n\n"
+        f"- 任务限时约 {timeout_rounds} 回合：已用 {steps_used}，剩余约 {rounds_left}。\n"
+        f"{budget_block}"
         "# 行动准则\n"
-        "0. 前提条件——文件读取规则（先于第 1 步执行）：\n"
-        "   - 若题目/任务书**没有**明确给出目标文件的目录（绝对或相对路径），读取任何文件（任务书、`API_DOCS.md`、`spec.md`、数据/脚本等）"
-        "都必须用“find 定位 + cat 读取”的组合命令，先 `find` 拿到真实绝对路径再读；禁止凭文件名直接拼绝对路径（文件常与任务书不在同目录，"
-        "读错/读空会白白浪费数轮）：\n"
-        '     f=$(find /tmp /var/tmp /root /home /workspace -maxdepth 8 -type f -iname "目标文件名" 2>/dev/null | head -1); [ -n "$f" ] && echo "== $f ==" && cat "$f"\n'
-        "   - 把 `目标文件名` 替换为实际要读的文件名（如 `task_*.md`、`API_DOCS.md`、`spec.md`）。"
-        "命令的 `== ... ==` 定位输出即该文件的真实绝对路径，后续可沿用并直接 `cat <该路径>`。\n"
-        "   - 除非题目/任务书明确给出文件确切路径，否则不得直接 `cat` 猜测路径；`find / ...` 全盘扫描易超时返回 [TIMEOUT]，禁止使用。\n"
-        f"当前阶段：{step}。请按顺序推进：\n"
-        "1. 找到并阅读任务书（沙盒内某处的任务书），明确三件事：任务目标、需要调用的服务或接口、答案的提交格式。\n"
-        "   - 同型任务先读当前任务书以确认变更项。若任务书明确API服务、认证和参数与上一题相同，"
-        "直接复用SOP中已验证的请求及JSON结构，只替换当前查询条件；不要重读相同的旧API文档、"
-        "不要再尝试已失败的认证方式。工作区与配置值仍以当前spec.md为准。\n"
-        "   - 若是本任务第一条命令，用下面这一条命令同时完成“定位 + 读出任务书”，不要分两条执行（限定了搜索起点与深度，稳定快速）：\n"
+        "0. 文件读取：任务书未给出目标文件确切目录时，一律“find 定位 + cat 读取”，"
+        "禁止凭文件名猜绝对路径、禁止全盘 `find /`（会超时）：\n"
+        '     f=$(find /tmp /var/tmp /root /home /workspace -maxdepth 8 -type f -iname "目标文件" 2>/dev/null | head -1); [ -n "$f" ] && echo "== $f ==" && cat "$f"\n'
+        f"当前阶段：{step}。按顺序推进：\n"
+        "1. 首条命令用“find 定位 + cat 读取”一步读出任务书（`==` 后为真实路径，后续可直接 `cat` 该路径）：\n"
         '     f=$(find /tmp /var/tmp /root /home /workspace -maxdepth 6 -name "task_*.md" 2>/dev/null | head -1); echo "== $f =="; cat "$f"\n'
-        "   - 注意：`find / ...` 全盘扫描很可能超过命令 15 秒上限并返回 [TIMEOUT]，禁止用全盘 find。若上方命令的 `==` 后为空（未找到），"
-        "再退回 `find /tmp /var/tmp /root /home /workspace -maxdepth 8 -type f -name \"task_*.md\" 2>/dev/null | head -5` 单独定位。\n"
-        "2. 按任务书步骤执行：探测环境 → 获取资料/调用接口 → 计算与汇总 → 得到最终答案。\n"
-        "   - 调用 HTTP 接口：首次调用成功前，直接输出**完整原始响应体**，"
-        "不要接 `| python3 -c ...` 做字段过滤/压缩——那会把 4xx 错误信息过滤成 0 条记录，白白浪费两轮。\n"
-        "   - 收到 4xx 时，以响应 message 字段为准修参后立即重试：`Missing required parameter: location` 说明必须用 `location=北京`"
-        "（哪怕任务书/文档写的是 `city=北京`，也以服务端提示为准）；`Missing 'Authorization' header. Expected format: ...` 说明认证头必须按该格式"
-        "（如 `Authorization: Bearer <key>`）。修正后直接重试该接口，禁止重复发送与上一条完全相同的请求。\n"
-        "   - 解析JSON前先核对真实层级：对象不是记录数组，遍历dict得到的是字符串键。"
-        "依据原始响应或api_schema逐层取出列表，使用isinstance(records, list)并确认元素为dict后再统计。"
-        "字段名按响应逐字使用，不猜测近义名称；必须核对分页总量与实际取回数量。"
-        "AttributeError/JSONDecodeError属于解析故障，没有新401/400证据时不要修改已成功的认证或参数。\n"
-        "   - 首次得到正确响应时同时保留原文和结构（顶层keys、记录数组路径、首条字段、分页信息）；"
-        "数据短且完整时直接据此生成答案，避免额外写长统计脚本。数据大时先将原始响应存为沙盒临时JSON文件，"
-        "打印结构和精简统计；修复解析代码时重用该文件，不反复请求API。不能把解析失败当作0条记录。\n"
-        "   - 短脚本可用python3 -c；多行Python含单引号/注释时优先使用带引号的heredoc："
-        "python3 - <<'PY'\\n...Python代码...\\nPY（将\\n写成实际换行），避免外层shell单引号被内部撇号截断。"
-        "heredoc脚本已经占用stdin，不要同时通过管道把curl输出传给json.load(sys.stdin)；"
-        "改为先存文件再json.load(open(path))，或Python内使用urllib完成请求。\n"
-        "   - 工程修复/部署/启动类任务（含 check 等验证脚本）：读 `spec.md` → 运行验证脚本（如 `./check`）→ 若因 CRLF 报不可执行/权限错"
-        "（exitCode 126），先 `sed -i 's/\\r$//' <脚本>` 修复再运行 → 通过后提交任务书要求的签名 token。\n"
-        "3. 任务时限严格：每做完一步就规划下一步能否与之合并；一旦完成计算并确认最终答案，必须立即输出 final_answer 并结束，"
-        "不要重复验证、不要重读已读文件、不要追加探测。\n"
-        "4. 修复/部署类任务：每次修改文件后，下一回合必须立即复跑验证脚本（如 `./check`）确认结果；"
-        "一旦输出“全部通过”或 `TOKEN:`，必须立即输出 final_answer。剩余回合不足 3 时，禁止再做无验证输出的操作"
-        "（改配置、建文件、探测目录）。\n"
-        "5. 如果执行遇到错误，优先照做自动注入的 `api_diag:` 指令；没有时再自行阅读错误信息并针对性修正命令，"
-        "不要盲目整体重试，更不要原封不动重复上一条已经得到错误结果的命令。\n"
-        "6. 若剩余回合已极少（≤2 回合）且已拥有提交所需的关键数据，直接基于现有数据提交当前最佳答案——完成并提交永远优于超时无结果。\n\n"
-        "# 输出协议（重要！只能返回下面两种 JSON 之一，禁止任何其他文字）\n"
-        "A) 需要执行一条命令时：\n"
-        '{"action": "execute_command", "command": "<shell/python 指令>"}\n'
-        "B) 已经能确定最终答案时：\n"
-        '{"action": "final_answer", "answer": "<任务要求的答案字符串>"}\n\n'
-        "# 提交前强制自检（至关重要！输出 final_answer 之前必须逐项核对）\n"
-        "1. 答案内容必须严格来自任务书要求与 API/命令的真实计算结果，严禁编造、猜测、估算任何数字或字段值；数据不足时宁可先补查再提交。\n"
-        "2. 提交形式必须与任务书【提交形式/提交要求】完全一致：字段名、字段顺序、嵌套结构、类型逐一比对，不多字段、不少字段、不改名。\n"
-        "3. 数字/字符串类型必须严格区分：任务书要求数字的（如数量、计数）必须是数值，绝不能写成字符串（如 0 不能写 \"0\"）；年份、名称、类型等必须用字符串。\n"
-        "4. 注意字段语义：如实名/名称类字段（如 oldest_era 语义若为\"年代最早的遗产名称\"）提交的是对应对象的名字而非日期/年代数字。\n"
-        "5. 若任务要求\"全部/所有\"数据，必须先遍历完整数据（注意分页、limit 限制）再统计；只看到部分数据时不得用部分数据充当全部。\n"
-        "6. 提交前再次从历史/任务书中读取【提交形式】原文逐条比对，确认每个字段的含义、单位、类型后才可提交；不一致时第一时间修正。\n\n"
+        "   （`==` 后为空则用 `-maxdepth 8 -type f` 重新定位；读完后明确任务目标、接口、答案提交格式。）\n"
+        "2. 探测环境 → 获取资料/调用接口 → 计算汇总 → 得到最终答案。\n"
+        "   - HTTP 接口：首次成功前直接输出**完整原始响应体**，不要接 `python3 -c` 过滤（会把 4xx 错误滤成 0 条，浪费两轮）。\n"
+        "   - 4xx 时以 message 为准立即修正重试：`Missing required parameter: X` → 参数名用 `X`；"
+        "`Missing 'Authorization' header. Expected format: ...` → 按该格式改认证头；禁止原样重发。\n"
+        "   - 用 `python3 -c` 处理数据时保留关键输出：总数、首个样本、异常/错误字段。\n"
+        "   - 解析 JSON 前先输出结构，确认列表与对象类型；仅对列表中的对象调用 `.get`，可用 `isinstance(records, list)` 验证。\n"
+        "   - 多行 Python 优先使用带引号的 heredoc 写入脚本；注意 heredoc 会占用 stdin，若还要解析 curl 输出，先存文件再读取。\n"
+        "   - 提交前核对数字/字符串类型，上一任务的 token 或统计值只能作格式参考，不能复用原值。\n"
+        "   - 工程修复/部署类（含 check 脚本）：读 `spec.md` → 跑 `./check` → 若 exitCode 126（CRLF/权限），"
+        "先 `sed -i 's/\\r$//' <脚本>` 再跑 → 通过后提交任务书要求的签名 token。\n"
+        "3. 一旦确认最终答案必须立即输出 final_answer；不要重复验证、不要重读已读文件、不要追加探测。\n"
+        "4. 修复类任务每次改文件后，下一回合立即复跑 `./check` 确认；输出“全部通过”或 `TOKEN:` 后立即提交。"
+        "剩余回合不足 3 时禁止再做无验证输出的操作。\n"
+        "5. 执行出错优先照做自动注入的 `api_diag:` 指令；没有则读错误信息针对性修正，不要盲目整体重试。\n"
+        "6. 剩余回合 ≤2 且已有关键数据时，直接提交当前最佳答案——完成并提交优于超时无结果。\n\n"
+        "# 输出协议（只能返回下面两种 JSON 之一，禁止任何其他文字）\n"
+        'A) 需要执行命令：{"action": "execute_command", "command": "<shell/python 指令>"}\n'
+        'B) 已能确定答案：{"action": "final_answer", "answer": "<任务要求的答案字符串>"}\n\n'
+        "# 提交自检（输出 final_answer 之前逐项核对）\n"
+        "1. 答案只能来自任务书与 API/命令的真实计算结果，严禁编造、猜测、估算；数据不足宁可先补查再提交。\n"
+        "2. 提交形式与任务书【提交形式】完全一致：字段名、顺序、嵌套、类型逐一比对，"
+        "数字保持数字（0 不能写 \"0\"）；名称类字段（如 oldest_era）提交对应名字而非数值。\n"
+        "3. 若要求“全部/所有”，必须先遍历全量数据（注意分页、limit）再统计，禁止拿部分数据充当全部。\n"
+        "4. 提交前再次对照任务书【提交形式】原文确认；不一致第一时间修正。\n\n"
         "# 格式硬性要求\n"
-        "- 输出必须是单个、可被 json.loads 一次解析成功的 JSON 对象；不要输出代码块、解释、分析文字或 markdown。\n"
-        "- 最终答案（answer）必须与任务书要求的提交形式完全一致：若任务书要求提交字符串形式的 JSON，"
-        "则整个 JSON 字符串就是 answer 的值，不要改变字段名、顺序或类型，不要把数字写成字符串。\n"
-        "- 禁止对题目要求的 key、枚举值、字符串内容做改写、翻译或简化；答错比答慢更不可接受。\n"
-        "- 每条命令执行结果最长约 15 秒，命令要写得高效、单条尽量完成更多步骤（可用 `&&` 串联）。"
+        "- 输出必须是可被 json.loads 一次解析成功的单个 JSON 对象；不要代码块、解释、分析或 markdown。\n"
+        "- 禁止改写题目要求的 key、枚举值、字符串内容；答错比答慢更不可接受。\n"
+        "- 每条命令最长约 15 秒，优先用 `&&` 串联减少命令数。"
     )

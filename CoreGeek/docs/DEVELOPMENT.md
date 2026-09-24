@@ -1,6 +1,6 @@
 # 开发与维护文档
 
-更新日期：2026-09-23，版本0.4.2。当前接入用户提供的任务交互日志格式，见[任务日志](TASK_LOGGING.md)；0.4.1的失败任务修正见[开发记录](TASK_FAILURE_LEARNING.md)。
+更新日期：2026-09-24，版本0.4.3。当前整合用户新增 `temp/task_controller(1).py`、`temp/task_prompt(2).py`，见[任务模块接入](TASK_INTEGRATION.md)；保留0.4.2的[任务日志](TASK_LOGGING.md)与0.4.1的[失败任务修正](TASK_FAILURE_LEARNING.md)。
 
 ## 1. 设计目标与边界
 
@@ -137,7 +137,7 @@ flowchart LR
 
 ### 任务与新闻
 
-用户生成器在`task_prompt.py`，由`task_controller.SelfEvolveController`直接调用，SOP/Skill同时注入；状态存于`task_state.TaskAgentMemory`，通过GameMemory进入每队事务。`task_service.py`将Turn字段映射到用户控制器，再映射回ActionPlan/executeCmd；先处理旧任务结果再切换新题目，避免成功归档丢失。`llm_service.py`只登记和匹配task pending，将原始回复交给用户解析器；新闻流程仍独立。需要回防、死亡或失败退出时释放开拓者，同题目保持挂起直到官方状态变化；离开范围是否结束由官方反馈决定。TaskService的`defense_due=False`参数沿用。字段与阈值详见[任务接入文档](TASK_INTEGRATION.md)。
+用户生成器在`task_prompt.py`，由`task_controller.SelfEvolveController`直接调用；同型Skill优先于SOP、内置任务类别经验。状态存于`task_state.TaskAgentMemory`，通过GameMemory进入每队事务。`task_service.py`将Turn的金币与总分、反馈等字段映射到控制器，再映射回ActionPlan/executeCmd；先处理旧任务结果再切换新题目。提交时保存金币/总分基线，仅奖励增长确认成功经验；业务错误诊断和JSON结构仍由`task_evidence.py`在裁剪前提取。`llm_service.py`只登记和匹配task pending，将原始回复交给用户解析器；新闻流程仍独立。需要回防、死亡或失败退出时释放开拓者，同题目保持挂起直到官方状态变化；离开范围是否结束由官方反馈决定。TaskService的`defense_due=False`参数沿用。字段与阈值详见[任务接入文档](TASK_INTEGRATION.md)。
 
 开拓者接取任务时，`GameMemory.last_task_point`保留点位；下一轮以活跃任务或官方成功反馈确认后，将 `(接取日,x,y)` 记录到`task_points_attempted`。`Strategy.task`仅排除当天已经尝试的点；控制器失败冷却仅绑定原点位，不会阻止开拓者前往另一任务点。每日日照预算、黄昏回防与官方点位有效性仍决定能否实际完成两题。
 

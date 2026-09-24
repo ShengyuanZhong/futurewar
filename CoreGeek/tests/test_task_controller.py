@@ -63,22 +63,38 @@ class ControllerIntegrationTests(unittest.TestCase):
     def test_success_archived_after_phase_clear_and_reused_by_type(self):
         self.start()
         self.solve()
+        self.raw['teamOur']['totalScore'] += 10
         self.step(phaseTask='', lastRoundRoleActionResults={'502': True})
         self.assertTrue(self.agent.self_evolve_sop[self.type_key]['ok'])
         self.assertEqual(self.agent.self_evolve_sop[self.type_key]['steps'], ['fixture_read'])
         self.assertEqual(self.agent.self_evolve_skill[self.type_key]['question'], 'Read task_1_fixture.md')
         # A new accepted task can use the same type even when its filename changes.
         response = self.step(phaseTask='Read task_2_other.md')
-        self.assertIn('已知成功流程（SOP', response['prompt'])
         self.assertIn('同型任务已掌握', response['prompt'])
         self.assertIn('fixture_read', response['prompt'])
         self.assertEqual(self.agent.self_evolve_first_question, 'Read task_2_other.md')
 
-    def test_legal_submission_alone_does_not_archive_success(self):
+    def test_legal_submission_without_reward_archives_failure(self):
         self.start()
         self.solve()
         self.step(lastRoundRoleActionResults={'502': True})
-        self.assertNotIn(self.type_key, self.agent.self_evolve_sop)
+        self.assertFalse(self.agent.self_evolve_sop[self.type_key]['ok'])
+        self.assertNotIn(self.type_key, self.agent.self_evolve_skill)
+
+    def test_placeholder_answer_is_rejected_before_submission(self):
+        self.start()
+        response = self.step(llmResp='{"action":"final_answer","answer":"PLACEHOLDER_TOKEN"}')
+        self.assertNotEqual(response['roleCommandMap'].get('502', {}).get('action'), 'submitAnswer')
+        self.assertIn('placeholder_rejected', response['prompt'])
+
+    def test_category_experience_is_used_without_an_existing_sop(self):
+        prompt = build_self_evolve_prompt('Read the task', [], category='unknown-api')
+        self.assertIn('unknown-api', prompt)
+        self.assertIn('pagination.total_count', prompt)
+        preferred = build_self_evolve_prompt('Read the task', [], category='unknown-api',
+                                             skill_hint='KNOWN_SKILL')
+        self.assertIn('KNOWN_SKILL', preferred)
+        self.assertNotIn('pagination.total_count', preferred)
 
     def test_wrong_or_timeout_answer_never_overwrites_successful_sop(self):
         for code in (1, 2):
@@ -134,7 +150,7 @@ class ControllerIntegrationTests(unittest.TestCase):
         response = self.step(phaseTask='Read task_a.md')
         self.assertIn('限时约 10 回合', response['prompt'])
         response = self.step(roundNo=7)
-        self.assertIn('已用 6 回合', response['prompt'])
+        self.assertIn('已用 6，', response['prompt'])
 
     def test_failure_without_success_commands_is_available_next_attempt(self):
         self.start()
@@ -148,6 +164,7 @@ class ControllerIntegrationTests(unittest.TestCase):
     def test_task_state_does_not_leak_between_teams_or_new_games(self):
         self.start()
         self.solve()
+        self.raw['teamOur']['totalScore'] += 10
         self.step(phaseTask='', lastRoundRoleActionResults={'502': True})
         other = copy.deepcopy(self.raw)
         other['teamOur']['teamId'] = 'other'

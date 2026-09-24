@@ -20,7 +20,7 @@ class TaskPromptTests(unittest.TestCase):
         memory = self.memory(service, raw)
         self.assertEqual(memory.task_started, 1)
         self.assertEqual(memory.task_timeout_rounds, 12)
-        self.assertIn('已用 0 回合', prompt)
+        self.assertIn('已用 0，', prompt)
 
     def test_reject_duplicate_json_keys_nonfinite_and_invalid_unicode(self):
         for raw in ('{"action":"execute_command","action":"final_answer","answer":"x"}',

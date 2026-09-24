@@ -161,6 +161,7 @@ class Turn:
     action_results: dict[str, bool] = field(default_factory=dict)
     treasure_result: int = 0
     errors: tuple[dict[str, Any], ...] = ()
+    total_score: int = 0
 
     @classmethod
     def load(cls, payload: dict[str, Any]) -> "Turn":
@@ -188,7 +189,8 @@ class Turn:
                    str(news.get("officialNews") or ""), str(news.get("folkLegends") or ""),
                    prices("vendorShopList"), prices("weaponShopList"),
                    {str(k): v for k, v in (payload.get("lastRoundRoleActionResults") or {}).items()},
-                   int(payload.get("lastSummonTreasureResult") or 0), tuple(payload.get("errors") or ()))
+                   int(payload.get("lastSummonTreasureResult") or 0), tuple(payload.get("errors") or ()),
+                   int(team.get("totalScore") or 0))
         ids = [u.unit_id for u in turn.ours + turn.enemies] + [r.robot_id for r in turn.robots]
         if len(ids) != len(set(ids)):
             raise ValueError("unit IDs must be globally unique")

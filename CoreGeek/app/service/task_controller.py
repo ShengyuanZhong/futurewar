@@ -40,7 +40,12 @@ class SelfEvolveController:
         self.state.self_evolve_command_trace = []
         self.state._self_evolve_diags = set()
         self.state._self_evolve_fail_streak = 0
-        self.state.self_evolve_last_action = ActionType.NOTHING.value
+        # 清空遗留动作标记：否则下个任务 acceptTask 成功回合会被
+        # _done_by_result 误判为「提交成功」而重置任务，白丢首回合预算
+        # （pk-742941 nanjing 即因该延迟致 final_answer 落在超时回合、奖励丢失）
+        self.state.self_evolve_last_action = ""
+        # 清空提交奖励基线，防止跨任务残留误判
+        self.state._submit_baseline = None
         if cooldown:
             self.state.self_evolve_abandon_tick = getattr(self.state, "round_no", 0) + self.ABANDON_COOLDOWN
         else:
@@ -73,7 +78,6 @@ class SelfEvolveController:
     # ---------- 任务执行 ----------
 
     def _continue_agent(self, role) -> bool:
-        self._record_command_result()
         if self.state.phase_task:
             # 持续缓存任务描述与第一个问题，提交成功后 phaseTask 会被判题器清空，
             # 归档 SOP / Skill 需要依据这里记录的描述还原任务与首问
@@ -91,32 +95,114 @@ class SelfEvolveController:
         if self._done_by_result(role):
             return False
         if not self.state.phase_task:
+            # 判题器可能因任务超时先行清空 phaseTask（pk-737957 gamma 任务
+            # ./check 6/6 通过后恰逢 10 回合预算耗尽），上轮 LLM 已生成的
+            # final_answer 仍要尽力提交，避免已完成任务静默丢分。
+            # 超时后任务上下文已失效：遗留 execute_command 不再下发（引擎丢弃且
+            # 浪费一轮），改为先归档已探索经验再放弃，供同类后续任务复用
+            # （pk-737826 beta/gamma 连续两轮 t12 任务超时，探索经验随重置丢弃，
+            # 下个同类任务只能从零重探，10 回合预算内必然再次超时）。
+            if self._pending_final_answer() and self._handle_tool_response():
+                return True
+            if self.state.last_cmd_result:
+                # 超时前放行的最后一条命令结果刚返回（如 ./check 输出的 TOKEN，
+                # pk-744456 gamma 任务即因拦截后结果无门可入而静默失败）：
+                # 接入上下文并重发一次 prompt，给 LLM 最后一次基于真实结果
+                # 提交的机会；下轮 LLM 提交 final_answer 时由上方兜底分支接手。
+                self._handle_tool_response()
+                self._dispatch_prompt(role)
+                return True
+            self._archive_experience()
             self._reset_agent()
             return False
         if self._stalled_by_failed_cmds(role):
             return False
         self.state.self_evolve_steps += 1
+        if self._budget_blocks_cmd():
+            # 剩余 ≤1 回合：新命令全流程（执行+结果返回+提交）必然超出预算，
+            # 拒绝下发并强制本回合直接提交，避免 final_answer 落在预算外被丢弃
+            self.state.self_evolve_context.append(
+                "budget_forced: 回合预算已不足（剩余 ≤1 回合），新命令被拒绝执行，"
+                "请用当前已有数据直接提交 final_answer。"
+            )
+            self._dispatch_prompt(role)
+            return True
         if self._handle_tool_response():
             return True
         self._dispatch_prompt(role)
         return True
+
+    def _budget_blocks_cmd(self) -> bool:
+        """剩余回合已不足以走完「命令执行+结果返回+提交」全流程时，
+        拒绝下发新命令。命令每条约 2 回合且需预留 1 回合提交答案，
+        steps 递增后 ≥ timeout-1（剩余 ≤1）再发命令，final_answer
+        必然落在预算外（pk-743687 beijing 任务即因此丢奖励）。
+
+        例外：上下文最近一条命令结果是非零退出码（修复/验证流程中途失败，
+        如 ./check 的 CRLF 126）时放行最后一条命令作最后一搏——此时 LLM
+        尚无答案可提交，强制提交只会空转（pk-744456 gamma 任务即因此
+        在差一步拿 TOKEN 时静默失败）。"""
+        timeout = self._timeout_rounds()
+        if timeout <= 0:
+            return False
+        if self._elapsed_steps() < timeout - 1:
+            return False
+        action, payload = _parse_llm_response(self.state.llm_resp or "")
+        if action != "execute_command" or not payload:
+            return False
+        return not self._last_result_failed()
+
+    def _last_result_failed(self) -> bool:
+        """上下文最后一条命令结果是否为非零退出码（修复流程中途失败的信号）。
+
+        只看上下文（不含本轮 last_cmd_result）：结果在上一轮已接入上下文，
+        而本轮 last_cmd_result 是待处理的新结果，尚未入库。"""
+        for line in reversed(self.state.self_evolve_context):
+            if "[exitCode:" in line:
+                return not inspect_result(line.removeprefix('cmd_result: ')).ok
+        return False
+
+    def _elapsed_steps(self) -> int:
+        return max(0, self.state.round_no - self.state.self_evolve_started_round)
 
     def _stalled_by_failed_cmds(self, role) -> bool:
         """连续多次命令执行失败（沙盒不可用等），放弃当前任务避免空转"""
         cmd_result = self.state.last_cmd_result or ""
         if not cmd_result:
             return False
-        if not inspect_result(cmd_result).ok:
-            self.state._self_evolve_fail_streak = getattr(self.state, "_self_evolve_fail_streak", 0) + 1
-        else:
+        # 判定只看整体是否有成功退出码：exitCode 标记可能出现在多行输出任意位置，
+        # 首行常是命令自身输出文本，不能以其判定成败
+        if inspect_result(cmd_result).ok:
             self.state._self_evolve_fail_streak = 0
             return False
+        self.state._self_evolve_fail_streak = getattr(self.state, "_self_evolve_fail_streak", 0) + 1
         if self.state._self_evolve_fail_streak >= self.MAX_CONSECUTIVE_FAIL_CMD:
             self.state._self_evolve_fail_streak = 0
             self._archive_experience()
             self._reset_agent()
             return True
         return False
+
+    def _record_command_result(self):
+        """Persist complete command feedback before success/failure settlement."""
+        raw = self.state.last_cmd_result or ""
+        if not raw or getattr(self.state, "_result_recorded", False):
+            return
+        self.state._result_recorded = True
+        evidence = inspect_result(raw)
+        commands = [line[5:] for line in self.state.self_evolve_context if line.startswith('cmd: ')]
+        if commands:
+            self.state.self_evolve_command_trace.append({
+                'command': commands[-1], 'ok': evidence.ok, 'schema': evidence.schema})
+        self.state.self_evolve_context.append(f"cmd_result: {_clip_cmd_result(raw)}")
+        diag = _extract_api_diag(raw)
+        for item in merged_strings([diag] if diag else [], evidence.diagnostics):
+            if item not in self.state._self_evolve_diags:
+                self.state._self_evolve_diags.add(item)
+                self.state.self_evolve_context.append(f"api_diag: {item}")
+        if evidence.schema:
+            self.state.self_evolve_context.append(f'api_schema: {evidence.schema}')
+        self.state.response_prompt = None
 
     def _done_by_result(self, role) -> bool:
         result = self.state.last_round_action_results.get(role.id)
@@ -125,35 +211,86 @@ class SelfEvolveController:
             self._archive_experience()
             self._reset_agent()
             return True
-        if result is False or self._was_submitting():
+        if self._was_submitting() and (1 in err_codes or 2 in err_codes):
+            self._archive_experience()
+            self._reset_agent()
+            return True
+        if result is False:
             if 1 in err_codes or 2 in err_codes:  # 提交被判错：固化失败经验供下轮避坑
                 self._archive_experience()
                 self._reset_agent()
                 return True
-        # 官方 actionResults 仅表示动作合法；任务结束且没有判错才归档成功。
-        ended = not self.state.phase_task or self.state.phase_task != self.state.self_evolve_task_desc
-        if result is True and self._was_submitting() and ended and not err_codes:
-            self._archive_sop()
+            if 5 in err_codes:  # LLM 额度超限：本日无法继续，放弃
+                self._reset_agent()
+                return True
+        if result is True and self._was_submitting():
+            if self._submission_rewarded():
+                self._archive_sop()
+            else:
+                # 提交动作合法但未获得奖励：答案被判错或超时提交被拒，
+                # 按失败归档，避免错误答案与半成品命令序列污染同型 Skill
+                self._archive_experience()
             self._reset_agent()
             return True
         return False
 
+    def _submission_rewarded(self) -> bool:
+        """提交后是否真正获得奖励（gold/score 增量）。
+
+        判题器对 submitAnswer 动作总是返回结果合法（lastRoundRoleActionResults=true），
+        答案正确性只体现在奖励上：答案错误或超时提交被拒时资源不增加。
+        仅凭 result=True 归档会把失败提交误记为成功（污染同型 Skill）。
+        """
+        baseline = getattr(self.state, "_submit_baseline", None)
+        if baseline is None:
+            return False
+        return self.state.gold > baseline[0] or self.state.total_score > baseline[1]
+
     def _was_submitting(self) -> bool:
         return getattr(self.state, "self_evolve_last_action", "") == ActionType.SUBMIT_ANSWER.value
 
+    def _pending_final_answer(self) -> bool:
+        """上轮 LLM 遗留响应是否为可提交的 final_answer。
+
+        phaseTask 清空（任务超时）后仅允许提交答案：
+        execute_command 在无任务上下文中既无法执行也没有意义，不再下发。
+        """
+        llm_resp = self.state.llm_resp or ""
+        if llm_resp.startswith('"') and llm_resp.endswith('"'):
+            llm_resp = llm_resp[1:-1]
+        action, payload = _parse_llm_response(llm_resp)
+        if action != "final_answer" or not payload:
+            return False
+        # 明显伪造/占位符答案（PLACEHOLDER_TOKEN 等）直接提交必得 0 分
+        # （pk-745859 beta/gamma 两次提交均因此终结任务），不视为可提交答案
+        return not _is_placeholder_answer(payload)
+
     def _handle_tool_response(self) -> bool:
         llm_resp = self.state.llm_resp or ""
+        cmd_result = self.state.last_cmd_result or ""
         if llm_resp:
             if llm_resp.startswith('"') and llm_resp.endswith('"'):
                 llm_resp = llm_resp[1:-1]
             action, payload = _parse_llm_response(llm_resp)
             if action == "final_answer" and payload:
+                if _is_placeholder_answer(payload):
+                    # 明显伪造/占位符答案（如 PLACEHOLDER_TOKEN）：拒绝提交并
+                    # 注入上下文重发 prompt，给 LLM 机会基于真实命令结果补全
+                    # （pk-745859 beta/gamma 两次占位符提交均终结任务得 0 分）
+                    self.state.self_evolve_context.append(
+                        "placeholder_rejected: 上轮 final_answer 含占位符/伪造值"
+                        "（如 PLACEHOLDER_TOKEN），禁止提交；请依据已有命令结果"
+                        "提取真实答案重新提交，或继续执行命令获取数据。"
+                    )
+                    return False
                 self.state.self_evolve_context.append(f"llm_answer: {payload}")
                 role = self.state.our_pioneer
                 if role is not None:
                     role.desired_action = ActionType.SUBMIT_ANSWER.value
                     role.task_answer = payload
                     self.state.self_evolve_last_action = ActionType.SUBMIT_ANSWER.value
+                    # 记录提交时的资源基线：判题器次轮据此判定提交是否真正获得奖励
+                    self.state._submit_baseline = (self.state.gold, self.state.total_score)
                     return True
             if action == "execute_command" and payload:
                 self.state.response_execute_cmd = payload
@@ -164,21 +301,10 @@ class SelfEvolveController:
                 self.state.self_evolve_context.append(
                     "llm_parse_error: 上轮 LLM 输出无法解析，请严格按 JSON 协议返回。"
                 )
-        return False
-
-    def _record_command_result(self):
-        """Record feedback before terminal/failure checks; archive the last command too."""
-        cmd_result = self.state.last_cmd_result or ""
         if cmd_result and not getattr(self.state, "_result_recorded", False):
-            self.state._result_recorded = True
-            evidence = inspect_result(cmd_result)
-            commands = [line[5:] for line in self.state.self_evolve_context if line.startswith('cmd: ')]
-            if commands:
-                self.state.self_evolve_command_trace.append({
-                    'command': commands[-1], 'ok': evidence.ok, 'schema': evidence.schema})
             self.state.self_evolve_context.append(f"cmd_result: {_clip_cmd_result(cmd_result)}")
             diag = _extract_api_diag(cmd_result)
-            for diag in merged_strings([diag] if diag else [], evidence.diagnostics):
+            if diag:
                 diags = getattr(self.state, "_self_evolve_diags", None)
                 if diags is None:
                     diags = set()
@@ -186,19 +312,22 @@ class SelfEvolveController:
                 if diag not in diags:
                     diags.add(diag)
                     self.state.self_evolve_context.append(f"api_diag: {diag}")
-            if evidence.schema:
-                self.state.self_evolve_context.append(f'api_schema: {evidence.schema}')
             self.state.response_prompt = None
+        return False
 
     def _dispatch_prompt(self, role):
         from . import task_prompt
+        desc = self.state.self_evolve_task_desc or self.state.phase_task
         prompt = task_prompt.build_self_evolve_prompt(
-            self.state.phase_task,
+            desc,
             self.state.self_evolve_context,
-            steps_used=max(0, self.state.round_no - self.state.self_evolve_started_round),
+            steps_used=self._elapsed_steps(),
             timeout_rounds=self._timeout_rounds(),
             sop_hint=self._sop_hint(),
             skill_hint=self._skill_hint(),
+            category=self._task_category(
+                f"{desc}\n" + "\n".join(self.state.self_evolve_context)
+            ),
         )
         self.state.response_prompt = prompt
         self.state.self_evolve_last_action = ActionType.NOTHING.value
@@ -270,8 +399,23 @@ class SelfEvolveController:
         return segs[-1] if segs else None
 
     def _extract_trace(self):
-        """只保留没有进程/业务错误的步骤；退出码0不能证明HTTP请求成功。"""
-        steps, _, answer, _ = self._extract_experience()
+        """从上下文提取成功路径：仅保留执行成功（[exitCode:0]）的命令 + 最终提交答案"""
+        steps = []
+        answer = None
+        pending_cmd = None
+        for line in self.state.self_evolve_context:
+            if line.startswith("cmd: "):
+                pending_cmd = line[len("cmd: "):]
+            elif line.startswith("cmd_result: ") and pending_cmd is not None:
+                result = line[len("cmd_result: "):]
+                if inspect_result(result).ok:
+                    steps.append(pending_cmd)
+                pending_cmd = None
+            elif line.startswith("llm_answer: ") and answer is None:
+                answer = line[len("llm_answer: "):]
+        trace = getattr(self.state, 'self_evolve_command_trace', [])
+        if trace:
+            steps = [item['command'] for item in trace if item['ok']]
         return steps, answer
 
     def _extract_experience(self):
@@ -294,15 +438,10 @@ class SelfEvolveController:
                 answer = line[len("llm_answer: "):]
         trace = getattr(self.state, 'self_evolve_command_trace', [])
         if trace:
-            # These statuses were computed before output clipping, not inferred from a fragment.
-            success_steps = [entry['command'] for entry in trace if entry['ok']]
-            fail_steps = [entry['command'] for entry in trace if not entry['ok']]
+            success_steps = [item['command'] for item in trace if item['ok']]
+            fail_steps = [item['command'] for item in trace if not item['ok']]
         diags = sorted(getattr(self.state, "_self_evolve_diags", None) or [])
         return success_steps, fail_steps, answer, diags
-
-    def _observed_schemas(self):
-        return merged_strings([item.get('schema', '') for item in
-                              getattr(self.state, 'self_evolve_command_trace', []) if item['ok']], limit=4)
 
     def _archive_experience(self):
         """任务失败/放弃时，把已探索到的信息固化进经验库，方便后续同类任务继续探索。
@@ -322,7 +461,6 @@ class SelfEvolveController:
             "steps": steps,
             "fail_steps": fail_steps[:10],
             "diags": diags[:10],
-            "schemas": self._observed_schemas(),
             "answer": (answer or "")[:500],
             "ok": False,
         }
@@ -341,7 +479,6 @@ class SelfEvolveController:
         for k in keys:
             existing = self.state.self_evolve_sop.get(k)
             if existing is not None and existing.get("ok"):
-                # A later failed task can add lessons without replacing the proven solution.
                 updates = {}
                 for field in ('fail_steps', 'diags'):
                     if entry.get(field):
@@ -350,6 +487,10 @@ class SelfEvolveController:
                     self.state.self_evolve_sop[k] = {**existing, **updates}
                 continue
             self.state.self_evolve_sop[k] = entry
+
+    def _observed_schemas(self):
+        return merged_strings([item.get('schema', '') for item in
+                               self.state.self_evolve_command_trace if item['ok']], limit=4)
 
     def _archive_sop(self):
         """任务提交成功后，把验证过的命令序列固化进同局可复用 SOP 库。
@@ -428,9 +569,40 @@ class SelfEvolveController:
             lines.append(f"首次触达该类型时的任务描述：{question}")
         if skill.get("answer"):
             lines.append(f"上次成功提交答案参考：{skill['answer']}")
-        lines.append(f"上次成功的关键命令序列（{len(skill['steps'])} 条，按当前题目调整参数）：\n{steps}")
-        lines.append('先读当前任务要求；同服务的已验证认证/参数/结构可复用，城市、路径、配置值和答案必须重新核对。')
-        return "\n".join(lines)
+        lines.append(f"上次成功的关键命令序列（{len(skill['steps'])} 条，顺序执行）：\n{steps}")
+        sop = self.state.self_evolve_sop.get(type_key, {})
+        if sop.get('diags'):
+            lines.append('已知接口/认证要求：\n' + '\n'.join(f"  - {item}" for item in sop['diags']))
+        if sop.get('schemas'):
+            lines.append('已验证响应字段结构：\n' + '\n'.join(sop['schemas']))
+        if sop.get('fail_steps'):
+            lines.append('以下命令曾失败，不要原样执行：\n' +
+                         '\n'.join(f"  - {item}" for item in sop['fail_steps'][:5]))
+        lines.append('按当前任务重新核对路径、参数与答案，不要复用上次的答案值。')
+        return "\n".join(lines) + self._budget_hint()
+
+    def _budget_hint(self) -> str:
+        """命中经验时附带回合预算提醒，让 LLM 在既定预算内安排剩余步骤"""
+        timeout = self._timeout_rounds()
+        if timeout <= 0:
+            return ""
+        used = self._elapsed_steps()
+        remaining = max(timeout - used, 0)
+        if remaining <= 2:
+            # 剩 2 回合时再执行命令，其结果返回后仅剩 0 回合提交答案，
+            # final_answer 必然落在预算外（pk-743687 beijing 即因此丢奖励）
+            return (
+                f"\n（预算提醒：本次任务限时 {timeout} 回合，已用 {used}，"
+                f"只剩 {remaining} 回合，已不足以再执行命令"
+                f"（每条约 2 回合，需预留 1 回合提交答案）："
+                f"本回合必须直接提交 final_answer，不要再执行任何命令。）"
+            )
+        cmds = (remaining - 1) // 2  # 每条命令约 2 回合（执行+结果返回），预留 1 回合提交
+        return (
+            f"\n（预算提醒：本次任务限时 {timeout} 回合，已用 {used}，"
+            f"剩约 {remaining} 回合，≈ 还够 {cmds} 条命令"
+            f"（每条约 2 回合，需预留 1 回合提交答案）。）"
+        )
 
     def _sop_hint(self):
         """新启动任务时，若命中已归档经验，返回可利用的提示文本。
@@ -462,7 +634,7 @@ class SelfEvolveController:
             return None
         steps = entry.get("steps") or []
         diags = entry.get("diags") or []
-        if not steps and not diags and not entry.get("fail_steps"):
+        if not steps and not diags:
             return None
         steps_block = "\n".join(f"  {i + 1}. {cmd}" for i, cmd in enumerate(steps))
         if entry.get("ok"):
@@ -470,13 +642,10 @@ class SelfEvolveController:
             if entry.get("answer"):
                 tip = f"\n  最终提交答案参考：{entry['answer']}"
             return (
-                "# 已知成功流程（SOP，复用方法并适配当前任务，不能直接抄答案）\n"
-                f"历史成功步骤（{len(steps)} 条）：\n{steps_block}{tip}\n"
-                "先读当前任务，替换城市、工作区、文件名、配置值等变量；历史答案只用于核对提交结构。"
-                "若当前任务明确同一服务/接口，沿用已验证的认证与参数，不重复读取相同旧文档，"
-                "不重试已否定的认证头和参数；只在当前响应出现新证据时更新。\n"
-                + self._evidence_hint(entry)
-            )
+                "# 已知成功流程（SOP，优先照做，但是不可以直接抄答案返回）\n"
+                f"该任务已有验证成功的固定流程（关键命令 {len(steps)} 条），"
+                f"请直接按以下顺序执行，不要重复探索、不要调整步骤：\n{steps_block}{tip}"
+            ) + self._budget_hint()
         lines = [
             "# 已探索经验（上次任务未完成，仅供继续探索参考，勿照搬流程）",
             "该同类任务上次未能完成，以下探索结果可减少重复尝试：",
@@ -490,21 +659,7 @@ class SelfEvolveController:
             lines.append(f"已知执行失败的命令（不要再原样重试）：\n{fails}")
         if entry.get("answer"):
             lines.append(f"上次提交的答案已被判定错误，仅作参考，不要直接复用：{entry['answer']}")
-        if entry.get('schemas'):
-            lines.append('已观察的JSON结构（需核对当前响应）：\n' + '\n'.join(entry['schemas']))
         return "\n".join(lines)
-
-    @staticmethod
-    def _evidence_hint(entry):
-        lines = []
-        if entry.get('schemas'):
-            lines.append('已观察的JSON结构（path为逐层字段路径，字段名按此核对，勿猜别名）：\n'
-                         + '\n'.join(entry['schemas']))
-        if entry.get('diags'):
-            lines.append('已有错误纠正与避坑信息：\n' + '\n'.join(entry['diags']))
-        if entry.get('fail_steps'):
-            lines.append('以下命令已观察到失败，不要原样执行：\n' + '\n'.join(entry['fail_steps'][:5]))
-        return '\n'.join(lines)
 
 
 class TreasureController:
@@ -687,6 +842,24 @@ def _parse_llm_response(resp: str):
         cmd = m.group(1).strip()
         return ("execute_command", cmd) if cmd else (None, None)
     return (None, None)
+
+
+_PLACEHOLDER_RE = re.compile(
+    r"PLACEHOLDER(?:_?TOKEN)?|<PLACEHOLDER>|待填写|占位符",
+    re.IGNORECASE,
+)
+
+
+def _is_placeholder_answer(answer: str) -> bool:
+    """明显伪造/占位符答案判定：命中即拒绝提交。
+
+    LLM 在拿不到真实数据时（./check 未跑成功、预算将尽）会输出
+    PLACEHOLDER_TOKEN 之类占位符凑数，直接提交必得 0 分
+    （pk-745859 beta/gamma 两次提交均因此终结任务）。
+    """
+    if not answer:
+        return True
+    return _PLACEHOLDER_RE.search(answer) is not None
 
 
 def _clip_cmd_result(cmd_result: str, head: int = 1600, tail: int = 800) -> str:

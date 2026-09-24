@@ -52,6 +52,7 @@ class TaskService:
             position = agent.accepted_task['task_position']
             tasks[f'{position[0]},{position[1]}'] = SimpleNamespace(**agent.accepted_task)
         state = SimpleNamespace(**vars(agent), round_no=turn.round_no, phase_task=turn.phase_task,
+            gold=turn.gold, total_score=turn.total_score,
             player_tasks=tasks, our_pioneer=role,
             last_round_action_results=({int(k): v for k, v in turn.action_results.items()
                                         if str(k).lstrip('-').isdigit()} if consecutive else {}),
@@ -89,7 +90,7 @@ class TaskService:
             controller._reset_agent(cooldown=False)
             state.self_evolve_task_desc = turn.phase_task
             state.self_evolve_first_question = turn.phase_task
-            state.self_evolve_started_round = memory.task_started
+            state.self_evolve_started_round = memory.task_started or turn.round_no
             state.execution_round = 0
             state.suspended = False
             if state.accepted_task:
