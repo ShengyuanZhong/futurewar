@@ -1,8 +1,10 @@
 # CoreGeek 参赛 Agent
 
-当前程序封版为 v1.0：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后两翼六墙升2级。基地不升级。全部达标后双工人墙内维修，白天轮流批量买包，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛 v2.0 规则尚未实现，后续开发参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
+当前程序版本为 v1.0.1：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后两翼六墙升2级。基地不升级。全部达标后双工人墙内维修，白天轮流批量买包，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛 v2.0 规则尚未实现，后续开发参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
 
 此目录可作为参赛程序目录提交。沿用示例的 `main3.py`、`src/agent/protocol.py`、`grid.py`、`brain.py`；HTTP 处理与跨回合协作放在 `app`。新增代码无第三方运行依赖。
+
+v1.0.1 增加有效施工/采矿目标保持、筹石施工并行、日照不足时继续采矿、单人升级券采购与让行失败回退，详见[工人效率修复](docs/WORKER_EFFICIENCY.md)。
 
 项目的完整架构、对象生命周期、字段映射、函数参数/返回值及扩展示例见 [根目录README](../README.md)。本页保留CoreGeek目录内的运行命令，并在后半部分提供按源码文件定位的速查表。
 
@@ -71,9 +73,9 @@ python main3.py 8080 --config config.local.json
 
 ```powershell
 python run_tests.py
-python tools/smoke_server.py --output ../reports/http-smoke-v1.0.json
-python tools/replay.py ../request.txt --output ../reports/sample-response-v1.0.json
-python tools/validate.py --cases 20 --output ../reports/validation-v1.0.json
+python tools/smoke_server.py --output ../reports/http-smoke-v1.0.1.json
+python tools/replay.py ../request.txt --output ../reports/sample-response-v1.0.1.json
+python tools/validate.py --cases 20 --output ../reports/validation-v1.0.1.json
 ```
 
 回放输入支持单个 JSON、JSON 数组、每行一份观测的 JSONL。单个队伍按回合递增；同回合相同内容返回缓存，不同内容拒绝，以免状态被重复推进。

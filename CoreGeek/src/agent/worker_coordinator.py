@@ -33,10 +33,28 @@ class WorkerCoordinator:
         return {job.get('goal') for uid,job in self.memory.worker_tasks.items()
                 if uid != role.unit_id and job.get('round',0) >= self.turn.round_no-1}
 
-    def target_owned(self, role, target):
-        return any(uid != role.unit_id and job.get('target') == target
+    def target_owned(self, role, target, kind=None):
+        eligible = {w.unit_id for w in self.turn.workers()
+                    if kind != 'build:wall' or 'stone' in w.backpack}
+        return any(uid != role.unit_id and uid in eligible and job.get('target') == target
+                   and (kind is None or job.get('kind') == kind)
                    and job.get('round',0) >= self.turn.round_no-1
                    for uid,job in self.memory.worker_tasks.items())
+
+    def purchase_owned(self, role, name):
+        """Keep a single courier for each outstanding bulk purchase."""
+        for worker in self.turn.workers():
+            if worker.unit_id == role.unit_id or worker.backpack_full:
+                continue
+            if not self.turn.is_day and self.s.guard.is_guard(worker):
+                continue
+            job = self.job(worker)
+            if (job.get('kind') == 'buy_upgrade' and job.get('purchase_item') == name
+                    and job.get('round', 0) >= self.turn.round_no-1
+                    and (worker.unit_id not in self.plan.used or
+                         self.plan.commands.get(str(worker.unit_id), {}).get('action') in ('move', 'buy'))):
+                return True
+        return False
 
     def hold_for_yield(self, role):
         job = self.job(role)
@@ -71,28 +89,33 @@ class WorkerCoordinator:
                 or (goal is not None and route.exposure.get(goal,0) > min((route.exposure.get(p,10**9) for p in goals),default=0))):
             goal = route.nearest(goals)
         if goal is not None and (allow_risk or self.turn.is_day or route.exposure.get(goal,0) == 0):
-            self.assign(role,kind,target,goal,role.pos != goal)
             if role.pos == goal:
+                self.assign(role,kind,target,goal)
                 return False
             step = route.step({goal})
             if step is not None and self.plan.add(role.unit_id,move_command(step)):
+                self.assign(role,kind,target,goal,True)
                 return True
         # A relaxed route is diagnostic only. Never step into the blocker's cell.
         ignore = frozenset(w.unit_id for w in self.turn.workers() if w.unit_id != role.unit_id)
         relaxed = Routes(self.turn,role,self.reserved(),self.s.danger,allowed,ignore)
         goal = relaxed.nearest(goals)
-        self.assign(role,kind,target,goal,True)
         if goal is None or (not allow_risk and not self.turn.is_day and relaxed.exposure[goal] > 0):
             return False
         step = relaxed.step({goal})
         blocker = next((w for w in self.turn.workers() if w.pos == step and w.unit_id != role.unit_id),None)
         if blocker:
-            self.yield_blocker(role,blocker,goal)
-            # Reserve this worker's turn while the blocker moves aside.
-            self.plan.used.add(role.unit_id)
-            return True
+            command = self.plan.commands.get(str(blocker.unit_id), {})
+            if self.yield_blocker(role,blocker,goal) or command.get('action') == 'move':
+                # Wait only when the blocker really has a departure planned.
+                self.assign(role,kind,target,goal)
+                self.plan.used.add(role.unit_id)
+                return True
+            return False
         if step is not None and step not in self.turn.blocked(role) and step not in self.plan.reserved:
-            return self.plan.add(role.unit_id,move_command(step))
+            if self.plan.add(role.unit_id,move_command(step)):
+                self.assign(role,kind,target,goal,True)
+                return True
         return False
 
     def yield_blocker(self, requester, blocker, goal):

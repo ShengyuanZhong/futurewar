@@ -2,11 +2,13 @@
 
 基于本目录《未来战争》v1.0 任务书、接口文档和 `DEVELOPMENT_RULES.md` 实现的参赛 HTTP Agent。保留 CoreGeek 的 `main3.py → src/agent` 基础结构，新增 `CoreGeek/app` 应用层。运行仅依赖 Python 标准库，Python 3.10 及以上。
 
-当前程序封版为 `v1.0`，基于用户确认的v0.4基准，版本声明见 [CoreGeek/pyproject.toml](CoreGeek/pyproject.toml)。开局仍为三火箭→采石→U形墙，随后集中升满一台火箭；第二天起依次强化正中两墙3级、第二台火箭2级、正面其余四墙2→3级、所有火箭3级，最后把两翼六墙升2级；不升级基地。全部目标达成后，两名工人全天墙内维修，白天轮流采购，后续金币用于修复包。阈值仍为严格低于30%。详细坐标、镜像、购买规则和关键函数见[建筑维护](CoreGeek/docs/MAINTENANCE.md)。沿用工人独立任务、让行、城墙掩护与动态备货，见[工人协作](CoreGeek/docs/WORKER_COORDINATION.md)。沿用昼夜统一工人经济流程，夜间可继续采购与配送升级券，维修工可在内侧兼顾升级，详见[昼夜统一调度](CoreGeek/docs/WORKER_SCHEDULE.md)。沿用根据log1/log2统一寻路与建筑位清理的预留集合，修复待建/缺墙位置造成的往返循环，详见[日志定位与修复](CoreGeek/docs/WORKER_PATH_FIX.md)。v0.4基准已[归档](reports/BASELINE-v0.4.md)。0.4.1根据teamA(2)失败记录修正任务经验：过滤退出码0的业务/脚本失败、保留真实JSON层级及字段、补充解析/引号诊断并压缩短任务步骤；详见[失败任务修正](CoreGeek/docs/TASK_FAILURE_LEARNING.md)。战斗和工人策略沿用基准。0.4.2接入用户提供的任务交互日志格式，见[日志开发文档](CoreGeek/docs/TASK_LOGGING.md)。0.4.3整合新版任务控制器与提示词，包含分类经验、临期预算、占位答案拦截和按奖励增量判定成功；双任务点调度沿用上一版，详见[任务模块接入](CoreGeek/docs/TASK_INTEGRATION.md)。
+当前程序版本为 `v1.0.1`，基于用户确认的v0.4基准，版本声明见 [CoreGeek/pyproject.toml](CoreGeek/pyproject.toml)。开局仍为三火箭→采石→U形墙，随后集中升满一台火箭；第二天起依次强化正中两墙3级、第二台火箭2级、正面其余四墙2→3级、所有火箭3级，最后把两翼六墙升2级；不升级基地。全部目标达成后，两名工人全天墙内维修，白天轮流采购，后续金币用于修复包。阈值仍为严格低于30%。详细坐标、镜像、购买规则和关键函数见[建筑维护](CoreGeek/docs/MAINTENANCE.md)。沿用工人独立任务、让行、城墙掩护与动态备货，见[工人协作](CoreGeek/docs/WORKER_COORDINATION.md)。沿用昼夜统一工人经济流程，夜间可继续采购与配送升级券，维修工可在内侧兼顾升级，详见[昼夜统一调度](CoreGeek/docs/WORKER_SCHEDULE.md)。沿用根据log1/log2统一寻路与建筑位清理的预留集合，修复待建/缺墙位置造成的往返循环，详见[日志定位与修复](CoreGeek/docs/WORKER_PATH_FIX.md)。v0.4基准已[归档](reports/BASELINE-v0.4.md)。0.4.1根据teamA(2)失败记录修正任务经验：过滤退出码0的业务/脚本失败、保留真实JSON层级及字段、补充解析/引号诊断并压缩短任务步骤；详见[失败任务修正](CoreGeek/docs/TASK_FAILURE_LEARNING.md)。战斗和工人策略沿用基准。0.4.2接入用户提供的任务交互日志格式，见[日志开发文档](CoreGeek/docs/TASK_LOGGING.md)。0.4.3整合新版任务控制器与提示词，包含分类经验、临期预算、占位答案拦截和按奖励增量判定成功；双任务点调度沿用上一版，详见[任务模块接入](CoreGeek/docs/TASK_INTEGRATION.md)。
 
-已进入32强。用户提供的 [32进16需求变更](32_docs/2026云核心网第十届编程大赛-32进16-需求变更.md)、[v2.0任务书](32_docs/任务书.md)、[v2.0接口文档](32_docs/接口文档.md)及[新版报文样例](32_docs/request.txt)是**后续复赛开发**的参照，优先于根目录初赛 v1.0 文档中的冲突条款。当前 v1.0 是变更前代码的封版，尚未实现捣乱鬼、可控机器人和小车等复赛功能；来源顺序与适配范围见[复赛规则接入索引](CoreGeek/docs/ROUND_OF_32_RULES.md)，封版证据见[v1.0基准记录](reports/BASELINE-v1.0.md)。
+已进入32强。用户提供的 [32进16需求变更](32_docs/2026云核心网第十届编程大赛-32进16-需求变更.md)、[v2.0任务书](32_docs/任务书.md)、[v2.0接口文档](32_docs/接口文档.md)及[新版报文样例](32_docs/request.txt)是**后续复赛开发**的参照，优先于根目录初赛 v1.0 文档中的冲突条款。v1.0 是变更前代码的封版，尚未实现捣乱鬼、可控机器人和小车等复赛功能；来源顺序与适配范围见[复赛规则接入索引](CoreGeek/docs/ROUND_OF_32_RULES.md)，封版证据见[v1.0基准记录](reports/BASELINE-v1.0.md)。
 
 ## 阅读导航
+
+v1.0.1 优化两名工人的行程：有效矿点/墙位保持、采石与施工并行、临近入夜不发起无法完成的施工、让行失败后尝试其它工作、同种升级券只安排一人采购。原因、函数与状态字段见[工人效率修复](CoreGeek/docs/WORKER_EFFICIENCY.md)。v1.0 封版记录保留，复赛新增功能仍按既有适配索引逐项推进。
 
 - [快速开始](#快速开始)：启动服务、检查入口。
 - [目录与模块职责](#project-layout)：完整文件树、各层边界。
@@ -56,6 +58,8 @@ bash run.sh 8080
 | [任务流程优化](CoreGeek/docs/TASK_OPTIMIZATION.md) | 新版控制器来源、接入范围及验证入口 |
 | [任务模块接入](CoreGeek/docs/TASK_INTEGRATION.md) | 新版控制器、SOP/Skill、状态与函数参数、预算和Postman逐轮调试 |
 | [复赛规则接入索引](CoreGeek/docs/ROUND_OF_32_RULES.md) | `32_docs/` 的来源优先级、关键变更、受影响模块与未实现范围 |
+| [工人效率修复](CoreGeek/docs/WORKER_EFFICIENCY.md) | v1.0.1 的目标保持、施工/采矿分工、日照截止和单人采购 |
+| [v1.0.1验证报告](reports/VALIDATION-v1.0.1.md) | 本次工人优化的本地回归、合成观测及HTTP证据 |
 | [v1.0基准记录](reports/BASELINE-v1.0.md) | 32强阶段封版源码、测试与复赛兼容边界 |
 | [实战日志往返修复](CoreGeek/docs/WORKER_PATH_FIX.md) | log1/log2证据、统一路径预留、重建场景与诊断字段 |
 | [昼夜统一调度](CoreGeek/docs/WORKER_SCHEDULE.md) | 跨昼夜任务连续、夜间升级/采购、维修岗位限制与函数参数 |
@@ -68,9 +72,9 @@ bash run.sh 8080
 
 ```powershell
 python CoreGeek/run_tests.py
-python CoreGeek/tools/smoke_server.py --output reports/http-smoke-v1.0.json
-python CoreGeek/tools/replay.py request.txt --output reports/sample-response-v1.0.json
-python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v1.0.json
+python CoreGeek/tools/smoke_server.py --output reports/http-smoke-v1.0.1.json
+python CoreGeek/tools/replay.py request.txt --output reports/sample-response-v1.0.1.json
+python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v1.0.1.json
 ```
 
 `replay.py` 只计算响应，不执行响应中的沙盒命令或 LLM 请求。验证脚本生成的压力结果是合成观测检查，不是比赛模拟、官方难度或胜率。
@@ -94,9 +98,9 @@ futurewar/
 ├── reports/
 │   ├── VALIDATION.md                 # 人类可读的历史验证报告
 │   ├── BASELINE-v1.0.md              # 当前程序封版与复赛适配边界
-│   ├── validation-v1.0.json          # 封版测试、压力、环境与源码哈希
-│   ├── http-smoke-v1.0.json          # 封版真实进程HTTP验证
-│   ├── sample-response-v1.0.json     # 封版对初赛样例的响应
+│   ├── validation-v1.0.1.json          # 封版测试、压力、环境与源码哈希
+│   ├── http-smoke-v1.0.1.json          # 封版真实进程HTTP验证
+│   ├── sample-response-v1.0.1.json     # 封版对初赛样例的响应
 │   ├── validation.json               # 测试/压力结果、环境、源码和规则文件SHA256
 │   ├── http-smoke.json               # 实际启动进程后的HTTP检查结果
 │   └── sample-response.json          # 原请求样例生成的离线响应
@@ -700,7 +704,7 @@ Strategy.run() -> None
 | `opening_stage()` | 无 | 返回`towers/stockpile/walls/complete/unconfigured`；只根据观测确认建筑完成 |
 | `missing_walls()` | 无 | 当前自定义/默认墙位中尚未存在存活己方墙的位置列表 |
 | `stone_targets()` | 无 | 工人ID→本批所需石头数；优先分配已有石头，再按剩余容量均摊缺口 |
-| `opening_worker(role)` | 工人 | `bool`；开局阶段接管角色，即使本轮只能等待也返回True；完成/无配置时False |
+| `opening_worker(role)` | 工人 | `bool`；满足自身石头配额即可施工，与同伴采石并行；无施工任务或无可达石矿时尝试收入采矿；完成/无配置时False |
 | `night_worker(role)` | 工人 | 返回None；兼容入口，仅调用run_worker，不再提供独立夜间采矿流程 |
 | `clear_build_cell(role)` | 当前角色 | `bool`；角色占用规划建筑格，或工人占用操控格时，尝试移开一格 |
 | `control_position(role)` | 开拓者 | 返回可达且覆盖最多现有炮的Pos，优先既有共同站位；无可达站位为None |
@@ -709,7 +713,7 @@ Strategy.run() -> None
 | `operate_weapons(role)` | 开拓者 | `bool`；夜间从相邻、冷却0、有目标的炮中选一座发射；否则移动或等待 |
 | `consume(role, allow_travel=True, allowed=None)` | 角色、是否允许为使用建筑物品而行走、可选巡护范围 | 依次考虑药剂、夜间法宝/炸弹、召唤令，再按统一阶段用券；按中央/外围/两翼阶段，组内前列与残血优先，升级优先于已有修复包 |
 | `worker(role)` | 工人 | 返回None；昼夜统一经济流程（建造仅白天）：补缺墙/筹石 → 商店旁补齐当前券 → 用券 → 补炮 → 卖矿（保护墙材）→ 买券 → 采矿 |
-| `build_wall(role)` | 工人 | `bool`；白天选择缺失墙位并检查通路，建造或前往其邻格；夜间False |
+| `build_wall(role)` | 工人 | `bool`；白天保留自己有效的墙位，避开同伴任务并检查通路；路径步数+建造1轮超过剩余日照时不启动行程；夜间False |
 | `wall_keeps_exit(role, target)` | 工人、待建墙坐标 | `bool`；近处真正建墙前检查小贩/本队任务点路线及开拓者操控格通路 |
 | `build_weapon(role)` | 工人 | `bool`；白天在规划炮位与当前建造区域的交集按loadout缺口建造或靠近；夜间False |
 | `sell(role, keep_stone=False)` | 角色、是否保留石头 | `bool`；按持有量×收购价选矿种；keep_stone=True时不出售石头，适用于开局墙材保护 |
@@ -723,11 +727,11 @@ Strategy.run() -> None
 
 几个便于调参和排查的计算细节：
 
-- 采矿评分当前为`value / (cost + 2)`；正常value来自收购清单，缺建墙石头时只考虑石矿并用1作为value。不是完整长期收益优化器。
+- 已开始的有效采矿目标优先保留；新目标再按是否被同伴使用及`value / (cost + 2)`排序。正常value来自收购清单，筹石时用1；没有可达石矿则允许暂采收入矿。
 - 不在小贩旁时，出售通常要求满背包或可售矿石达到`sell_batch`；已在小贩旁可直接出售少量库存。
 - 有可用武器区时，买券前预留`(3 - tower_count) × 25`金币；同轮卖矿不会增加该预算。
 - 开局75金币优先保留给三座火箭。两个工人每人每轮只能造一座，初始至多同时造两座；第三座随后补齐，距离会增加移动轮数。
-- `stockpile`阶段按配置的缺失墙数筹石，每墙一石；工人合计容量不足时分批。只要模板仍缺墙就保护墙材，包含开局完成后的毁墙补建，不按普通卖矿阈值售出。
+- `stockpile`阶段按缺失墙数筹石，每墙一石；各工人完成自己的配额后可以独立施工。同种待购物品由一名采购工人保持行程。只要模板仍缺墙就保护墙材，不按普通卖矿阈值售出。
 - 回防条件只用于开拓者：有炮且夜晚，或`daylight_left <= 到操控站位的实际路径成本 + return_margin`。普通采矿工不黄昏回防；第三天起维修工另按到墙内通路的成本提前返岗。
 - 接任务预算为“前往路径成本 + 任务timeout（缺省15）+ 任务点至操控格的切比雪夫距离 + return_margin”。返程是估计；仍在任务中但已到回防时间时让出开拓者。
 - 每轮只由开拓者操控一座炮；直接读取`cooldown==0`。按发射后3轮空窗，理想共同站位下为A→B→C→空→A；无目标或移动会额外消耗轮次。
@@ -891,10 +895,10 @@ if step is not None:
 
 ```powershell
 python CoreGeek/run_tests.py
-python CoreGeek/tools/replay.py request.txt --output reports/sample-response-v1.0.json
+python CoreGeek/tools/replay.py request.txt --output reports/sample-response-v1.0.1.json
 python CoreGeek/tools/replay.py observations.jsonl --output reports/replayed-responses.json --config CoreGeek/config.local.json
-python CoreGeek/tools/smoke_server.py --output reports/http-smoke-v1.0.json
-python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v1.0.json
+python CoreGeek/tools/smoke_server.py --output reports/http-smoke-v1.0.1.json
+python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v1.0.1.json
 ```
 
 上述JSONL命令需要先准备`observations.jsonl`。工具会覆盖指定的同名输出；新版本应另取报告文件名，保留历史证据。`validate.py`不会自动重写人工说明，修改代码后需另存对应版本的说明。本版压力观测同时覆盖三火箭和混合旧炮，增加“仅开拓者攻击”和输入冷却为0的断言。
@@ -912,7 +916,7 @@ python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v1.0.js
 | `test_http_config.py` | HTTP响应/错误、请求上限、配置文件检查 | 启动入口、网络层、配置变化 |
 | `fixtures.py` | 统一合成数据构造，布局专供测试 | 不能当官方地图坐标或规则来源 |
 
-v1.0封版回归记录见[基准报告](reports/BASELINE-v1.0.md)；v0.4.3报告记录222个测试通过、80份合成观测检查通过，见[历史验证报告](reports/VALIDATION-v0.4.3.md)及[机器记录](reports/validation-v0.4.3.json)。[原报告](reports/VALIDATION.md)的56个测试属于v0.2.0历史证据；这些本地检查均不代表复赛 v2.0 规则已适配或官方比赛胜率。
+v1.0.1记录232个测试通过、80份合成观测检查通过，见[当前验证报告](reports/VALIDATION-v1.0.1.md)。v1.0封版回归记录见[基准报告](reports/BASELINE-v1.0.md)；[v0.4.3历史报告](reports/VALIDATION-v0.4.3.md)保留原始222项测试证据。这些本地检查均不代表复赛 v2.0 规则已适配或官方比赛胜率。
 
 `validate.independent_contract(raw, response)`是压力工具中的附加结构断言，检查角色互斥、移动占用和攻击时机等。它不是完整判题器，不能代替官方平台对动作执行结果和比分的裁定。
 

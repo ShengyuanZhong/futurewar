@@ -59,7 +59,9 @@ class DefaultOpeningTests(unittest.TestCase):
                             self.assertEqual(len(before.weapons()), 3, "finish all three rockets before mining")
                             point = cmd["targetPos"][0]
                             name = next(z["neutralType"] for z in raw["mapInfo"]["zones"] if z["pos"] == point)
-                            self.assertEqual(name, "stone")
+                            if name != "stone":
+                                missing = len(Settings().build_cells(before, 'wall')) - len(before.walls())
+                                self.assertGreaterEqual(sum(w.backpack.count('stone') for w in before.workers()), missing)
                             trace.append((number, "collect"))
                             actor["backpack"].append(name)
                 else:
