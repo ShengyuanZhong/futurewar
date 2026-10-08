@@ -1,6 +1,6 @@
 # 开发与维护文档
 
-更新日期：2026-09-24，版本0.4.3。当前整合用户新增 `temp/task_controller(1).py`、`temp/task_prompt(2).py`，见[任务模块接入](TASK_INTEGRATION.md)；保留0.4.2的[任务日志](TASK_LOGGING.md)与0.4.1的[失败任务修正](TASK_FAILURE_LEARNING.md)。
+更新日期：2026-10-08，程序封版 v1.0。现有策略与任务模块对应复赛前的实现，变更历史见[任务模块接入](TASK_INTEGRATION.md)。32进16阶段的 v2.0 文档已登记为后续规则参照，详见[复赛规则接入索引](ROUND_OF_32_RULES.md)；这次封版未改动游戏策略或协议实现。
 
 ## 1. 设计目标与边界
 
