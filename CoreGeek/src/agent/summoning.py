@@ -1,4 +1,4 @@
-"""Summon geography uses actual bases; unverified regions stay conservative."""
+"""Rear spawn cells just outside the six-by-six region in the user's image."""
 from .protocol import CONTROLLABLE_TYPES, LAND, MINERALS, Pos, distance, station_footprint
 
 
@@ -30,10 +30,10 @@ def summon_cell_legal(turn, settings, pos, pending=()):
     inferred = enemy_base_position(turn)
     if inferred is not None and inferred not in bases:
         bases.append(inferred)
-    # No request field defines the complete coloured building regions (D01).
-    # Exclude a conservative five-cell margin around both 2x2 footprints.
+    # User image: base (9,22), full coloured region x=7..12, y=19..24.
+    # Extra configured margin may enlarge it, never shrink this two-cell floor.
     for base in bases:
-        if min(distance(pos, p) for p in station_footprint(base)) <= settings.summon_build_margin:
+        if min(distance(pos, p) for p in station_footprint(base)) <= max(2, settings.summon_build_margin):
             return False
     if pos in settings.build_cells(turn, 'wall') or pos in settings.build_cells(turn, 'rocket'):
         return False
@@ -53,10 +53,13 @@ def rear_spawn_position(turn, settings, pending=(), failed=()):
     if base is None or rear is None:
         return None
     right = 2 * base.x + 1 > turn.width - 1
+    x = base.x + (4 if right else -3)
+    preferred = (Pos(x,base.y), Pos(x,base.y-1))
     occupied = turn.occupied_cells() | {r.pos for r in turn.robots if r.health > 0}
     candidates = [Pos(x, y) for x in range(turn.width) for y in range(turn.height)
                   if (x > base.x + 1 if right else x < base.x)
                   and abs(2*y-(2*base.y-1)) <= 5
                   and Pos(x, y) not in failed and summon_cell_legal(turn, settings, Pos(x, y), pending)]
-    return min(candidates, key=lambda p: (p in occupied or not turn.land(p), distance(p, rear),
+    return min(candidates, key=lambda p: (p in occupied or not turn.land(p),
+                                        preferred.index(p) if p in preferred else len(preferred), distance(p, rear),
                                         abs(2*p.y-(2*base.y-1)), p)) if candidates else None

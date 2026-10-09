@@ -2,9 +2,8 @@
 import math
 import time
 from .grid import Routes
-from .protocol import CONTROLLABLE_TYPES, TOWER_TYPES, Pos, distance, move_command
-from .robot_combat import blocking_wall, clear_attack
-from .summoning import enemy_rear_position
+from .protocol import PIONEER, WORKER, TOWER_TYPES, Pos, distance, move_command
+from .robot_combat import blocking_wall, clear_attack, enemy_at
 
 
 class RobotRaider:
@@ -14,6 +13,10 @@ class RobotRaider:
         live = {r.robot_id for r in self.turn.summon_robots if r.health > 0}
         self.memory.robot_raids = {uid: job for uid, job in self.memory.robot_raids.items()
                                    if uid in live and not self.turn.is_day and self.turn.day == 1}
+
+    def firing_key(self, target, post):
+        victim = enemy_at(self.turn,target)
+        return (victim.unit_id if victim else None,target,post)
 
     def firing_plan(self, robot, points, route):
         options = []
@@ -25,7 +28,7 @@ class RobotRaider:
                         return None
                     post = Pos(x, y)
                     if (post == target or post not in route.cost
-                            or (target, post) in old.get('failed_firing', {})
+                            or self.firing_key(target,post) in old.get('failed_firing', {})
                             or blocking_wall(self.turn, post, target) is not None):
                         continue
                     options.append((route.cost[post], post != old.get('goal'), post, target))
@@ -37,13 +40,15 @@ class RobotRaider:
         if not self.plan.add(robot.robot_id, command):
             return False
         old = self.memory.robot_raids.get(robot.robot_id, {})
+        victim = enemy_at(self.turn,target) if action == 'attack' else None
         self.memory.robot_raids[robot.robot_id] = dict(old, round=self.turn.round_no, stage=stage,
-            position=robot.pos, target=target, goal=goal, action=action, **extra)
+            position=robot.pos, target=target, goal=goal, action=action,
+            attack_target_id=victim.unit_id if victim else None, **extra)
         return True
 
     def pursue(self, robot, points, route, stage, **extra):
         failed = self.memory.robot_raids.get(robot.robot_id, {}).get('failed_firing', {})
-        direct = [p for p in points if clear_attack(self.turn, robot, p) and (p, robot.pos) not in failed]
+        direct = [p for p in points if clear_attack(self.turn, robot, p) and self.firing_key(p,robot.pos) not in failed]
         if direct:
             target = min(direct, key=lambda p: (distance(robot.pos, p), p))
             return self.issue(robot, 'attack', target, robot.pos, stage, **extra)
@@ -68,24 +73,10 @@ class RobotRaider:
         if not options:
             return False
         _, _, _, _, wall, firing = min(options, key=lambda entry: entry[:4])
-        if clear_attack(self.turn, robot, wall.pos) and (wall.pos, robot.pos) not in failed:
+        if clear_attack(self.turn, robot, wall.pos) and self.firing_key(wall.pos,robot.pos) not in failed:
             return self.issue(robot, 'attack', wall.pos, robot.pos, 'breach', **extra)
         step = route.step({firing[2]})
         return step is not None and self.issue(robot, 'move', step, firing[2], 'breach', **extra)
-
-    def scout(self, robot, rear, route, **extra):
-        goals = {p for p in (rear,) + rear.neighbours() if p in route.cost}
-        if distance(robot.pos, rear) <= 2:
-            old = self.memory.robot_raids.setdefault(robot.robot_id, {})
-            old['scouted'] = True
-            return False
-        goal = route.nearest(goals)
-        if goal is not None:
-            step = route.step({goal})
-            if step is not None:
-                return self.issue(robot, 'move', step, goal, 'scout', **extra)
-        # Walls can also prevent a rear search: use the same observed-wall fallback.
-        return self.pursue(robot, [rear], route, 'scout', **extra)
 
     def decide(self, robot):
         if (not self.s.settings.enable_boss_raid or self.turn.day != 1 or self.turn.is_day
@@ -97,28 +88,33 @@ class RobotRaider:
         if (old.get('round') == self.turn.round_no-1 and old.get('action') == 'attack'
                 and old.get('position') == robot.pos
                 and self.turn.action_results.get(str(robot.robot_id)) is False):
-            failed[old['target'], robot.pos] = self.turn.round_no+4
+            failed[old.get('attack_target_id'),old['target'],robot.pos] = self.turn.round_no+4
         old['failed_firing'] = failed
-        rear = enemy_rear_position(self.turn)
         weapons = [u for u in self.turn.enemies if u.health > 0 and u.kind in TOWER_TYPES]
-        heroes = [u for u in self.turn.enemies if u.health > 0 and u.kind in CONTROLLABLE_TYPES]
-        operators = [u for u in heroes if any(distance(u.pos, w.pos) <= 1 for w in weapons)
-                     or (u.kind == 'pioneer' and rear is not None and distance(u.pos, rear) <= 4)]
-        known = next((u for u in self.turn.enemies if u.unit_id == old.get('controller_id')), None)
-        if known is not None and known.health > 0 and known.kind in CONTROLLABLE_TYPES and known not in operators:
-            operators.append(known)
+        crew = [u for u in self.turn.enemies if u.kind in (PIONEER, WORKER)
+                and any(distance(u.pos,w.pos) <= 1 for w in weapons)]
+        old['operator_snapshot'] = tuple((u.unit_id,u.health) for u in crew)
+        operators = [u for u in crew if u.health > 0]
         if operators:
-            target = min(operators, key=lambda u: (u.unit_id != old.get('controller_id'),
-                not any(distance(u.pos, w.pos) <= 1 for w in weapons), u.kind != 'pioneer',
-                distance(robot.pos, u.pos), u.health, u.unit_id))
+            choices = []
+            for target in operators:
+                if time.monotonic() >= self.s.deadline:
+                    return False
+                direct = (clear_attack(self.turn,robot,target.pos)
+                          and self.firing_key(target.pos,robot.pos) not in failed)
+                firing = self.firing_plan(robot,[target.pos],route) if not direct else None
+                walk = 0 if direct else firing[0] if firing is not None else 10_000
+                rank = (not direct, not direct and firing is None,
+                        math.ceil(target.health / max(1,robot.attack_power)), target.health, walk,
+                        -sum(distance(target.pos,w.pos) <= 1 for w in weapons),
+                        target.unit_id != old.get('controller_id'), distance(robot.pos,target.pos),target.unit_id)
+                choices.append((rank,target))
+            target = min(choices,key=lambda entry:entry[0])[1]
+            # This branch is a hard barrier: alive cannon crews forbid base attacks.
             return self.pursue(robot, [target.pos], route, 'controller', controller_id=target.unit_id,
-                                controller_pos=target.pos, last_seen=self.turn.round_no)
-        if old.get('controller_id') is not None and known is None and self.turn.round_no - old.get('last_seen', 0) <= 3:
-            if self.scout(robot, old['controller_pos'], route):
-                return True
-        killed = known is not None and known.health <= 0
-        if rear is not None and not killed and not old.get('scouted'):
-            if self.scout(robot, rear, route):
-                return True
+                                controller_pos=target.pos, controller_health=target.health,
+                                last_seen=self.turn.round_no)
+        for key in ('controller_id','controller_pos','controller_health','last_seen','scouted'):
+            old.pop(key,None)
         base = next((u for u in self.turn.enemies if u.health > 0 and u.kind == 'station'), None)
         return base is not None and self.pursue(robot, [base.pos], route, 'base')

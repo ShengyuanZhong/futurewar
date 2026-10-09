@@ -1,6 +1,6 @@
 # 开发与维护文档
 
-更新日期：2026-10-09，程序版本 v1.2.0。新增[第一天BOSS袭击](BOSS_RAID.md)：两任务结束后买一张BOSS券、远程敌后召唤、返回操炮位；第一夜以机器人真实ID独立追击操炮者、绕墙/破墙及攻基地。新增本方机器人归属、move/attack权限和召唤位置校验。保留[占点防御](SITE_BLOCKADE.md)、[火箭比值与2+1](ROCKET_SECTORS.md)、[捣乱鬼](IMP_STRATEGY.md)、[工人经济](COMPLETED_ECONOMY.md)及任务流程；其余复赛接入范围见[索引](ROUND_OF_32_RULES.md)。
+更新日期：2026-10-09，程序版本 v1.2.1。[BOSS袭击](BOSS_RAID.md)每轮重查三类炮台周围工人/先锋，以当前HP清理全部操炮者后再攻基地；新截图支持完整6×6建造区及近后排两点，默认召唤排除余量改2。失败射击按目标ID绑定，不妨碍同格新角色被攻击。第一天购买/回防、[占点防御](SITE_BLOCKADE.md)、[火箭比值与2+1](ROCKET_SECTORS.md)、[捣乱鬼](IMP_STRATEGY.md)、[工人经济](COMPLETED_ECONOMY.md)及任务流程继续保留，复赛接入范围见[索引](ROUND_OF_32_RULES.md)。
 
 ## 1. 设计目标与边界
 

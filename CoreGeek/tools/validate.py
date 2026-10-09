@@ -35,12 +35,42 @@ def independent_wall_blocks(start, end, wall):
 
 
 def independent_contract(raw, response):
+    """Audit fresh observations; the stress service has no failed-shot history."""
     assert set(response) == {"roleCommandMap", "prompt", "executeCmd"}
     assert isinstance(response["prompt"], str) and isinstance(response["executeCmd"], str)
     assert not response["executeCmd"] or raw["phaseTask"]
     units = {str(r["id"]): r for r in raw["teamOur"]["roles"]}
     owned = {str(r['id']): r for r in raw['teamOur'].get('summonRobotList', [])}
     units.update(owned)
+    enemy_roles = raw['teamEnemy']['roles']
+    enemy_weapons = [u for u in enemy_roles if u['health'] > 0
+                     and u['roleType'] in ('gatling', 'railgun', 'rocket')]
+    cannon_crews = [u for u in enemy_roles if u['health'] > 0
+                   and u['roleType'] in ('worker', 'pioneer')
+                   and any(distance(Pos.load(u['pos']), Pos.load(w['pos'])) <= 1
+                           for w in enemy_weapons)]
+    crew_cells = {Pos.load(u['pos']) for u in cannon_crews}
+    enemy_wall_cells = {Pos.load(u['pos']) for u in enemy_roles
+                        if u['health'] > 0 and u['roleType'] == 'wall'}
+    all_wall_cells = enemy_wall_cells | {Pos.load(u['pos']) for u in raw['teamOur']['roles']
+                                       if u['health'] > 0 and u['roleType'] == 'wall'}
+    for key, boss in owned.items():
+        if (boss['roleType'] != 'bossRobot' or boss['health'] <= 0
+                or boss.get('abnormalState') == 'dizzy' or not 71 <= raw['roundNo'] <= 130):
+            continue
+        origin = Pos.load(boss['pos'])
+        direct = [u for u in cannon_crews
+                  if 0 < distance(origin, Pos.load(u['pos'])) <= 3
+                  and not any(independent_wall_blocks(origin, Pos.load(u['pos']), wall)
+                              for wall in all_wall_cells - {origin, Pos.load(u['pos'])})]
+        if direct:
+            command = response['roleCommandMap'].get(key, {})
+            assert command.get('action') == 'attack', 'visible cannon crew must be attacked before movement'
+            assert len(command.get('targetPos', [])) == 1
+            target = Pos.load(command['targetPos'][0])
+            weakest = min(u['health'] for u in direct)
+            assert target in {Pos.load(u['pos']) for u in direct if u['health'] == weakest}, \
+                'fresh BOSS attack must target a lowest-current-HP direct cannon crew'
     blocked = {Pos.load(z["pos"]) for z in raw["mapInfo"]["zones"] if z["neutralType"] != "land"}
     for unit in raw["teamOur"]["roles"] + raw["teamEnemy"]["roles"] + raw["robot"]["roles"]:
         if unit["health"] <= 0:
@@ -72,6 +102,9 @@ def independent_contract(raw, response):
                 assert len(command['targetPos']) == 1 and owned[key].get('abnormalState') != 'dizzy'
                 target = Pos.load(command['targetPos'][0]); origin = Pos.load(owned[key]['pos'])
                 assert 0 < distance(origin,target) <= 3
+                if owned[key]['roleType'] == 'bossRobot' and cannon_crews:
+                    assert target in crew_cells | enemy_wall_cells, \
+                        'alive cannon crew forbids attacks on the base or other units'
                 enemy_cells = set()
                 for enemy in raw['teamEnemy']['roles']:
                     if enemy['health'] > 0:
@@ -134,6 +167,7 @@ def main():
     role_cases = {"with_imp": 0, "legacy_three_roles": 0}
     imp_actions = {"move": 0, "destroy": 0, "wait": 0}
     controlled_cases = 0
+    controlled_priority_cases = 0
     controlled_actions = {'move': 0, 'attack': 0, 'wait': 0}
     seeds = [17, 20260917]
     count = 0
@@ -153,10 +187,16 @@ def main():
                                                unit(852,'pioneer',33,8,health=500)]
                     if index % 8 == 0:
                         raw['teamEnemy']['roles'].append(unit(853,'wall',34,8))
+                    else:
+                        raw['teamEnemy']['roles'] += [unit(854,'gatling',33,10),
+                                                     unit(855,'worker',34,10,health=40)]
+                        controlled_priority_cases += 1
                     boss_x = 37 if index % 8 == 0 else 36
                     boss = robot(30000+index,boss_x,8,health=800,roleType='bossRobot')
                     raw['teamOur']['summonRobotList'] = [boss]
                     robot_exclusions = {(30,8),(31,8),(30,7),(31,7),(32,8),(33,8),(34,8),(boss_x,8)}
+                    if index % 8 != 0:
+                        robot_exclusions.update(((33,10),(34,10)))
                     controlled_cases += 1
                 if index % 2 == 0:
                     imp_pos = (8,24) if index % 4 == 0 else (29,6)
@@ -200,17 +240,19 @@ def main():
     round32 = {p.relative_to(ROOT.parent).as_posix():hashlib.sha256(p.read_bytes()).hexdigest()
                for p in sorted((ROOT.parent / '32_docs').glob('*')) if p.is_file()}
     report = {"created_utc": datetime.now(timezone.utc).isoformat(), "python": platform.python_version(),
-              "platform": platform.platform(), "rules_baseline": "legacy v1.0 plus v2.0 imp/destroy and owned robot move/attack/summon; user rocket ratio, wall detours and first-night BOSS raid; other v2 features pending",
+              "platform": platform.platform(), "rules_baseline": "legacy v1.0 plus v2.0 imp/destroy and owned robot move/attack/summon; user rocket ratio, wall detours, per-observation cannon-crew-first BOSS raid and screenshot-derived rear spawn pad 2; other v2 features pending",
               "round32_rule_hashes": round32,
               "tests": {"run": result.testsRun, "failures": len(result.failures), "errors": len(result.errors)},
               "synthetic_input_stress": {"seeds": seeds, "teams": ["challenger", "defender"], "cases": count,
                   "pressure": "0..150 robots on night observations; no simulated match outcomes", "failures": failures,
                   "loadout_cases": loadout_cases, "role_cases": role_cases, "imp_actions": imp_actions,
                   "controlled_robot_cases": controlled_cases, "controlled_robot_actions": controlled_actions,
+                  "controlled_robot_priority_cases": controlled_priority_cases,
                   "median_ms": round(statistics.median(timings), 3), "max_ms": round(max(timings), 3)},
               "source_hashes": hashes, "baseline_hashes": baseline,
               "construction_policy": "user-authorized base-surroundings fallback enabled by default; explicit verified layouts take precedence; not official geography",
-              "unverified": ["D01 official construction coordinates and conservative summon exclusion margin", "D07 trajectory cell-boundary ties and round conventions",
+              "unverified": ["D01 complete official construction coordinates; rear spawn pad 2 is user-screenshot evidence, not official region data", "D07 trajectory cell-boundary ties and round conventions",
+                             "enemy heroes and weapons outside shared sight cannot be inferred dead; the raid audits currently observed crews",
                              "full matches and held-out maps", "official LLM/sandbox/judger integration", "Linux bash entry on target runtime"],
               "scope": "protocol and rule regression plus synthetic observation stress; not official certification or win rate"}
     args.output.parent.mkdir(parents=True, exist_ok=True)

@@ -153,7 +153,8 @@ class SummonControlTests(unittest.TestCase):
         self.assertEqual(command['action'], 'use')
         self.assertEqual(command['name'], ORDER)
         pos = Pos.load(command['targetPos'][0]); self.assertGreater(pos.x, 34)
-        self.assertGreater(min(distance(pos, p) for p in s.turn.footprint(s.turn.enemies[0])), 5)
+        self.assertEqual(pos,Pos(37,25))
+        self.assertEqual(min(distance(pos,p) for p in s.turn.footprint(s.turn.enemies[0])),3)
         memory.record(s.turn, plan)
         raw['roundNo'] = 31; raw['teamOur']['roles'][1]['backpack'] = []
         raw['lastRoundRoleActionResults'] = {'502': True}

@@ -31,7 +31,8 @@ class BossRaidTests(unittest.TestCase):
             s, plan = strategy(raw, finished_tasks()); s.run()
             command = plan.commands['502']; self.assertEqual(command['name'], ORDER)
             spawn = Pos.load(command['targetPos'][0])
-            self.assertGreater(min(distance(spawn, p) for p in station_footprint(Pos(enemy_x, enemy_y))), 5)
+            self.assertEqual(min(distance(spawn,p) for p in station_footprint(Pos(enemy_x,enemy_y))),3)
+            self.assertEqual(spawn,Pos(enemy_x+(4 if enemy_x>20 else -3),enemy_y))
             self.assertTrue(spawn.x > enemy_x+1 if enemy_x > 20 else spawn.x < enemy_x)
             self.assertLess(abs(spawn.y-enemy_y), 3)
 
@@ -40,8 +41,7 @@ class BossRaidTests(unittest.TestCase):
         raw['teamOur']['roles'][1]['backpack'] = [ORDER]
         s, plan = strategy(raw, finished_tasks()); s.run()
         pos = Pos.load(plan.commands['502']['targetPos'][0])
-        self.assertEqual(pos.x, 40)
-        self.assertIn(pos.y, (24, 25))
+        self.assertEqual(pos,Pos(37,25))
 
     def test_buy_uses_observed_price_capacity_and_actual_gold(self):
         for gold, price, full, buys in ((130, 130, False, True), (129, 130, False, False),
@@ -129,10 +129,12 @@ class BossRaidTests(unittest.TestCase):
 
     def test_completely_screened_controller_causes_breach_then_resumes_attack(self):
         raw = raid_request(71, boss=True)
-        raw['teamEnemy']['roles'] = [unit(990, 'station', 33, 25), unit(992, 'pioneer', 36, 25, health=500)]
+        raw['teamEnemy']['roles'] = [unit(990, 'station', 33, 25),
+                                   unit(991,'rocket',35,25),unit(992,'pioneer',36,25,health=500)]
         # The whole ring blocks every firing line to the controller.
         for i, pos in enumerate(Pos(36, 25).neighbours(), 1001):
-            raw['teamEnemy']['roles'].append(unit(i, 'wall', pos.x, pos.y, health=40))
+            if pos != Pos(35,25):  # Cannon occupies one ring cell; other cells are walls.
+                raw['teamEnemy']['roles'].append(unit(i, 'wall', pos.x, pos.y, health=40))
         memory = finished_tasks(); s, plan = strategy(raw, memory); s.run()
         command = plan.commands['30005']
         self.assertEqual(command['action'], 'attack')
@@ -142,22 +144,22 @@ class BossRaidTests(unittest.TestCase):
         raw['roundNo'] = 72; s, plan = strategy(raw, memory); s.run()
         self.assertEqual(plan.commands['30005']['targetPos'], [{'x': 36, 'y': 25}])
 
-    def test_living_locked_controller_is_pursued_after_leaving_the_weapon(self):
+    def test_departed_controller_releases_priority_and_returns_to_base(self):
         raw = raid_request(71, boss=True); memory = finished_tasks()
         s, plan = strategy(raw, memory); s.run(); memory.record(s.turn, plan)
         raw['roundNo'] = 72
         raw['teamEnemy']['roles'][2]['pos'] = {'x': 36, 'y': 20}
         s, plan = strategy(raw, memory); s.run()
-        self.assertEqual(memory.robot_raids[30005]['controller_id'], 992)
-        self.assertEqual(memory.robot_raids[30005]['stage'], 'controller')
+        self.assertNotIn('controller_id',memory.robot_raids[30005])
+        self.assertEqual(memory.robot_raids[30005]['stage'],'base')
         self.assertEqual(plan.commands['30005']['action'], 'move')
 
-    def test_hidden_controller_is_scouted_without_attacking_an_empty_coordinate(self):
+    def test_no_visible_controller_attempts_base_without_attacking_empty_coordinate(self):
         raw = raid_request(71, boss=True)
         raw['teamEnemy']['roles'] = raw['teamEnemy']['roles'][:2]
         s, plan = strategy(raw, finished_tasks()); s.run()
         self.assertEqual(plan.commands['30005']['action'], 'move')
-        self.assertEqual(s.memory.robot_raids[30005]['stage'], 'scout')
+        self.assertEqual(s.memory.robot_raids[30005]['stage'], 'base')
 
     def test_stun_death_new_day_and_deadline_stop_robot_orders(self):
         for mode in ('stun', 'death', 'day', 'later', 'deadline'):

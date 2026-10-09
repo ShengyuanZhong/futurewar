@@ -34,7 +34,7 @@ class Settings:
     enable_tasks: bool = True
     enable_news: bool = True
     enable_boss_raid: bool = True
-    summon_build_margin: int = 5
+    summon_build_margin: int = 2
     max_body_bytes: int = 2 * 1024 * 1024
 
     @classmethod
