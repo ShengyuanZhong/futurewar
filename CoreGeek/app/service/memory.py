@@ -45,6 +45,8 @@ class GameMemory:
     repair_supplier_id: int | None = None
     dual_repair_active: bool = False
     worker_tasks: dict[int, dict[str, Any]] = field(default_factory=dict)
+    imp_home_side: int = 0
+    imp_tasks: dict[int, dict[str, Any]] = field(default_factory=dict)
     repair_usage_today: dict[int, int] = field(default_factory=dict)
     repair_usage_previous: dict[int, int] = field(default_factory=dict)
 

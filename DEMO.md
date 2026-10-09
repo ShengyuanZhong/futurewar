@@ -1,5 +1,7 @@
 # 当前实现现状
 
+v1.1.0新增捣乱鬼的昼夜敌半区选矿、连续destroy、死亡清理与复活恢复；见[捣乱鬼开发说明](CoreGeek/docs/IMP_STRATEGY.md)。其它复赛功能状态见[规则接入索引](CoreGeek/docs/ROUND_OF_32_RULES.md)，下文保留原基准实现记录。
+
 更新日期：2026-10-08，程序封版 v1.0。本页主要保留初赛实现与历史验证记录；32进16复赛 v2.0 规则的后续适配范围见[复赛规则接入索引](CoreGeek/docs/ROUND_OF_32_RULES.md)。
 
 CoreGeek 已从仅含建造/采集/单目标夜间攻击的 demo，扩展为有应用层和跨回合记忆的 HTTP Agent。

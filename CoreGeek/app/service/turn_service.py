@@ -94,6 +94,10 @@ class TurnService:
                          'last_action_ok': turn.action_results.get(str(w.unit_id)),
                          'oscillating': memory.worker_tasks.get(w.unit_id, {}).get('oscillating', False)}
                          for w in turn.workers()})
+            if any(u.kind == 'imp' for u in turn.ours):
+                LOGGER.info("imp_motion round=%s home_side=%s jobs=%s commands=%s", turn.round_no,
+                            memory.imp_home_side, memory.imp_tasks,
+                            {str(u.unit_id):plan.commands.get(str(u.unit_id)) for u in turn.imps()})
             for reason in plan.rejections:
                 LOGGER.warning("action_rejected %s", reason)
             return response

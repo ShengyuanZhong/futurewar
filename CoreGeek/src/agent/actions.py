@@ -1,7 +1,7 @@
-"""One gate for all twelve actions, shared spending and destination reservations."""
+"""One gate for existing actions plus imp destruction, spending and reservations."""
 from collections import Counter
 from typing import Any
-from .protocol import (CONTROLLABLE_TYPES, MINERALS, PIONEER, TOWER_TYPES, WORKER,
+from .protocol import (CONTROLLABLE_TYPES, IMP, MINERALS, PIONEER, TOWER_TYPES, WORKER,
                        Pos, Turn, Unit, distance)
 
 SUMMON_ITEMS = {f"{kind}RobotSummonOrder" for kind in ("Small", "Middle", "Large", "Boss")}
@@ -13,7 +13,7 @@ ACTION_FIELDS = {
     "sell": {"name", "num"}, "buy": {"name", "num"}, "build": {"name", "targetPos"},
     "remove": {"targetPos"}, "acceptTask": set(), "submitAnswer": {"taskAnswer"},
     "summonTreasure": {"targetPos", "item"}, "use": {"name", "targetPos"},
-    "drop": {"name"}, "collect": {"targetPos"},
+    "drop": {"name"}, "collect": {"targetPos"}, "destroy": {"targetPos"},
 }
 
 
@@ -59,7 +59,7 @@ class ActionPlan:
         points = [Pos.load(p) for p in raw_points]
         require(all(self.turn.in_bounds(p) for p in points), "target outside map")
         target = points[0] if points else None
-        if action in ("move", "build", "remove", "collect", "summonTreasure"):
+        if action in ("move", "build", "remove", "collect", "destroy", "summonTreasure"):
             require(len(points) == 1, "exactly one target required")
         name = command.get("name", "")
         if action in ("buy", "sell", "build", "use", "drop"):
@@ -122,6 +122,10 @@ class ActionPlan:
         elif action == "collect":
             require(role.kind == WORKER and not role.backpack_full, "cannot collect")
             require(distance(role.pos, target) == 1 and self.turn.zones.get(target) in MINERALS, "not beside a mine")
+        elif action == "destroy":
+            require(role.kind == IMP, "only imps destroy minerals")
+            require(distance(role.pos, target) == 1 and self.turn.zones.get(target) in MINERALS,
+                    "not beside a mine")
         elif action == "acceptTask":
             require(role.kind == PIONEER and not self.turn.phase_task, "cannot accept a task")
             require(any(t.valid and t.cooldown == 0 and self.near(role, self.turn.task_cells(t)) for t in self.turn.tasks), "no available friendly task in reach")

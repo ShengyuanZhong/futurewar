@@ -1,4 +1,4 @@
-"""Official v1.0 observations. No simulator-only fields are required."""
+"""Official observations with the round-of-32 imp role; no private fields required."""
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -7,8 +7,9 @@ ROUNDS_PER_DAY = DAY_ROUNDS + NIGHT_ROUNDS
 WEAPON_BUILD_COST = 25
 WALL_MATERIAL = "stone"
 LAND, STATION, WALL, WORKER, PIONEER = "land", "station", "wall", "worker", "pioneer"
+IMP = "imp"
 TOWER_TYPES = ("gatling", "railgun", "rocket")
-CONTROLLABLE_TYPES = (WORKER, PIONEER)
+CONTROLLABLE_TYPES = (WORKER, PIONEER, IMP)
 MINERALS = ("stone", "iron", "copper")
 TOWER_RANGE_BY_LEVEL = {"gatling": (3, 5, 7), "railgun": (6, 8, 10), "rocket": (10, 15, 10**9)}
 STEPS = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1))
@@ -220,6 +221,9 @@ class Turn:
     def workers(self) -> tuple[Unit, ...]:
         return self.alive((WORKER,))
 
+    def imps(self) -> tuple[Unit, ...]:
+        return self.alive((IMP,))
+
     def weapons(self) -> tuple[Unit, ...]:
         return self.alive(TOWER_TYPES)
 
@@ -259,6 +263,10 @@ def move_command(pos: Pos) -> dict[str, Any]:
 
 def collect_command(pos: Pos) -> dict[str, Any]:
     return {"action": "collect", "targetPos": [pos.dump()]}
+
+
+def destroy_command(pos: Pos) -> dict[str, Any]:
+    return {"action": "destroy", "targetPos": [pos.dump()]}
 
 
 def build_command(pos: Pos, name: str) -> dict[str, Any]:

@@ -53,6 +53,15 @@ def independent_contract(raw, response):
             assert units[actor]["roleType"] == "pioneer"
             assert units[key].get("cooldown", 0) == 0
             assert distance(Pos.load(units[key]["pos"]), Pos.load(units[actor]["pos"])) <= 1
+        if command["action"] == "destroy":
+            assert units[key]["roleType"] == "imp"
+            assert len(command["targetPos"]) == 1
+            target = Pos.load(command["targetPos"][0])
+            assert distance(Pos.load(units[key]["pos"]), target) == 1
+            assert any(z["pos"] == target.dump() and z["neutralType"] in ('stone','iron','copper')
+                       for z in raw["mapInfo"]["zones"])
+            # Synthetic fixtures below have their own base in the upper half.
+            assert 40*target.y < 31*target.x
 
 
 def main():
@@ -64,6 +73,8 @@ def main():
     result = unittest.TextTestRunner(verbosity=1).run(suite)
     timings, failures = [], []
     loadout_cases = {"three_rockets": 0, "mixed_compatibility": 0}
+    role_cases = {"with_imp": 0, "legacy_three_roles": 0}
+    imp_actions = {"move": 0, "destroy": 0, "wait": 0}
     seeds = [17, 20260917]
     count = 0
     for seed in seeds:
@@ -75,19 +86,30 @@ def main():
                 raw["teamOur"]["playerTasks"] = []
                 raw["teamOur"]["roles"] = [unit(803, "station", 10, 24), unit(800, "worker", 8, 23),
                     unit(801, "pioneer", 10, 26), unit(802, "worker", 12, 23)]
+                if index % 2 == 0:
+                    imp_pos = (8,24) if index % 4 == 0 else (29,6)
+                    raw["teamOur"]["roles"].append(unit(805,"imp",*imp_pos,health=500,level=0))
+                    raw["mapInfo"]["zones"] += [{'neutralType':'iron','pos':{'x':30,'y':5}},
+                                                 {'neutralType':'stone','pos':{'x':28,'y':9}}]
+                    role_cases["with_imp"] += 1
+                else:
+                    role_cases["legacy_three_roles"] += 1
                 loadout = ("rocket", "rocket", "rocket") if index % 2 == 0 else ("gatling", "railgun", "rocket")
                 loadout_cases["three_rockets" if index % 2 == 0 else "mixed_compatibility"] += 1
                 raw["teamOur"]["roles"] += [unit(810+i, kind, x, y, level=rng.randint(1, 3), cooldown=rng.randint(0, 3) if kind == "rocket" else 0)
                     for i, (kind, x, y) in enumerate((kind, 9+i, 25) for i, kind in enumerate(loadout))]
                 if not (raw["roundNo"] - 1) % 130 < 70:
+                    excluded = ({imp_pos,(30,5),(28,9)} if index % 2 == 0 else set())
                     cells = [(x, y) for x in range(41) for y in range(32)
-                             if x < 6 or x > 16 or y < 18 or y > 28]
+                             if (x < 6 or x > 16 or y < 18 or y > 28) and (x,y) not in excluded]
                     raw["robot"]["roles"] = [robot(900+i, x, y, health=rng.choice([40, 60, 500, 800]), targetTeam=team)
                         for i, (x, y) in enumerate(rng.sample(cells, rng.randint(0, 150)))]
                 started = time.perf_counter()
                 try:
                     response = TurnService(Settings(enable_news=False)).decide(raw)
                     independent_contract(raw, response)
+                    if index % 2 == 0:
+                        imp_actions[response['roleCommandMap'].get('805',{}).get('action','wait')] += 1
                 except Exception as exc:
                     failures.append({"seed": seed, "team": team, "index": index, "error": repr(exc)})
                 timings.append((time.perf_counter() - started) * 1000)
@@ -100,12 +122,15 @@ def main():
         hashes[path.relative_to(ROOT.parent).as_posix()] = hashlib.sha256(path.read_bytes()).hexdigest()
     baseline = {name: hashlib.sha256((ROOT.parent / name).read_bytes()).hexdigest()
                 for name in ("DEVELOPMENT_RULES.md", "任务书.md", "接口文档.md", "request.txt", "response.txt")}
+    round32 = {p.relative_to(ROOT.parent).as_posix():hashlib.sha256(p.read_bytes()).hexdigest()
+               for p in sorted((ROOT.parent / '32_docs').glob('*')) if p.is_file()}
     report = {"created_utc": datetime.now(timezone.utc).isoformat(), "python": platform.python_version(),
-              "platform": platform.platform(), "rules_baseline": "local v1.0 2026-09-09; upstream commit recorded in DEVELOPMENT_RULES.md",
+              "platform": platform.platform(), "rules_baseline": "legacy v1.0 plus round-of-32 v2.0 2026-09-30 for imp/destroy; other v2 features pending",
+              "round32_rule_hashes": round32,
               "tests": {"run": result.testsRun, "failures": len(result.failures), "errors": len(result.errors)},
               "synthetic_input_stress": {"seeds": seeds, "teams": ["challenger", "defender"], "cases": count,
                   "pressure": "0..150 robots on night observations; no simulated match outcomes", "failures": failures,
-                  "loadout_cases": loadout_cases,
+                  "loadout_cases": loadout_cases, "role_cases": role_cases, "imp_actions": imp_actions,
                   "median_ms": round(statistics.median(timings), 3), "max_ms": round(max(timings), 3)},
               "source_hashes": hashes, "baseline_hashes": baseline,
               "construction_policy": "user-authorized base-surroundings fallback enabled by default; explicit verified layouts take precedence; not official geography",

@@ -8,8 +8,9 @@ from .grid import Routes, adjacent_cells
 from .worker_safety import robot_danger
 from .worker_coordinator import WorkerCoordinator
 from .wall_guard import WallGuard
+from .imp_policy import ImpController
 from . import upgrade_policy
-from .protocol import (MINERALS, PIONEER, TOWER_TYPES, Pos, Turn, Unit,
+from .protocol import (IMP, MINERALS, PIONEER, TOWER_TYPES, Pos, Turn, Unit,
                        attack_command, build_command, collect_command, distance, move_command)
 
 
@@ -27,6 +28,7 @@ class Strategy:
         self.danger = robot_danger(turn)
         self.guard = WallGuard(self)
         self.coordinator = WorkerCoordinator(self)
+        self.imp = ImpController(self)
 
     def movement_reserved(self, role: Unit | None = None) -> set[Pos]:
         """Use the same future sites in paths, yields and site clearance."""
@@ -75,7 +77,7 @@ class Strategy:
 
     def run(self) -> None:
         # Resolve the pioneer first, so workers never claim its next step or control cell.
-        available = sorted(self.turn.controllable(), key=lambda r: (r.kind != PIONEER,
+        available = sorted(self.turn.controllable(), key=lambda r: (r.kind != PIONEER, r.kind != IMP,
                            -self.coordinator.job(r).get('stalled',0), r.unit_id != self.guard.worker_id, r.unit_id))
         self.opening_stage()
         for role in available:
@@ -83,6 +85,9 @@ class Strategy:
                 continue
             if time.monotonic() >= self.deadline:
                 break
+            if role.kind == IMP:
+                self.imp.decide(role)
+                continue
             maximum = 200 if role.kind == PIONEER else 220
             if role.health <= maximum // 2 and "Medicine" in role.backpack:
                 self.plan.add(role.unit_id, {"action": "use", "name": "Medicine"})
