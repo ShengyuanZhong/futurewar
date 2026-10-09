@@ -1,27 +1,16 @@
 """Persistent enemy-half mineral destruction, independent of worker schedules."""
 from .grid import adjacent_cells
-from .protocol import MINERALS, STATION, Pos, destroy_command, distance, move_command
-
-
-def diagonal_side(pos: Pos, width: int, height: int) -> int:
-    """Side of (0,0)->(width-1,height-1): upper=1, lower=-1, boundary=0."""
-    value = pos.y * (width-1) - pos.x * (height-1)
-    return (value > 0) - (value < 0)
+from .map_regions import base_side, diagonal_side
+from .protocol import MINERALS, Pos, destroy_command, distance, move_command
 
 
 class ImpController:
     def __init__(self, strategy):
         self.s = strategy
         self.turn, self.plan, self.memory = strategy.turn, strategy.plan, strategy.memory
-        base = next((u for u in self.turn.ours if u.kind == STATION and self.turn.in_bounds(u.pos)), None)
-        enemy = next((u for u in self.turn.enemies if u.kind == STATION and self.turn.in_bounds(u.pos)), None)
-        reference = base or enemy
-        if reference is not None:
-            # Base pos is its top-left; use the centre of the 2x2 footprint.
-            value = (2*reference.pos.y-1)*(self.turn.width-1) - (2*reference.pos.x+1)*(self.turn.height-1)
-            side = (value > 0) - (value < 0)
-            if side:
-                self.memory.imp_home_side = side if base is not None else -side
+        side = base_side(self.turn)
+        if side:
+            self.memory.imp_home_side = side
         live = {u.unit_id:u for u in self.turn.imps()}
         self.memory.imp_tasks = {uid:job for uid,job in self.memory.imp_tasks.items()
             if uid in live and job.get('round') == self.turn.round_no-1

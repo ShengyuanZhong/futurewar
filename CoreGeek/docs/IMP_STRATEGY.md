@@ -35,7 +35,7 @@ v1.1.0，2026-10-09。依据用户指令及 `32_docs/任务书.md` §4.1、§4.4
 | `src/agent/protocol.py` `IMP` / `CONTROLLABLE_TYPES` | 新增imp可控角色；`Turn.imps()`返回存活imp元组 |
 | 同上 `destroy_command(pos)` | `Pos`→`{"action":"destroy","targetPos":[...]}` |
 | `src/agent/actions.py` `ActionPlan.add` | 新增destroy校验：仅imp、单坐标、矿石八邻域、本轮未行动；昼夜均可用 |
-| `src/agent/imp_policy.py` `diagonal_side(pos,width,height)` | 返回1/-1/0，不使用浮点边界判断 |
+| `src/agent/map_regions.py` `diagonal_side(pos,width,height)` / `base_side(turn)` | 与三级火箭共享；返回半区侧值，不使用浮点边界判断；imp_policy保留导入兼容 |
 | 同上 `ImpController(strategy)` | 根据基地确定半区，清理死亡、跳轮和复活前旧任务 |
 | 同上 `decide(role)` | 当前imp `Unit`→是否已安排动作；在ActionPlan写入move或destroy并保存任务 |
 | `src/agent/brain.py` `Strategy.run()` | 开拓者先安排、捣乱鬼独立安排，再逐工人调度；imp分支在治疗/工人逻辑之前 |

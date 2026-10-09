@@ -1,6 +1,6 @@
 # 开发与维护文档
 
-更新日期：2026-10-09，程序版本 v1.1.0。新增独立捣乱鬼策略：昼夜破坏对方半区矿石，保持连续destroy，观测到复活即恢复行动；详见[捣乱鬼开发说明](IMP_STRATEGY.md)。工人的[完成后经济循环](COMPLETED_ECONOMY.md)与[行程效率修复](WORKER_EFFICIENCY.md)继续保留，其它复赛功能见[规则接入索引](ROUND_OF_32_RULES.md)。
+更新日期：2026-10-09，程序版本 v1.1.1。三级火箭在双方半区都有活机器人时使用两发防守、一发攻击敌区最高总分的占用中心；详见[火箭半区策略](ROCKET_SECTORS.md)。捣乱鬼和炮台共用`map_regions.py`半区判断；[捣乱鬼](IMP_STRATEGY.md)、[工人经济循环](COMPLETED_ECONOMY.md)与原有任务流程继续回归，其它复赛功能见[规则接入索引](ROUND_OF_32_RULES.md)。
 
 ## 1. 设计目标与边界
 
@@ -35,6 +35,7 @@ CoreGeek/
 │   ├── grid.py                   # 八方向 BFS 与相邻交互格
 │   ├── actions.py                # 原十二动作及destroy的统一校验入口与预算
 │   ├── imp_policy.py             # 捣乱鬼半区识别、目标保持、连续破坏与复活恢复
+│   ├── map_regions.py            # 对角线半区、己/敌基地中心位置判断
 │   ├── construction.py           # 当前建造区域内规划三炮及共同操控格
 │   ├── upgrade_policy.py         # 单炮集中升级、分组墙目标与完成判断
 │   ├── worker_coordinator.py     # 独立任务、目的格和协作侧移
