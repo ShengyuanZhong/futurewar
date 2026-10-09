@@ -1,4 +1,5 @@
-"""Level-three rocket allocation and score-maximizing occupied enemy centres."""
+"""Level-three allocation and occupied efficiency-maximizing rocket centres."""
+from fractions import Fraction
 import time
 import unittest
 
@@ -38,6 +39,11 @@ def area_score(raw, target):
                and distance(Pos.load(r['pos']), target) <= 1)
 
 
+def area_ratio(raw, target):
+    return sum((Fraction(POINTS[r['roleType']],r['health']) for r in raw['robot']['roles']
+                if r['health'] > 0 and distance(Pos.load(r['pos']),target) <= 1),Fraction(0))
+
+
 class RocketSectorTests(unittest.TestCase):
     def test_three_shots_split_two_home_one_enemy_in_both_team_positions(self):
         for lower in (False, True):
@@ -50,22 +56,22 @@ class RocketSectorTests(unittest.TestCase):
                 self.assertLess((40*targets[2].y-31*targets[2].x)*own_sign,0)
                 self.assertEqual(targets[2], Pos.load(raw['robot']['roles'][1]['pos']))
 
-    def test_enemy_score_prefers_boss_over_larger_small_robot_damage(self):
+    def test_enemy_efficiency_prefers_eight_small_robots_over_a_full_boss(self):
         raw = battlefield()
         raw['robot']['roles'][1]['pos'] = {'x':23,'y':5}
         raw['robot']['roles'] += [robot(910+i,x,y,health=40)
             for i,(x,y) in enumerate(((29,4),(30,4),(31,4),(29,5),(30,5),(31,5),(29,6),(30,6)))]
         enemy = target_list(raw)[2]
-        self.assertEqual(enemy, Pos(23,5))
-        self.assertEqual(area_score(raw,enemy),10)
+        self.assertIn(enemy,{Pos.load(r['pos']) for r in raw['robot']['roles'] if r['health']>0})
+        self.assertEqual(area_ratio(raw,enemy),Fraction(1,5))
 
-    def test_enemy_score_sums_all_robots_not_just_the_centre(self):
+    def test_enemy_efficiency_sums_all_robots_not_just_the_centre(self):
         raw = battlefield()
         raw['robot']['roles'][1]['pos'] = {'x':23,'y':5}
         raw['robot']['roles'] += [robot(910+i,x,y,health=60,roleType='middleRobot')
             for i,(x,y) in enumerate(((29,4),(30,4),(31,4),(29,5),(30,5),(31,5)))]
         enemy = target_list(raw)[2]
-        self.assertEqual(area_score(raw,enemy),12)
+        self.assertEqual(area_ratio(raw,enemy),Fraction(1,5))
         self.assertIn(enemy,{Pos.load(r['pos']) for r in raw['robot']['roles'] if r['health']>0})
 
     def test_empty_high_score_centre_is_not_a_legal_enemy_choice(self):
@@ -112,11 +118,11 @@ class RocketSectorTests(unittest.TestCase):
         self.assertEqual(targets[2],Pos(30,5))
         self.assertEqual(health,{900:0,901:780})
 
-    def test_enemy_nine_square_score_includes_cross_boundary_splash_robots(self):
+    def test_both_sector_ratios_include_cross_boundary_splash_robots(self):
         raw = battlefield()
         raw['robot']['roles'] += [robot(902,20,15), robot(903,20,16,health=800,roleType='bossRobot')]
-        self.assertEqual(area_score(raw,Pos(20,15)),11)
-        self.assertEqual(target_list(raw)[2],Pos(20,15))
+        self.assertEqual(area_ratio(raw,Pos(20,15)),Fraction(3,80))
+        self.assertEqual(target_list(raw),[Pos(20,16),Pos(20,16),Pos(20,15)])
 
     def test_expired_deadline_does_not_commit_partial_predictions(self):
         raw = battlefield(); health = {900:500,901:800}

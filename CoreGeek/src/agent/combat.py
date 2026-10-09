@@ -1,6 +1,7 @@
 """Target selection estimates damage, but never simulates authoritative results."""
 from itertools import permutations
 from collections import Counter
+from fractions import Fraction
 import time
 from .grid import Routes, adjacent_cells
 from .map_regions import base_side, diagonal_side
@@ -72,8 +73,6 @@ def damage_for(turn: Turn, tower: Unit, target: Pos, health: dict[int, int]) -> 
 
 def _candidate_positions(turn, tower, robots):
     candidates = {r.pos for r in robots}
-    if tower.kind == "rocket":
-        candidates.update(p for r in robots for p in r.pos.neighbours())
     return sorted(p for p in candidates if turn.in_bounds(p)
                   and 0 < distance(tower.pos, p) <= tower.range_of_attack())
 
@@ -114,15 +113,22 @@ def _greedy_targets(turn, tower, robots, candidates, count, health, deadline, fi
     return targets
 
 
-def _enemy_score_target(turn, tower, enemies, robots, deadline):
-    """Only occupied enemy centres compete; rank observed 3x3 kill-point totals."""
+def _rocket_efficiency_scores(robots, deadline):
+    """Aggregate exact sum(points / observed current HP) at every 3x3 centre."""
     scores = Counter()
     for robot in robots:
         if time.monotonic() >= deadline:
             return None
+        if robot.health <= 0:
+            continue
+        ratio = Fraction(ROBOT_POINTS.get(robot.kind, 0), robot.health)
         for centre in (robot.pos,) + robot.pos.neighbours():
-            scores[centre] += ROBOT_POINTS.get(robot.kind, 0)
-    candidates = {r.pos for r in enemies if turn.in_bounds(r.pos)
+            scores[centre] += ratio
+    return scores
+
+
+def _occupied_rocket_target(turn, tower, centres, scores):
+    candidates = {r.pos for r in centres if r.health > 0 and turn.in_bounds(r.pos)
                   and 0 < distance(tower.pos,r.pos) <= tower.range_of_attack()}
     return max(candidates, key=lambda p:(scores[p],-distance(tower.pos,p),p)) if candidates else None
 
@@ -133,30 +139,33 @@ def choose_targets(turn: Turn, tower: Unit, expected_health: dict[int, int], dea
         return []
     count = 1 if tower.kind == "railgun" else max(1, min(3, tower.level))
     health = dict(expected_health)
-    side = base_side(turn) or diagonal_side(tower.pos,turn.width,turn.height)
-    if tower.kind == 'rocket' and tower.level == 3 and side:
-        own = [r for r in robots if diagonal_side(r.pos,turn.width,turn.height)*side >= 0]
-        enemies = [r for r in robots if diagonal_side(r.pos,turn.width,turn.height)*side < 0]
-        enemy_target = _enemy_score_target(turn,tower,enemies,robots,deadline) if enemies else None
-        if time.monotonic() >= deadline:
+    if tower.kind == 'rocket':
+        scores = _rocket_efficiency_scores(robots,deadline)
+        if scores is None:
             return []
-        if own:
-            candidates = [p for p in _candidate_positions(turn,tower,own)
-                          if diagonal_side(p,turn.width,turn.height)*side >= 0]
-            own_count = 2 if enemy_target is not None else 3
-            targets = _greedy_targets(turn,tower,own,candidates,own_count,health,deadline,fill_zero=True)
-            if len(targets) != own_count or time.monotonic() >= deadline:
+        side = base_side(turn) or diagonal_side(tower.pos,turn.width,turn.height)
+        if tower.level == 3 and side:
+            own = [r for r in robots if diagonal_side(r.pos,turn.width,turn.height)*side >= 0]
+            enemies = [r for r in robots if diagonal_side(r.pos,turn.width,turn.height)*side < 0]
+            own_target = _occupied_rocket_target(turn,tower,own,scores)
+            enemy_target = _occupied_rocket_target(turn,tower,enemies,scores)
+            if own_target is not None:
+                targets = [own_target]*(2 if enemy_target is not None else 3)
+                if enemy_target is not None:
+                    targets.append(enemy_target)
+            elif enemy_target is not None:
+                targets = [enemy_target]*3
+            else:
                 return []
-            if enemy_target is not None:
-                targets.append(enemy_target)
-                _apply_damage(health,damage_for(turn,tower,enemy_target,health))
-        elif enemy_target is not None:
-            # Nothing threatens our half: avoid wasting the two defensive missiles.
-            targets = [enemy_target]*3
-            for target in targets:
-                _apply_damage(health,damage_for(turn,tower,target,health))
         else:
-            return []
+            target = _occupied_rocket_target(turn,tower,robots,scores)
+            if target is None:
+                return []
+            targets = [target]*count
+        for target in targets:
+            if time.monotonic() >= deadline:
+                return []
+            _apply_damage(health,damage_for(turn,tower,target,health))
     else:
         targets = _greedy_targets(turn,tower,robots,_candidate_positions(turn,tower,robots),
                                   count,health,deadline)

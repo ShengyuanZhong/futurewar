@@ -8,6 +8,7 @@ import statistics
 import sys
 import time
 import unittest
+from fractions import Fraction
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -53,27 +54,30 @@ def independent_contract(raw, response):
             assert units[actor]["roleType"] == "pioneer"
             assert units[key].get("cooldown", 0) == 0
             assert distance(Pos.load(units[key]["pos"]), Pos.load(units[actor]["pos"])) <= 1
-            if units[key]['roleType'] == 'rocket' and units[key].get('level') == 3:
+            if units[key]['roleType'] == 'rocket':
                 targets = [Pos.load(p) for p in command['targetPos']]
                 live = [r for r in raw['robot']['roles'] if r['health'] > 0]
-                own = [r for r in live if 40*r['pos']['y'] >= 31*r['pos']['x']]
-                enemies = [r for r in live if 40*r['pos']['y'] < 31*r['pos']['x']]
-                assert len(targets) == 3
-                if own and enemies:
-                    assert all(40*p.y >= 31*p.x for p in targets[:2])
-                    assert 40*targets[2].y < 31*targets[2].x
-                elif own:
-                    assert all(40*p.y >= 31*p.x for p in targets)
+                level = max(1,min(3,units[key].get('level',1)))
+                limit = {1:10,2:15,3:10**9}[level]
+                observed = units[key].get('attackRange',0)
+                if observed > 0:
+                    limit = min(limit,observed)
+                origin = Pos.load(units[key]['pos'])
+                centres = {Pos.load(r['pos']) for r in live
+                           if 0 < distance(origin,Pos.load(r['pos'])) <= limit}
+                own = {p for p in centres if 40*p.y >= 31*p.x}
+                enemies = centres-own
+                assert len(targets) == level
+                if level == 3:
+                    pools = [own,own,enemies] if own and enemies else [own or enemies]*3
                 else:
-                    assert all(40*p.y < 31*p.x for p in targets)
-                if enemies:
-                    target = targets[2]
-                    centres = {Pos.load(r['pos']) for r in enemies}
-                    assert target in centres
-                    points = {'smallRobot':1,'middleRobot':2,'largeRobot':4,'bossRobot':10}
-                    totals = {p:sum(points[r['roleType']] for r in live
-                              if distance(p,Pos.load(r['pos'])) <= 1) for p in centres}
-                    assert totals[target] == max(totals.values())
+                    pools = [centres]*level
+                points = {'smallRobot':1,'middleRobot':2,'largeRobot':4,'bossRobot':10}
+                totals = {p:sum((Fraction(points[r['roleType']],r['health']) for r in live
+                          if distance(p,Pos.load(r['pos'])) <= 1),Fraction(0)) for p in centres}
+                for target, pool in zip(targets,pools):
+                    assert target in pool
+                    assert totals[target] == max(totals[p] for p in pool)
         if command["action"] == "destroy":
             assert units[key]["roleType"] == "imp"
             assert len(command["targetPos"]) == 1
@@ -146,7 +150,7 @@ def main():
     round32 = {p.relative_to(ROOT.parent).as_posix():hashlib.sha256(p.read_bytes()).hexdigest()
                for p in sorted((ROOT.parent / '32_docs').glob('*')) if p.is_file()}
     report = {"created_utc": datetime.now(timezone.utc).isoformat(), "python": platform.python_version(),
-              "platform": platform.platform(), "rules_baseline": "legacy v1.0 plus v2.0 2026-09-30 imp/destroy and sector rocket targeting; other v2 features pending",
+              "platform": platform.platform(), "rules_baseline": "legacy v1.0 plus v2.0 imp/destroy and rocket user policy sum(points/current HP); other v2 features pending",
               "round32_rule_hashes": round32,
               "tests": {"run": result.testsRun, "failures": len(result.failures), "errors": len(result.errors)},
               "synthetic_input_stress": {"seeds": seeds, "teams": ["challenger", "defender"], "cases": count,

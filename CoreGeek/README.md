@@ -1,10 +1,10 @@
 # CoreGeek 参赛 Agent
 
-当前程序版本为 v1.1.1：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后两翼六墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回墙内，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
+当前程序版本为 v1.1.2：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后两翼六墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回墙内，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
 
 此目录可作为参赛程序目录提交。沿用示例的 `main3.py`、`src/agent/protocol.py`、`grid.py`、`brain.py`；HTTP 处理与跨回合协作放在 `app`。新增代码无第三方运行依赖。
 
-v1.1.1采用三级火箭两发己区、一发敌区；敌区中心必须有机器人，按3×3总分选择最高点。敌区为空则全部防守，详见[火箭半区策略](docs/ROCKET_SECTORS.md)。
+v1.1.2将所有等级火箭的己区、敌区选点统一为：中心有活机器人，九宫格内Σ(击杀分/当前剩余HP)最大，用精确分数求和。三级沿用两发己区、一发敌区；敌区为空则全部防守，详见[火箭半区策略](docs/ROCKET_SECTORS.md)。
 
 v1.1.0接入捣乱鬼：昼夜持续破坏对方半区矿石、保持四轮引导，死亡复活后立即重新出发；不使用工人危险权重。详见[捣乱鬼开发说明](docs/IMP_STRATEGY.md)。
 
@@ -79,9 +79,9 @@ python main3.py 8080 --config config.local.json
 
 ```powershell
 python run_tests.py
-python tools/smoke_server.py --output ../reports/http-smoke-v1.1.1.json
-python tools/replay.py ../request.txt --output ../reports/sample-response-v1.1.1.json
-python tools/validate.py --cases 20 --output ../reports/validation-v1.1.1.json
+python tools/smoke_server.py --output ../reports/http-smoke-v1.1.2.json
+python tools/replay.py ../request.txt --output ../reports/sample-response-v1.1.2.json
+python tools/validate.py --cases 20 --output ../reports/validation-v1.1.2.json
 ```
 
 回放输入支持单个 JSON、JSON 数组、每行一份观测的 JSONL。单个队伍按回合递增；同回合相同内容返回缓存，不同内容拒绝，以免状态被重复推进。
@@ -159,7 +159,7 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | [src/agent/combat.py](src/agent/combat.py) | `pair_weapons(turn, roles)` | 保留的旧匹配函数；当前Strategy不调用 |
 | 同上 | `segment_entry(start, end, cell)` | 线段与方格相交估值 |
 | 同上 | `damage_for(turn, tower, target, health)` | 计算单发预计伤害字典 |
-| 同上 | `choose_targets(turn, tower, expected_health, deadline=inf)` | 选择符合数量/范围约束的目标，并更新预测HP |
+| 同上 | `choose_targets(turn, tower, expected_health, deadline=inf)` | 火箭按占用中心Σ(分/当前HP)最大选点、三级2+1；符合数量/范围后更新预测HP |
 | [src/agent/server.py](src/agent/server.py) | `Handler/serve` | 转发新网络层，兼容demo旧导入 |
 
 ## 函数调用时容易混淆的参数
