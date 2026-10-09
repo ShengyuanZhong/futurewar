@@ -1,8 +1,10 @@
 # CoreGeek 参赛 Agent
 
-当前程序版本为 v1.0.1：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后两翼六墙升2级。基地不升级。全部达标后双工人墙内维修，白天轮流批量买包，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛 v2.0 规则尚未实现，后续开发参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
+当前程序版本为 v1.0.2：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后两翼六墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回墙内，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛 v2.0 规则尚未实现，后续开发参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
 
 此目录可作为参赛程序目录提交。沿用示例的 `main3.py`、`src/agent/protocol.py`、`grid.py`、`brain.py`；HTTP 处理与跨回合协作放在 `app`。新增代码无第三方运行依赖。
+
+v1.0.2 恢复防线升级完成后的白天经济工作、黄昏回防、夜间双人维修；批量购包为采矿保留一批空位，详见[完成后的经济循环](docs/COMPLETED_ECONOMY.md)。
 
 v1.0.1 增加有效施工/采矿目标保持、筹石施工并行、日照不足时继续采矿、单人升级券采购与让行失败回退，详见[工人效率修复](docs/WORKER_EFFICIENCY.md)。
 
@@ -73,9 +75,9 @@ python main3.py 8080 --config config.local.json
 
 ```powershell
 python run_tests.py
-python tools/smoke_server.py --output ../reports/http-smoke-v1.0.1.json
-python tools/replay.py ../request.txt --output ../reports/sample-response-v1.0.1.json
-python tools/validate.py --cases 20 --output ../reports/validation-v1.0.1.json
+python tools/smoke_server.py --output ../reports/http-smoke-v1.0.2.json
+python tools/replay.py ../request.txt --output ../reports/sample-response-v1.0.2.json
+python tools/validate.py --cases 20 --output ../reports/validation-v1.0.2.json
 ```
 
 回放输入支持单个 JSON、JSON 数组、每行一份观测的 JSONL。单个队伍按回合递增；同回合相同内容返回缓存，不同内容拒绝，以免状态被重复推进。
@@ -135,7 +137,7 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | 同上 | `near/near_zone` | 通用相邻交互检查 |
 | [src/agent/grid.py](src/agent/grid.py) | `Routes(turn, role, reserved=None, danger=None, allowed=None)` | BFS或风险优先Dijkstra；保存步数、累计风险和第一步，allowed限制巡护区域 |
 | [src/agent/worker_safety.py](src/agent/worker_safety.py) | `robot_danger(turn)` | 机器人射程及警戒缓冲的风险图，供工人寻路与矿点筛选 |
-| [src/agent/wall_guard.py](src/agent/wall_guard.py) | `WallGuard(strategy)`、`daytime/nighttime` | 单人夜修/完成后双人全天维修，均衡备包、轮流采购与墙内阈值维修 |
+| [src/agent/wall_guard.py](src/agent/wall_guard.py) | `WallGuard(strategy)`、`daytime/nighttime` | 单人夜修/完成后白天经济、双人夜修，均衡备包、轮流采购与墙内阈值维修 |
 | 同上 | `Routes.nearest(goals)/step(goals)` | 最近可达站位/到该站位的第一步 |
 | 同上 | `adjacent_cells(turn, targets)` | 建筑或矿点周围的候选交互格 |
 | 同上 | `next_step(turn, moving, goal)` | 单个精确目的地的旧兼容接口 |

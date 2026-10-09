@@ -113,11 +113,8 @@ class Strategy:
         """One economic schedule; night adds safety and assigned guard duty."""
         if self.coordinator.hold_for_yield(role):
             return
-        if self.guard.full_time:
-            if self.turn.is_day:
-                self.guard.final_daytime(role)
-            else:
-                self.guard.on_duty(role)
+        if self.guard.full_time and not self.turn.is_day:
+            self.guard.on_duty(role)
             return
         if self.guard.is_guard(role) and not self.turn.is_day:
             self.guard.on_duty(role)
@@ -492,7 +489,7 @@ class Strategy:
             self.coordinator.job(role)['purchase_item'] = name
         return handled
 
-    def mine(self, role: Unit, need_stone: bool = False) -> bool:
+    def mine(self, role: Unit, need_stone: bool = False, return_cells: set[Pos] | None = None) -> bool:
         if role.backpack_full:
             return False
         options = []
@@ -509,6 +506,10 @@ class Strategy:
                 route = self.coordinator.diagnostic_route(role)
             if self.danger:
                 goals = {p for p in goals if not self.danger.get(p, 0) and route.exposure.get(p) == 0}
+            if return_cells is not None:
+                goals = {p for p in goals if p in route.cost and return_cells
+                         and route.cost[p] + 1 + min(distance(p, home) for home in return_cells)
+                         + self.settings.return_margin < self.turn.daylight_left}
             cost = route.cost.get(route.nearest(goals), 10_000)
             if cost >= 10_000:
                 continue

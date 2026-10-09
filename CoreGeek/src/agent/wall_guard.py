@@ -1,4 +1,4 @@
-"""Night repair duty; after all target upgrades, both workers guard and resupply."""
+"""Night repair duty; completed defenses keep daytime mining and kit income."""
 from .protocol import Pos, distance
 
 
@@ -25,8 +25,9 @@ class WallGuard:
         if self.full_time:
             self.stock_targets = self.final_stock_targets(workers)
             supplier = next((w for w in workers if w.unit_id == self.memory.repair_supplier_id), None)
-            # Finish the return trip before sending the other worker out.
-            if supplier is None or (supplier.pos in self.inner_cells() and self.stock_missing(supplier) == 0):
+            # Completed daytime workers keep working after the purchase; the
+            # next supplier need not wait for a return to the night post.
+            if supplier is None or self.stock_missing(supplier) == 0:
                 candidates = [w for w in workers if self.stock_missing(w) > 0]
                 supplier = min(candidates, key=lambda w: (w.backpack.count('WallFixer'), w.unit_id), default=None)
                 self.memory.repair_supplier_id = supplier.unit_id if supplier else None
@@ -37,9 +38,10 @@ class WallGuard:
         return role.kind == 'worker' and (self.full_time or role.unit_id == self.worker_id)
 
     def final_stock_targets(self, workers) -> dict[int, int]:
-        """Distribute affordable kits across bags, respecting individual capacity."""
+        """Distribute affordable kits while keeping a sale batch of mining space."""
         targets = {w.unit_id: w.backpack.count('WallFixer') for w in workers}
-        capacities = {w.unit_id: targets[w.unit_id] + max(0, w.capacity-len(w.backpack)) for w in workers}
+        capacities = {w.unit_id: targets[w.unit_id] + max(0, w.capacity-len(w.backpack)
+                      - min(self.settings.sell_batch, max(0, w.capacity-1))) for w in workers}
         if 'WallFixer' not in self.turn.shop_prices:
             return targets
         price = self.turn.shop_prices['WallFixer']
@@ -144,17 +146,27 @@ class WallGuard:
         return s.travel(role, shops, 'repair_supply')
 
     def final_daytime(self, role) -> None:
-        """Repair first; only one supplier may leave, and only with return time."""
+        """Repair, sell, buy kits and mine; both workers return before dusk."""
         s = self.strategy
         if self.nighttime(role, urgent_only=True):
+            return
+        cells = self.inner_cells()
+        route = s.route(role)
+        home = route.nearest(cells)
+        if home is None:
+            route = s.coordinator.diagnostic_route(role)
+            home = route.nearest(cells)
+        if home is None or self.turn.daylight_left <= route.cost[home] + self.settings.return_margin:
+            self.nighttime(role)
+            return
+        vendors = [p for p,k in self.turn.zones.items() if k == 'vendor']
+        if self.trip_fits_daylight(role, vendors, cells) and s.sell(role):
             return
         missing = self.stock_missing(role)
         if role.unit_id == self.memory.repair_supplier_id and missing:
             shops = [p for p,k in self.turn.zones.items() if k == 'weaponShop']
-            cells = self.inner_cells()
             if shops and cells:
-                return_cost = min(max(0, distance(shop,p)-1) for shop in shops for p in cells)
-                if s.cost(role, shops) + 1 + return_cost + self.settings.return_margin < self.turn.daylight_left:
+                if self.trip_fits_daylight(role, shops, cells):
                     if self.plan.near_zone(role, 'weaponShop'):
                         price = self.turn.shop_prices['WallFixer']
                         count = min(missing, role.capacity-len(role.backpack), self.plan.gold//price if price else missing)
@@ -162,7 +174,16 @@ class WallGuard:
                             return
                     elif s.travel(role, shops, 'repair_supply'):
                         return
-        self.nighttime(role)
+        if not s.mine(role, return_cells=cells):
+            self.nighttime(role)
+
+    def trip_fits_daylight(self, role, landmarks, cells) -> bool:
+        """Budget one interaction and a return estimate, using current outbound paths."""
+        if not landmarks or not cells:
+            return False
+        return_cost = min(max(0, distance(p, home)-1) for p in landmarks for home in cells)
+        return (self.strategy.cost(role, landmarks) + 1 + return_cost
+                + self.settings.return_margin < self.turn.daylight_left)
 
     def on_site_upgrade(self, role) -> bool:
         """A guard may deliver a voucher along the inner lane without leaving duty."""

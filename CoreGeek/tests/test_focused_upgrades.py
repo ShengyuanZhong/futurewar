@@ -101,8 +101,8 @@ class FocusedUpgradesTests(unittest.TestCase):
             self.assertNotEqual(repairs[0]['targetPos'],repairs[1]['targetPos'])
             self.assertEqual(plan.rejections,[])
 
-    def test_final_workers_hold_inside_day_and_night_without_mining(self):
-        for number in (201,261,331):
+    def test_final_workers_hold_inside_at_night_without_mining(self):
+        for number in (201,331):
             raw=finished(number);raw['teamOur']['goldNum']=0
             s,plan=setup(raw);s.run()
             for uid in (501,504):
@@ -143,8 +143,9 @@ class FocusedUpgradesTests(unittest.TestCase):
         self.assertFalse(s.treasure(pioneer))
         self.assertEqual(plan.commands,{})
 
-    def test_supplier_round_trips_spend_all_affordable_gold_with_one_guard_home(self):
+    def test_supplier_round_trips_when_no_mining_work_is_available(self):
         raw=finished(261);raw['teamOur']['goldNum']=200
+        raw['mapInfo']['zones'] = [z for z in raw['mapInfo']['zones'] if z['neutralType'] not in ('stone','iron','copper')]
         service=TurnService()
         purchases=[]
         for number in range(261,321):
@@ -177,7 +178,7 @@ class FocusedUpgradesTests(unittest.TestCase):
             self.assertEqual(plan.rejections,[])
 
     def test_final_restock_respects_capacity_price_and_dusk(self):
-        for gold,price,bag,expected in ((100,10,['stone']*99,1),(0,0,['stone']*98,2),(5,10,[],0)):
+        for gold,price,bag,expected in ((100,10,['WallFixer']*87,1),(0,0,['WallFixer']*86,2),(5,10,[],0)):
             raw=finished(261);raw['teamOur']['goldNum']=gold
             raw['teamOur']['roles'][2].update(pos={'x':3,'y':7},backpack=bag)
             raw['teamOur']['roles'][3]['backpack']=['WallFixer']*100
