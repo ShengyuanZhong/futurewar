@@ -12,6 +12,7 @@ TOWER_TYPES = ("gatling", "railgun", "rocket")
 CONTROLLABLE_TYPES = (WORKER, PIONEER, IMP)
 MINERALS = ("stone", "iron", "copper")
 TOWER_RANGE_BY_LEVEL = {"gatling": (3, 5, 7), "railgun": (6, 8, 10), "rocket": (10, 15, 10**9)}
+ROBOT_ATTACK_POWER = {'smallRobot': 5, 'middleRobot': 10, 'largeRobot': 20, 'bossRobot': 40}
 STEPS = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1))
 
 
@@ -88,6 +89,17 @@ class Robot:
     target_team: str = ""
     abnormal_state: str = ""
 
+    @property
+    def unit_id(self) -> int:
+        return self.robot_id
+
+    @property
+    def attack_power(self) -> int:
+        return ROBOT_ATTACK_POWER.get(self.kind, 0)
+
+    def range_of_attack(self) -> int:
+        return 3
+
     @classmethod
     def load(cls, raw: dict[str, Any]) -> "Robot":
         return cls(integer(raw["id"], "id"), Pos.load(raw["pos"]), integer(raw["health"], "health"),
@@ -163,6 +175,7 @@ class Turn:
     treasure_result: int = 0
     errors: tuple[dict[str, Any], ...] = ()
     total_score: int = 0
+    summon_robots: tuple[Robot, ...] = ()
 
     @classmethod
     def load(cls, payload: dict[str, Any]) -> "Turn":
@@ -177,11 +190,22 @@ class Turn:
         def prices(name: str) -> dict[str, int]:
             return {str(item["name"]): integer(item["price"], "price")
                     for item in payload.get(name) or () if item["price"] >= 0}
+        robots = tuple(Robot.load(r) for r in (payload.get('robot') or {}).get('roles') or ())
+        owned = tuple(Robot.load(r) for r in team.get('summonRobotList') or ())
+        if len({r.robot_id for r in owned}) != len(owned) or any(r.kind not in ROBOT_ATTACK_POWER for r in owned):
+            raise ValueError('invalid owned robot list')
+        global_robots = {r.robot_id: r for r in robots}
+        for robot in owned:
+            shared = global_robots.get(robot.robot_id)
+            if shared and (shared.pos, shared.health, shared.kind) != (robot.pos, robot.health, robot.kind):
+                raise ValueError('conflicting owned/global robot observation')
+        owned = tuple(global_robots.get(r.robot_id, r) for r in owned)
+        robots += tuple(r for r in owned if r.robot_id not in global_robots)
         turn = cls(round_no, (round_no - 1) % ROUNDS_PER_DAY < DAY_ROUNDS,
                    integer(team["goldNum"], "goldNum"), width, height,
                    {Pos.load(z["pos"]): str(z["neutralType"]) for z in info.get("zones") or ()},
                    tuple(Unit.load(r) for r in team.get("roles") or ()),
-                   tuple(Robot.load(r) for r in (payload.get("robot") or {}).get("roles") or ()),
+                   robots,
                    tuple(Unit.load(r) for r in (payload.get("teamEnemy") or {}).get("roles") or ()),
                    str(team["teamId"]), team["type"],
                    tuple(PlayerTask.load(t) for t in team.get("playerTasks") or ()),
@@ -191,7 +215,7 @@ class Turn:
                    prices("vendorShopList"), prices("weaponShopList"),
                    {str(k): v for k, v in (payload.get("lastRoundRoleActionResults") or {}).items()},
                    int(payload.get("lastSummonTreasureResult") or 0), tuple(payload.get("errors") or ()),
-                   int(team.get("totalScore") or 0))
+                   int(team.get("totalScore") or 0), owned)
         ids = [u.unit_id for u in turn.ours + turn.enemies] + [r.robot_id for r in turn.robots]
         if len(ids) != len(set(ids)):
             raise ValueError("unit IDs must be globally unique")
@@ -223,6 +247,10 @@ class Turn:
 
     def imps(self) -> tuple[Unit, ...]:
         return self.alive((IMP,))
+
+    def hostile_robots(self) -> tuple[Robot, ...]:
+        owned = {r.robot_id for r in self.summon_robots}
+        return tuple(r for r in self.robots if r.robot_id not in owned)
 
     def weapons(self) -> tuple[Unit, ...]:
         return self.alive(TOWER_TYPES)

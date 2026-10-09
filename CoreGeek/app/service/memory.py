@@ -51,6 +51,9 @@ class GameMemory:
     temporary_wall_sites: set[Pos] = field(default_factory=set)
     blockade_worker_id: int | None = None
     blockade_watch: bool = False
+    boss_raid: dict[str, Any] = field(default_factory=dict)
+    robot_raids: dict[int, dict[str, Any]] = field(default_factory=dict)
+    pending_summon_positions: set[Pos] = field(default_factory=set)
     imp_home_side: int = 0
     imp_tasks: dict[int, dict[str, Any]] = field(default_factory=dict)
     repair_usage_today: dict[int, int] = field(default_factory=dict)
@@ -66,16 +69,23 @@ class GameMemory:
                 self.task_points_attempted.add((day, *self.last_task_point))
         if self.last_round == turn.round_no - 1:
             for actor, command in self.last_commands.items():
+                if (command.get('action') == 'use' and command.get('name', '').endswith('RobotSummonOrder')
+                        and turn.action_results.get(actor) is False):
+                    self.summon_attempts = max(0, self.summon_attempts-1)
+                    self.pending_summon_positions.discard(Pos.load(command['targetPos'][0]))
                 if (command.get("action") == "use" and command.get("name") == "WallFixer"
                         and turn.action_results.get(actor) is True):
                     uid = int(actor)
                     self.repair_usage_today[uid] = self.repair_usage_today.get(uid, 0) + 1
         if self.day != turn.day:
+            self.pending_summon_positions.clear()
             self.repair_usage_previous = self.repair_usage_today if self.day == turn.day-1 else {}
             self.repair_usage_today = {}
             self.day = turn.day
             self.ordinary_llm_calls = 0
             self.summon_attempts = 0
+        if not turn.is_day and (turn.round_no - 1) % 130 == 70:
+            self.pending_summon_positions.clear()
         entry = {"day": turn.day, "officialNews": turn.official_news, "folkLegends": turn.folk_legends}
         if (turn.official_news or turn.folk_legends) and entry not in self.news:
             self.news.append(entry)
@@ -110,6 +120,7 @@ class GameMemory:
         self.last_round = turn.round_no
         self.last_commands = plan.commands
         self.summon_attempts = plan.summon_used
+        self.pending_summon_positions = set(plan.summon_positions)
         if any(c["action"] == "acceptTask" for c in plan.commands.values()):
             self.task_accept_round = turn.round_no
             selected = self.task_agent.accepted_task

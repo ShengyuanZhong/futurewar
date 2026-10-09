@@ -35,7 +35,7 @@ def robot_danger(turn: Turn) -> dict[Pos, int]:
     """
     danger = {}
     walls = [w.pos for w in turn.walls()]
-    for robot in turn.robots:
+    for robot in turn.hostile_robots():
         if robot.health <= 0:
             continue
         weight = ROBOT_DAMAGE.get(robot.kind, 40)

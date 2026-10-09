@@ -1,6 +1,7 @@
-"""Start the real CLI as an owned subprocess and POST the unmodified sample."""
+"""Start the real CLI and POST an unmodified official or supplied fixture."""
 import argparse
 import http.client
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -15,6 +16,8 @@ ROOT = Path(__file__).resolve().parents[1]
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=ROOT.parent / "reports" / "http-smoke.json")
+    parser.add_argument('--request', type=Path, default=ROOT.parent / 'request.txt')
+    parser.add_argument('--robot-id', type=int, help='Assert this controlled robot receives move/attack')
     args = parser.parse_args()
     with socket.socket() as sock:
         sock.bind(("127.0.0.1", 0))
@@ -40,7 +43,7 @@ def main():
                 time.sleep(.05)
             finally:
                 conn.close()
-        body = (ROOT.parent / "request.txt").read_bytes()
+        body = args.request.read_bytes()
         conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
         try:
             started = time.perf_counter()
@@ -51,10 +54,16 @@ def main():
             assert response.status == 200
             assert set(result) == {"roleCommandMap", "prompt", "executeCmd"}
             assert isinstance(result["roleCommandMap"], dict)
+            if args.robot_id is not None:
+                command = result['roleCommandMap'][str(args.robot_id)]
+                assert command['action'] in ('move', 'attack') and 'controllerId' not in command
             report = {"status": response.status, "elapsed_ms": round(elapsed, 3),
                       "actions": len(result["roleCommandMap"]), "entry": "python CoreGeek/main3.py <port>",
-                      "request": "unmodified request.txt", "bind_verified_from_startup_log": False,
+                      "request": 'unmodified request.txt' if args.request.resolve() == (ROOT.parent/'request.txt').resolve() else args.request.name,
+                      'request_sha256': hashlib.sha256(body).hexdigest(), "bind_verified_from_startup_log": False,
                       "bash_executed": False}
+            if args.robot_id is not None:
+                report['controlled_robot_command'] = result['roleCommandMap'][str(args.robot_id)]
         finally:
             conn.close()
     finally:

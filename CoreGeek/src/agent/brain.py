@@ -10,6 +10,9 @@ from .worker_coordinator import WorkerCoordinator
 from .wall_guard import WallGuard
 from .imp_policy import ImpController
 from .site_blockade import SiteBlockade
+from .boss_raid import BOSS_ORDER, BossRaid
+from .robot_raider import RobotRaider
+from .summoning import rear_spawn_position
 from . import upgrade_policy
 from .protocol import (IMP, MINERALS, PIONEER, TOWER_TYPES, Pos, Turn, Unit,
                        attack_command, build_command, collect_command, distance, move_command)
@@ -32,6 +35,8 @@ class Strategy:
         self.imp = ImpController(self)
         self.site_guard = SiteBlockade(self)
         self.site_guard.choose_watcher()
+        self.boss_raid = BossRaid(self)
+        self.raider = RobotRaider(self)
 
     def movement_reserved(self, role: Unit | None = None) -> set[Pos]:
         """Use the same future sites in paths, yields and site clearance."""
@@ -97,6 +102,8 @@ class Strategy:
                 self.plan.add(role.unit_id, {"action": "use", "name": "Medicine"})
                 continue
             if role.kind == PIONEER:
+                if self.boss_raid.pioneer(role):
+                    continue
                 if self.pioneer_should_defend(role):
                     self.operate_weapons(role)
                     continue
@@ -111,6 +118,11 @@ class Strategy:
                 self.move_to_control(role)
             else:
                 self.run_worker(role)
+        for robot in self.turn.summon_robots:
+            if time.monotonic() >= self.deadline:
+                break
+            if robot.robot_id not in self.plan.used:
+                self.raider.decide(robot)
         for role in self.turn.workers():
             if self.coordinator.job(role).get('round') != self.turn.round_no:
                 command = self.plan.commands.get(str(role.unit_id),{})
@@ -171,7 +183,7 @@ class Strategy:
 
     def operate_weapons(self, role: Unit) -> bool:
         if not self.turn.is_day:
-            health = {r.robot_id: r.health for r in self.turn.robots}
+            health = {r.robot_id: r.health for r in self.turn.hostile_robots()}
             choices = []
             for tower in self.turn.weapons():
                 if tower.cooldown != 0 or distance(role.pos, tower.pos) > 1:
@@ -329,7 +341,7 @@ class Strategy:
             for name in ("Bomb", "DizzyWeapon"):
                 if name not in role.backpack:
                     continue
-                robots = [r for r in self.turn.robots if r.health > 0 and (name == "Bomb" or r.abnormal_state != "dizzy")]
+                robots = [r for r in self.turn.hostile_robots() if r.health > 0 and (name == "Bomb" or r.abnormal_state != "dizzy")]
                 candidates = {p for r in robots for p in (r.pos,) + r.pos.neighbours() if self.turn.in_bounds(p)}
                 if candidates:
                     target = max(sorted(candidates), key=lambda p: sum(min(r.health, 100) if name == "Bomb" else 1 for r in robots if distance(r.pos, p) <= 1))
@@ -337,8 +349,12 @@ class Strategy:
                     if hit_count >= 2:
                         return self.plan.add(role.unit_id, {"action": "use", "name": name, "targetPos": [target.dump()]})
         for name in sorted(set(role.backpack) & SUMMON_ITEMS):
+            if name == BOSS_ORDER and self.settings.enable_boss_raid:
+                continue  # Reserved for the task-complete day-one pioneer workflow.
             if self.plan.summon_used < 10:
-                return self.plan.add(role.unit_id, {"action": "use", "name": name})
+                spawn = rear_spawn_position(self.turn, self.settings, self.plan.summon_positions)
+                if spawn is not None:
+                    return self.plan.add(role.unit_id, {"action": "use", "name": name, "targetPos": [spawn.dump()]})
         # Purchase and use share one observed-state stage, regardless of bag order.
         candidates = self.upgrade_candidates()
         if candidates and candidates[0].kind == "wall":
@@ -475,6 +491,7 @@ class Strategy:
         shops = [p for p, k in self.turn.zones.items() if k == "weaponShop"]
         reserve = max(0, 3 - self.plan.tower_count) * 25 if self.settings.build_cells(self.turn, "rocket") else 0
         reserve += self.guard.budget_reserve()
+        reserve += self.boss_raid.budget_reserve()
         planned = Counter(i for r in self.turn.controllable() for i in r.backpack)
         for command in self.plan.commands.values():
             if command["action"] == "buy":

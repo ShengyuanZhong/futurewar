@@ -51,9 +51,9 @@ def segment_entry(start: Pos, end: Pos, cell: Pos) -> float | None:
 def damage_for(turn: Turn, tower: Unit, target: Pos, health: dict[int, int]) -> dict[int, int]:
     if tower.kind == "rocket":
         return {r.robot_id: min(health.get(r.robot_id, r.health), 20 if r.pos == target else 10)
-                for r in turn.robots if r.health > 0 and distance(r.pos, target) <= 1}
+                for r in turn.hostile_robots() if r.health > 0 and distance(r.pos, target) <= 1}
     hits = []
-    for robot in turn.robots:
+    for robot in turn.hostile_robots():
         if robot.health <= 0 or health.get(robot.robot_id, robot.health) <= 0:
             continue
         entry = segment_entry(tower.pos, target, robot.pos)
@@ -134,7 +134,7 @@ def _occupied_rocket_target(turn, tower, centres, scores):
 
 
 def choose_targets(turn: Turn, tower: Unit, expected_health: dict[int, int], deadline=float("inf")) -> list[Pos]:
-    robots = [r for r in turn.robots if r.health > 0]
+    robots = [r for r in turn.hostile_robots() if r.health > 0]
     if not robots or time.monotonic() >= deadline:
         return []
     count = 1 if tower.kind == "railgun" else max(1, min(3, tower.level))

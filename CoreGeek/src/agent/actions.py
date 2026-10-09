@@ -3,6 +3,8 @@ from collections import Counter
 from typing import Any
 from .protocol import (CONTROLLABLE_TYPES, IMP, MINERALS, PIONEER, TOWER_TYPES, WORKER,
                        Pos, Turn, Unit, distance)
+from .robot_combat import clear_attack
+from .summoning import summon_cell_legal
 
 SUMMON_ITEMS = {f"{kind}RobotSummonOrder" for kind in ("Small", "Middle", "Large", "Boss")}
 UPGRADES = {f"{prefix}UpgradeVoucher{level}": (kinds, level)
@@ -18,7 +20,7 @@ ACTION_FIELDS = {
 
 
 class ActionPlan:
-    def __init__(self, turn: Turn, settings, summon_used: int = 0):
+    def __init__(self, turn: Turn, settings, summon_used: int = 0, summon_positions=()):
         self.turn, self.settings = turn, settings
         self.commands: dict[str, dict[str, Any]] = {}
         self.used: set[int] = set()
@@ -26,10 +28,12 @@ class ActionPlan:
         self.gold = turn.gold
         self.tower_count = len(turn.weapons())
         self.summon_used = summon_used
+        self.summon_positions = set(summon_positions)
         self.build_targets: set[Pos] = set()
         self.temporary_wall_sites: set[Pos] = set()
         self.upgrade_targets: set[int] = set()
         self.units = {u.unit_id: u for u in turn.ours if u.health > 0}
+        self.robots = {r.robot_id: r for r in turn.summon_robots if r.health > 0}
         self.rejections: list[str] = []
 
     def near(self, role: Unit, cells) -> bool:
@@ -56,13 +60,28 @@ class ActionPlan:
         action = command.get("action")
         require(action in ACTION_FIELDS, "unknown action")
         require(set(command) <= ACTION_FIELDS[action] | {"action"}, "unexpected command field")
-        role = self.units[unit_id]
         require(unit_id not in self.used, "unit already acted")
         raw_points = command.get("targetPos", [])
         require(isinstance(raw_points, list), "targetPos must be an array")
         points = [Pos.load(p) for p in raw_points]
         require(all(self.turn.in_bounds(p) for p in points), "target outside map")
         target = points[0] if points else None
+        if unit_id in self.robots:
+            robot = self.robots[unit_id]
+            require(action in ('move', 'attack') and set(command) == {'action', 'targetPos'}, 'robot only moves or attacks')
+            require(not self.turn.is_day and robot.abnormal_state != 'dizzy', 'robot unavailable')
+            require(len(points) == 1, 'exactly one robot target required')
+            if action == 'move':
+                require(distance(robot.pos, target) == 1, 'robot movement must be one neighbour')
+                require(self.turn.land(target) and target not in self.turn.blocked(robot), 'occupied destination')
+                require(target not in self.reserved, 'destination already reserved')
+                self.reserved.add(target)
+            else:
+                require(clear_attack(self.turn, robot, target), 'robot target unseen, out of range or behind wall')
+            self.commands[str(unit_id)] = command
+            self.used.add(unit_id)
+            return
+        role = self.units[unit_id]
         if action in ("move", "build", "remove", "collect", "destroy", "summonTreasure"):
             require(len(points) == 1, "exactly one target required")
         name = command.get("name", "")
@@ -161,7 +180,8 @@ class ActionPlan:
                     require(len(points) == 1, "area target required")
                 elif name in SUMMON_ITEMS:
                     require(self.summon_used < 10, "daily summon allowance exhausted")
-                    require(not points, "summon order takes no target")
+                    require(len(points) == 1, 'summon order requires one target')
+                    require(summon_cell_legal(self.turn, self.settings, target, self.summon_positions), 'invalid summon position')
                     summon = 1
                 else:
                     require(name == "Medicine" and not points, "unknown consumable")
@@ -169,6 +189,8 @@ class ActionPlan:
         self.gold -= cost
         self.tower_count += new_tower
         self.summon_used += summon
+        if summon:
+            self.summon_positions.add(target)
         self.commands[str(unit_id)] = command
         self.used.update((unit_id, actor.unit_id))
         if action in ("move", "build"):

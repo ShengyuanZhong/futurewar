@@ -62,7 +62,7 @@ class TurnService:
                 self.llm.apply_news(turn, memory, reply)
                 if not reply:
                     memory.analysed_news = ""
-            plan = ActionPlan(turn, self.settings, memory.summon_attempts)
+            plan = ActionPlan(turn, self.settings, memory.summon_attempts, memory.pending_summon_positions)
             strategy = Strategy(turn, plan, memory)
             strategy.deadline = started + 3.5
             pioneer = next(iter(turn.alive(("pioneer",))), None)
@@ -102,6 +102,10 @@ class TurnService:
                 LOGGER.info('wall_blockade round=%s occupations=%s gaps=%s temporary=%s watcher=%s watch=%s',
                             turn.round_no, memory.site_occupations, memory.wall_blockades,
                             sorted(memory.temporary_wall_sites), memory.blockade_worker_id, memory.blockade_watch)
+            if memory.boss_raid or memory.robot_raids:
+                LOGGER.info('boss_raid round=%s stage=%s robots=%s commands=%s', turn.round_no,
+                            memory.boss_raid, memory.robot_raids,
+                            {str(r.robot_id): plan.commands.get(str(r.robot_id)) for r in turn.summon_robots})
             for reason in plan.rejections:
                 LOGGER.warning("action_rejected %s", reason)
             return response

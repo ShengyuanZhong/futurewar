@@ -1,8 +1,10 @@
 # CoreGeek 参赛 Agent
 
-当前程序版本为 v1.1.3：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后两翼六墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回墙内，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
+当前程序版本为 v1.2.0：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后两翼六墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回墙内，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
 
 此目录可作为参赛程序目录提交。沿用示例的 `main3.py`、`src/agent/protocol.py`、`grid.py`、`brain.py`；HTTP 处理与跨回合协作放在 `app`。新增代码无第三方运行依赖。
+
+v1.2.0接入[第一天BOSS袭击](docs/BOSS_RAID.md)：两任务结束后赴店买一张BOSS券，指定敌基地后方出生点并回防；第一夜BOSS以实际机器人ID独立追击操炮者、绕墙/破墙、确认击杀后攻基地。解析summonRobotList，己方机器人不进入炮台取分或工人危险估值；只改变这段第一天流程。
 
 v1.1.2将所有等级火箭的己区、敌区选点统一为：中心有活机器人，九宫格内Σ(击杀分/当前剩余HP)最大，用精确分数求和。三级沿用两发己区、一发敌区；敌区为空则全部防守，详见[火箭半区策略](docs/ROCKET_SECTORS.md)。
 
@@ -73,7 +75,7 @@ python main3.py 8080 --config config.local.json
 - 防御优先于活跃任务与宝藏；保留射程、目标数量、伤害估值和角色互斥检查。
 - 开拓者接任务，官方 LLM / 沙盒探索，提交答案，按类型保存成功/失败经验并复用SOP/Skill。
 - 跨日新闻积累、停矿信息推理、宝藏购买与定时献祭、失败方案去重。
-- 原十二种动作与destroy都提供统一校验。`remove` / `drop`可供扩展策略调用；当前基线不会主动拆墙或丢物品。普通物品使用受开局、夜采与防御优先级限制，不会自动采购召唤令、炸弹、眩晕法宝。
+- 原十二种动作与destroy提供统一校验，原生机器人move/attack有独立权限；remove用于原墙确认补齐后的临时墙清理，drop仍仅供扩展。新增第一天BOSS券购买，其它召唤令、炸弹与眩晕法宝不自动采购。
 
 这是一版可运行的策略基线，不保证任务解题正确率或比赛胜率；判题器负责真实结算、伤害、复活、计分与胜负。
 
@@ -81,9 +83,9 @@ python main3.py 8080 --config config.local.json
 
 ```powershell
 python run_tests.py
-python tools/smoke_server.py --output ../reports/http-smoke-v1.1.3.json
-python tools/replay.py ../request.txt --output ../reports/sample-response-v1.1.3.json
-python tools/validate.py --cases 20 --output ../reports/validation-v1.1.3.json
+python tools/smoke_server.py --output ../reports/http-smoke-v1.2.0.json
+python tools/replay.py ../request.txt --output ../reports/sample-response-v1.2.0.json
+python tools/validate.py --cases 20 --output ../reports/validation-v1.2.0.json
 ```
 
 回放输入支持单个 JSON、JSON 数组、每行一份观测的 JSONL。单个队伍按回合递增；同回合相同内容返回缓存，不同内容拒绝，以免状态被重复推进。
@@ -138,7 +140,7 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | 同上 | `Pos/Unit/Robot/PlayerTask/CommandResult` | 坐标、单位、机器人、任务点、沙盒结果 |
 | 同上 | `distance/station_footprint` | 切比雪夫距离、基地四格 |
 | 同上 | `move_command/collect_command/build_command/attack_command` | 官方动作格式构造，仍需动作校验 |
-| [src/agent/actions.py](src/agent/actions.py) | `ActionPlan(turn, settings, summon_used=0)` | 初始化当前回合预算和预留 |
+| [src/agent/actions.py](src/agent/actions.py) | `ActionPlan(turn, settings, summon_used=0, summon_positions=())` | 预算、待生成位置与原生机器人move/attack权限 |
 | 同上 | `ActionPlan.add(unit_id, command)` | 校验并加入命令，成功True、拒绝False |
 | 同上 | `near/near_zone` | 通用相邻交互检查 |
 | [src/agent/grid.py](src/agent/grid.py) | `Routes(turn, role, reserved=None, danger=None, allowed=None)` | BFS或风险优先Dijkstra；保存步数、累计风险和第一步，allowed限制巡护区域 |
@@ -163,6 +165,9 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | 同上 | `damage_for(turn, tower, target, health)` | 计算单发预计伤害字典 |
 | 同上 | `choose_targets(turn, tower, expected_health, deadline=inf)` | 火箭按占用中心Σ(分/当前HP)最大选点、三级2+1；符合数量/范围后更新预测HP |
 | [src/agent/site_blockade.py](src/agent/site_blockade.py) | `SiteBlockade(strategy).watch(role)` / `cleanup(role)` | 连续占点、携石待命和白天抢补；观测确认后拆临时墙 |
+| [src/agent/boss_raid.py](src/agent/boss_raid.py) | `BossRaid(strategy).pioneer(role)` | 两任务结束后买一张BOSS券、远程召唤、回到原操炮位 |
+| [src/agent/robot_raider.py](src/agent/robot_raider.py) | `RobotRaider(strategy).decide(robot)` | 第一夜BOSS独立追击、搜索、绕墙/破墙与攻基地 |
+| [src/agent/summoning.py](src/agent/summoning.py) | `rear_spawn_position(turn, settings, pending=(), failed=())` | 实际敌基地优先，选择非建造区的后方出生点 |
 | [src/agent/server.py](src/agent/server.py) | `Handler/serve` | 转发新网络层，兼容demo旧导入 |
 
 ## 函数调用时容易混淆的参数

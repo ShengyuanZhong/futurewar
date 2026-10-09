@@ -1,0 +1,22 @@
+{
+  "status": 200,
+  "elapsed_ms": 55.795,
+  "actions": 4,
+  "entry": "python CoreGeek/main3.py <port>",
+  "request": "boss-raid-observation-v1.2.0.json",
+  "request_sha256": "7971e71437c4d547c5bf282c0b30204dac3eabf3977541191a6caca9c679dd39",
+  "bind_verified_from_startup_log": true,
+  "bash_executed": false,
+  "controlled_robot_command": {
+    "action": "attack",
+    "targetPos": [
+      {
+        "x": 36,
+        "y": 25
+      }
+    ]
+  },
+  "construction_warning": false,
+  "base_surroundings_enabled": true,
+  "task_debug_logged": true
+}

@@ -10,5 +10,7 @@
   "repair_threshold_percent": 30,
   "enable_tasks": true,
   "enable_news": true,
+  "enable_boss_raid": true,
+  "summon_build_margin": 5,
   "max_body_bytes": 2097152
 }

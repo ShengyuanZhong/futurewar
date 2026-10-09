@@ -33,6 +33,8 @@ class Settings:
     repair_threshold_percent: int = 30
     enable_tasks: bool = True
     enable_news: bool = True
+    enable_boss_raid: bool = True
+    summon_build_margin: int = 5
     max_body_bytes: int = 2 * 1024 * 1024
 
     @classmethod
@@ -56,7 +58,9 @@ class Settings:
             raise ValueError("repair settings exceed days, worker capacity or percentage")
         if type(settings.repair_stock_per_day) is not int or not 0 <= settings.repair_stock_per_day <= 100:
             raise ValueError("repair_stock_per_day must be an integer in 0..100")
-        for key in ("allow_base_surroundings", "enable_tasks", "enable_news"):
+        if type(settings.summon_build_margin) is not int or not 0 <= settings.summon_build_margin <= 10:
+            raise ValueError('summon_build_margin must be an integer in 0..10')
+        for key in ("allow_base_surroundings", "enable_tasks", "enable_news", "enable_boss_raid"):
             if type(getattr(settings, key)) is not bool:
                 raise ValueError(f"{key} must be boolean")
         for team, layout in settings.layouts.items():

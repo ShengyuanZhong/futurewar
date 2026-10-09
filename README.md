@@ -2,11 +2,13 @@
 
 以初赛基线为基础，按 `32_docs/` v2.0 文档逐项扩展的参赛 HTTP Agent；规则来源见 `DEVELOPMENT_RULES.md`。保留 CoreGeek 的 `main3.py → src/agent` 基础结构，新增 `CoreGeek/app` 应用层。运行仅依赖 Python 标准库，Python 3.10 及以上。
 
-当前程序版本为 `v1.1.3`，基于用户确认的v0.4基准，版本声明见 [CoreGeek/pyproject.toml](CoreGeek/pyproject.toml)。开局仍为三火箭→采石→U形墙，随后集中升满一台火箭；第二天起依次强化正中两墙3级、第二台火箭2级、正面其余四墙2→3级、所有火箭3级，最后把两翼六墙升2级；不升级基地。全部目标达成后，两名工人白天继续采矿售矿、批量购包，黄昏回防，夜间双人维修。阈值仍为严格低于30%。详细坐标、镜像、购买规则和关键函数见[建筑维护](CoreGeek/docs/MAINTENANCE.md)。沿用工人独立任务、让行、城墙掩护与动态备货，见[工人协作](CoreGeek/docs/WORKER_COORDINATION.md)。沿用昼夜统一工人经济流程，夜间可继续采购与配送升级券，维修工可在内侧兼顾升级，详见[昼夜统一调度](CoreGeek/docs/WORKER_SCHEDULE.md)。沿用根据log1/log2统一寻路与建筑位清理的预留集合，修复待建/缺墙位置造成的往返循环，详见[日志定位与修复](CoreGeek/docs/WORKER_PATH_FIX.md)。v0.4基准已[归档](reports/BASELINE-v0.4.md)。0.4.1根据teamA(2)失败记录修正任务经验：过滤退出码0的业务/脚本失败、保留真实JSON层级及字段、补充解析/引号诊断并压缩短任务步骤；详见[失败任务修正](CoreGeek/docs/TASK_FAILURE_LEARNING.md)。战斗和工人策略沿用基准。0.4.2接入用户提供的任务交互日志格式，见[日志开发文档](CoreGeek/docs/TASK_LOGGING.md)。0.4.3整合新版任务控制器与提示词，包含分类经验、临期预算、占位答案拦截和按奖励增量判定成功；双任务点调度沿用上一版，详见[任务模块接入](CoreGeek/docs/TASK_INTEGRATION.md)。
+当前程序版本为 `v1.2.0`，基于用户确认的v0.4基准，版本声明见 [CoreGeek/pyproject.toml](CoreGeek/pyproject.toml)。开局仍为三火箭→采石→U形墙，随后集中升满一台火箭；第二天起依次强化正中两墙3级、第二台火箭2级、正面其余四墙2→3级、所有火箭3级，最后把两翼六墙升2级；不升级基地。全部目标达成后，两名工人白天继续采矿售矿、批量购包，黄昏回防，夜间双人维修。阈值仍为严格低于30%。详细坐标、镜像、购买规则和关键函数见[建筑维护](CoreGeek/docs/MAINTENANCE.md)。沿用工人独立任务、让行、城墙掩护与动态备货，见[工人协作](CoreGeek/docs/WORKER_COORDINATION.md)。沿用昼夜统一工人经济流程，夜间可继续采购与配送升级券，维修工可在内侧兼顾升级，详见[昼夜统一调度](CoreGeek/docs/WORKER_SCHEDULE.md)。沿用根据log1/log2统一寻路与建筑位清理的预留集合，修复待建/缺墙位置造成的往返循环，详见[日志定位与修复](CoreGeek/docs/WORKER_PATH_FIX.md)。v0.4基准已[归档](reports/BASELINE-v0.4.md)。0.4.1根据teamA(2)失败记录修正任务经验：过滤退出码0的业务/脚本失败、保留真实JSON层级及字段、补充解析/引号诊断并压缩短任务步骤；详见[失败任务修正](CoreGeek/docs/TASK_FAILURE_LEARNING.md)。战斗和工人策略沿用基准。0.4.2接入用户提供的任务交互日志格式，见[日志开发文档](CoreGeek/docs/TASK_LOGGING.md)。0.4.3整合新版任务控制器与提示词，包含分类经验、临期预算、占位答案拦截和按奖励增量判定成功；双任务点调度沿用上一版，详见[任务模块接入](CoreGeek/docs/TASK_INTEGRATION.md)。
 
-已进入32强。用户提供的 [32进16需求变更](32_docs/2026云核心网第十届编程大赛-32进16-需求变更.md)、[v2.0任务书](32_docs/任务书.md)、[v2.0接口文档](32_docs/接口文档.md)及[新版报文样例](32_docs/request.txt)是**后续复赛开发**的参照，优先于根目录初赛 v1.0 文档中的冲突条款。v1.0 是变更前代码的封版；当前已接入捣乱鬼移动和destroy，可控机器人、小车及其它复赛改动仍待逐项开发；来源顺序与适配范围见[复赛规则接入索引](CoreGeek/docs/ROUND_OF_32_RULES.md)，封版证据见[v1.0基准记录](reports/BASELINE-v1.0.md)。
+已进入32强。用户提供的 [32进16需求变更](32_docs/2026云核心网第十届编程大赛-32进16-需求变更.md)、[v2.0任务书](32_docs/任务书.md)、[v2.0接口文档](32_docs/接口文档.md)及[新版报文样例](32_docs/request.txt)是**后续复赛开发**的参照，优先于根目录初赛 v1.0 文档中的冲突条款。v1.0 是变更前封版；当前已接入捣乱鬼move/destroy、召唤坐标和本方机器人move/attack，新增第一夜BOSS策略。小车及其它复赛改动仍待逐项开发，范围见[复赛规则接入索引](CoreGeek/docs/ROUND_OF_32_RULES.md)，封版证据见[v1.0基准记录](reports/BASELINE-v1.0.md)。
 
 ## 阅读导航
+
+v1.2.0增加[第一天BOSS袭击](CoreGeek/docs/BOSS_RAID.md)：两个任务结束后开拓者赴店，按实价买一张BOSS召唤令并远程指定敌基地后方出生点，再返回操炮位；第一夜独立操控本方BOSS追击敌方操炮者，绕墙找射线，必要时破墙，确认死亡后攻基地。接入summonRobotList归属，己方BOSS不再进入炮台取分和工人危险估值。
 
 v1.1.3增加恶意占点防御：同一敌方角色在同一未建造设施位连续超过5回合，缺墙处白天向外绕建临时墙；一名工人携石在内侧待命，下一次白天位置空出时抢补原墙，确认建成后拆临时墙。临时墙不参与升级。流程、区域假设、函数和日志见[占点防御](CoreGeek/docs/SITE_BLOCKADE.md)。
 
@@ -69,7 +71,9 @@ bash run.sh 8080
 | [捣乱鬼开发说明](CoreGeek/docs/IMP_STRATEGY.md) | 半区、独立寻路、连续destroy、死亡/复活、日志与函数 |
 | [火箭半区策略](CoreGeek/docs/ROCKET_SECTORS.md) | 所有火箭占用中心、Σ(分/当前HP)、精确计算、三级2+1、预测血量 |
 | [占点防御](CoreGeek/docs/SITE_BLOCKADE.md) | 连续占点识别、临时绕建、携石待命、白天抢补及确认后拆墙 |
-| [v1.1.3验证报告](reports/VALIDATION-v1.1.3.md) | 当前占点防御的回归及原策略压力检查 |
+| [第一天BOSS袭击](CoreGeek/docs/BOSS_RAID.md) | 买券/召唤/返岗、归属解析、夜间追击/绕墙/破墙及原生机器人指令 |
+| [v1.2.0验证报告](reports/VALIDATION-v1.2.0.md) | 当前BOSS流程、归属/攻击回归及含可控机器人的压力检查 |
+| [v1.1.3历史报告](reports/VALIDATION-v1.1.3.md) | 占点防御的回归及原策略压力检查 |
 | [v1.1.2历史报告](reports/VALIDATION-v1.1.2.md) | 比值选点的回归及独立压力检查 |
 | [v1.1.1历史报告](reports/VALIDATION-v1.1.1.md) | 上一版半区分配与总分选点证据 |
 | [v1.1.0验证报告](reports/VALIDATION-v1.1.0.md) | 本次捣乱鬼接入的完整回归、压力和新版报文回放 |
@@ -89,9 +93,9 @@ bash run.sh 8080
 
 ```powershell
 python CoreGeek/run_tests.py
-python CoreGeek/tools/smoke_server.py --output reports/http-smoke-v1.1.3.json
-python CoreGeek/tools/replay.py request.txt --output reports/sample-response-v1.1.3.json
-python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v1.1.3.json
+python CoreGeek/tools/smoke_server.py --output reports/http-smoke-v1.2.0.json
+python CoreGeek/tools/replay.py request.txt --output reports/sample-response-v1.2.0.json
+python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v1.2.0.json
 ```
 
 `replay.py` 只计算响应，不执行响应中的沙盒命令或 LLM 请求。验证脚本生成的压力结果是合成观测检查，不是比赛模拟、官方难度或胜率。
@@ -115,9 +119,9 @@ futurewar/
 ├── reports/
 │   ├── VALIDATION.md                 # 人类可读的历史验证报告
 │   ├── BASELINE-v1.0.md              # 当前程序封版与复赛适配边界
-│   ├── validation-v1.1.3.json          # 封版测试、压力、环境与源码哈希
-│   ├── http-smoke-v1.1.3.json          # 封版真实进程HTTP验证
-│   ├── sample-response-v1.1.3.json     # 封版对初赛样例的响应
+│   ├── validation-v1.2.0.json          # 封版测试、压力、环境与源码哈希
+│   ├── http-smoke-v1.2.0.json          # 封版真实进程HTTP验证
+│   ├── sample-response-v1.2.0.json     # 封版对初赛样例的响应
 │   ├── validation.json               # 测试/压力结果、环境、源码和规则文件SHA256
 │   ├── http-smoke.json               # 实际启动进程后的HTTP检查结果
 │   └── sample-response.json          # 原请求样例生成的离线响应
@@ -160,6 +164,10 @@ futurewar/
     │       ├── construction.py      # 在当前建造格内选三炮位置与共同操控格
     │       ├── combat.py            # 弹道相交、选敌伤害估值、旧匹配函数
     │       ├── site_blockade.py     # 敌方设施占点计数、临时围挡、携石守候及拆墙
+    │       ├── boss_raid.py         # 第一天两任务结束后买一张BOSS券、召唤、回防
+    │       ├── robot_raider.py      # 原生机器人独立追击操炮者、绕墙/破墙、攻基地
+    │       ├── robot_combat.py      # 机器人射程/可见目标/城墙遮挡检查
+    │       ├── summoning.py         # 实际/镜像敌基地、后排出生点与召唤区域约束
     │       ├── brain.py             # 昼夜策略、经济、建造、回防、接任务、宝藏行动
     │       └── server.py            # 旧agent.server入口的兼容转发
     ├── tests/
@@ -230,6 +238,7 @@ flowchart TD
     Strategy --> Grid[Routes / BFS]
     Strategy --> Layout[construction / 三炮与共同站位]
     Strategy --> Combat[单人选炮 / 选敌估值]
+    Strategy --> Raid[第一天买券召唤 / 第一夜BOSS独立操控]
     Strategy --> Plan[ActionPlan.add]
     LLM --> Plan
     Plan --> Result[roleCommandMap]
@@ -330,6 +339,8 @@ PYTHON=/usr/bin/python3 bash CoreGeek/run.sh 8080
 | `repair_threshold_percent` | 整数1–100 | `30` | 墙血量严格低于该百分比时夜间维修 |
 | `enable_tasks` | `bool` | `true` | 控制是否主动接新任务；已处于`phaseTask`的任务继续处理 |
 | `enable_news` | `bool` | `true` | 控制是否生成普通新闻分析prompt；不控制任务内的LLM调用 |
+| `enable_boss_raid` | `bool` | `true` | 第一天两任务结束后的买券/召唤与第一夜BOSS操控 |
+| `summon_build_margin` | `int`，0–10 | `5` | 排除距双方基地占格该范围的召唤点；保守地图假设，不是官方建造区定义 |
 | `max_body_bytes` | 正整数，单位为字节 | `2097152` | HTTP请求体上限，即2MiB；过大返回413 |
 
 注意：`Settings.load(path)`会校验文件结构和参数；直接在Python里调用`Settings(...)`是dataclass构造，不会自动执行同一套文件校验。正式配置建议经过`load`。
@@ -349,6 +360,8 @@ PYTHON=/usr/bin/python3 bash CoreGeek/run.sh 8080
   "repair_threshold_percent": 30,
   "enable_tasks": true,
   "enable_news": true,
+  "enable_boss_raid": true,
+  "summon_build_margin": 5,
   "max_body_bytes": 2097152
 }
 ```
@@ -407,6 +420,7 @@ PYTHON=/usr/bin/python3 bash CoreGeek/run.sh 8080
 | `Pos` | `x: int`、`y: int` | 一个地图格；可排序、可哈希，可用作字典key |
 | `Unit` | `unit_id`、`pos`、`kind`、`health`、`level`、`cooldown`、`attack_range`、`capacity`、`backpack` | 己方或可见敌方角色/建筑 |
 | `Robot` | `robot_id`、`pos`、`health`、`kind`、`target_team`、`abnormal_state` | 全图可见机器人，包含目标阵营和眩晕状态 |
+| `Turn.summon_robots` / `hostile_robots()` | 本方可控列表 / 排除本方ID的全场机器人 | 本方ID只来自summonRobotList；占用合并、炮台/工人估值分离 |
 | `PlayerTask` | `kind`、`pos`、`cooldown`、`valid`、`timeout`、`score`、`gold` | 官方任务点及可接取状态 |
 | `CommandResult` | `raw`、`status`、`exit_code`、`output`、`truncated` | 官方沙盒上一轮执行结果 |
 | `Turn` | 地图、队伍、机器人、任务、新闻、商店、反馈 | 一轮完整可用观测 |
@@ -616,11 +630,11 @@ TaskService.active(turn, memory, plan, llm, reply: str | dict, defense_due: bool
 位置：[CoreGeek/src/agent/actions.py](CoreGeek/src/agent/actions.py)。
 
 ```text
-ActionPlan(turn: Turn, settings, summon_used: int = 0)
+ActionPlan(turn: Turn, settings, summon_used: int = 0, summon_positions=())
 ActionPlan.add(unit_id: int, command: dict) -> bool
 ```
 
-`turn`提供当前权限、位置和资源；`settings`提供建造区域；`summon_used`是本游戏日已经计划过的召唤令尝试数。`add`的`unit_id`必须使用请求实际提供的整数ID：普通动作用角色ID，攻击用武器ID。
+`turn`提供当前权限、位置和资源；`settings`提供建造区域与召唤排除余量；`summon_used`是本日召唤预算，`summon_positions`是已待生成的位置。`add`使用实际整数ID：英雄动作以英雄ID、武器攻击以武器ID、原生机器人move/attack以本方机器人ID；机器人attack不带controllerId。
 
 成功返回`True`，并更新动作map、角色占用、金币及相关预留。可识别的校验失败返回`False`并把原因写进`rejections`，不会写入该指令。内部`_add`实施约束，策略应使用有错误处理的`add`入口。
 
@@ -635,6 +649,7 @@ ActionPlan.add(unit_id: int, command: dict) -> bool
 | `build_targets` | 建造格集合 | 记录本轮接受的建造目标 |
 | `upgrade_targets` | 建筑ID集合 | 避免同轮重复升级/维修同一建筑 |
 | `units` | 整数ID → 存活己方单位 | 校验角色和操控者 |
+| `robots` / `summon_positions` | 本方存活机器人字典 / 待生成Pos集合 | 机器人独立权限及召唤位置去重 |
 | `rejections` | 原因字符串列表 | 日志和测试检查本地策略错误 |
 
 `near(role, cells)`判断角色是否在任一目标格切比雪夫距离1以内；`near_zone(role, kind)`在`turn.zones`中查指定类型中立点后做相同判断。
@@ -644,11 +659,11 @@ ActionPlan.add(unit_id: int, command: dict) -> bool
 | action | 本地调用时的主要字段 | 附加检查/当前选择行为 |
 |---|---|---|
 | `move` | `targetPos: [pos]` | 八邻格、可通行、不争抢；不会移动多格 |
-| `attack` | `controllerId: str`、`targetPos: [...]` | 夜晚、距离、射程、冷却、等级数量、加特林角度 |
+| `attack` | 武器需`controllerId: str`和`targetPos`；原生机器人只传一个`targetPos` | 武器保留射程/冷却/数量/角度；本方机器人夜间、未眩晕、射程3、可见敌目标且无中间墙 |
 | `sell` | `name`、`num`默认1 | 小贩相邻、矿物、库存、当前收购清单 |
 | `buy` | `name`、`num`默认1 | 商店相邻、当前价格、共同预算和背包空间 |
 | `build` | `name`、`targetPos: [pos]` | 白天工人、当前配置或默认区域、材料、25金币或石头、总炮数 |
-| `remove` | `targetPos: [pos]` | 工人、相邻己方墙；当前策略不主动使用 |
+| `remove` | `targetPos: [pos]` | 工人、相邻己方墙；占点防御在原墙已实际补齐后拆本进程临时墙 |
 | `acceptTask` | 无额外字段 | 开拓者、己方任务点有效、冷却为0、无活跃任务 |
 | `submitAnswer` | `taskAnswer: str` | 活跃任务、非空字符串答案 |
 | `summonTreasure` | `targetPos: [pos]`、`item: list[str]` | 开拓者、范围、任务用品、多重数量检查 |
@@ -657,7 +672,7 @@ ActionPlan.add(unit_id: int, command: dict) -> bool
 | `collect` | `targetPos: [pos]` | 工人、相邻矿点、背包未满 |
 | `destroy` | `targetPos: [pos]` | 仅捣乱鬼、八邻域矿点、每轮单动作；昼夜均可；策略固定敌半区矿连续破坏 |
 
-`ACTION_FIELDS`定义各动作允许出现的字段，必填和语义检查由`_add`完成。`UPGRADES`映射券名称到“建筑类型集合、适用原等级”，`SUMMON_ITEMS`列出四种召唤令。法宝/炸弹需要一个目标坐标，Medicine和召唤令不带坐标。
+`ACTION_FIELDS`定义各动作允许出现的字段，必填和语义检查由`_add`完成。`UPGRADES`映射券名称到“建筑类型集合、适用原等级”，`SUMMON_ITEMS`列出四种召唤令。法宝/炸弹和召唤令均需要一个目标坐标；Medicine不带坐标。召唤仍不得进入任一基地建造区/NPC或重复待生成位置，动态占用可由官方旁移。
 
 `protocol.py`另提供`move_command(pos)`、`collect_command(pos)`、`destroy_command(pos)`、`build_command(pos, name)`、`attack_command(controller_id, targets)`五个构造器。构造器只拼装格式，不校验合法性；生成后仍必须经过`plan.add`。`attack_command`接受单个`Pos`或`list[Pos]`，统一输出坐标数组和字符串控制者ID。
 
@@ -757,7 +772,7 @@ Strategy.run() -> None
 - 回防条件只用于开拓者：有炮且夜晚，或`daylight_left <= 到操控站位的实际路径成本 + return_margin`。普通采矿工不黄昏回防；第三天起维修工另按到墙内通路的成本提前返岗。
 - 接任务预算为“前往路径成本 + 任务timeout（缺省15）+ 任务点至操控格的切比雪夫距离 + return_margin”。返程是估计；仍在任务中但已到回防时间时让出开拓者。
 - 每轮只由开拓者操控一座炮；直接读取`cooldown==0`。按发射后3轮空窗，理想共同站位下为A→B→C→空→A；无目标或移动会额外消耗轮次。
-- Medicine在角色血量不超过初始上限一半时优先考虑。`consume`支持Bomb/DizzyWeapon等物品，工人夜间同样进入consume分支；开拓者有炮防守时优先控炮。不主动采购炸弹、眩晕法宝或召唤令。
+- Medicine在角色血量不超过初始上限一半时优先考虑。`consume`支持Bomb/DizzyWeapon，工人夜间同样进入consume分支；开拓者夜间优先控炮。第一天两任务结束后新增一次BOSS券购买；其它召唤令、炸弹和眩晕法宝不自动采购。
 
 旧`agent.brain.decide(payload) -> dict`仅返回动作map，每次使用新默认配置和新记忆，没有完整LLM协作。它保留兼容，不应替代比赛主入口中的`TurnService.decide`。
 
@@ -919,10 +934,10 @@ if step is not None:
 
 ```powershell
 python CoreGeek/run_tests.py
-python CoreGeek/tools/replay.py request.txt --output reports/sample-response-v1.1.3.json
+python CoreGeek/tools/replay.py request.txt --output reports/sample-response-v1.2.0.json
 python CoreGeek/tools/replay.py observations.jsonl --output reports/replayed-responses.json --config CoreGeek/config.local.json
-python CoreGeek/tools/smoke_server.py --output reports/http-smoke-v1.1.3.json
-python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v1.1.3.json
+python CoreGeek/tools/smoke_server.py --output reports/http-smoke-v1.2.0.json
+python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v1.2.0.json
 ```
 
 上述JSONL命令需要先准备`observations.jsonl`。工具会覆盖指定的同名输出；新版本应另取报告文件名，保留历史证据。`validate.py`不会自动重写人工说明，修改代码后需另存对应版本的说明。本版压力观测同时覆盖三火箭和混合旧炮，增加“仅开拓者攻击”和输入冷却为0的断言。
@@ -940,7 +955,7 @@ python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v1.1.3.
 | `test_http_config.py` | HTTP响应/错误、请求上限、配置文件检查 | 启动入口、网络层、配置变化 |
 | `fixtures.py` | 统一合成数据构造，布局专供测试 | 不能当官方地图坐标或规则来源 |
 
-v1.1.3记录288个测试通过、80份合成观测检查通过，见[当前验证报告](reports/VALIDATION-v1.1.3.md)。v1.0封版回归记录见[基准报告](reports/BASELINE-v1.0.md)；[v0.4.3历史报告](reports/VALIDATION-v0.4.3.md)保留原始222项测试证据。这些本地检查均不代表复赛 v2.0 规则已适配或官方比赛胜率。
+v1.2.0记录323个测试通过、80份合成观测检查通过（20份含本方可控BOSS），见[当前验证报告](reports/VALIDATION-v1.2.0.md)。v1.0封版回归见[基准报告](reports/BASELINE-v1.0.md)；[v0.4.3历史报告](reports/VALIDATION-v0.4.3.md)保留222项测试证据。这些本地检查不代表所有复赛规则已适配或官方比赛胜率。
 
 `validate.independent_contract(raw, response)`是压力工具中的附加结构断言，检查角色互斥、移动占用和攻击时机等。它不是完整判题器，不能代替官方平台对动作执行结果和比分的裁定。
 
