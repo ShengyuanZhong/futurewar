@@ -1,6 +1,6 @@
 # 开发与维护文档
 
-更新日期：2026-10-09，程序版本 v1.1.2。所有火箭落点统一要求中心有活机器人，按九宫格内Σ(击杀分/当前HP)最大选点；三级继续2+1分配。公式、精确计算和函数见[火箭半区策略](ROCKET_SECTORS.md)。[捣乱鬼](IMP_STRATEGY.md)、[工人经济循环](COMPLETED_ECONOMY.md)与原有任务流程继续回归，其它复赛功能见[规则接入索引](ROUND_OF_32_RULES.md)。
+更新日期：2026-10-09，程序版本 v1.1.3。新增[恶意占点防御](SITE_BLOCKADE.md)：连续超过5回合占点，临时外侧围挡、携石待命、白天抢补与确认后拆墙。沿用所有火箭占用中心Σ(击杀分/当前HP)最大选点及三级2+1，见[火箭半区策略](ROCKET_SECTORS.md)。[捣乱鬼](IMP_STRATEGY.md)、[工人经济循环](COMPLETED_ECONOMY.md)与任务流程继续回归，其它复赛功能见[规则接入索引](ROUND_OF_32_RULES.md)。
 
 ## 1. 设计目标与边界
 
@@ -98,6 +98,8 @@ flowchart LR
 例如数学上基地 `(10,24)` 加偏移 `(-1,0)` 等于 `(9,24)`；这只解释坐标算法，不证明该格属于官方蓝区。不得从示例测试推断地图区域。阵营偏移分别登记，不自动假设镜像。武器与墙列表不能重叠或重复；越界、基地内、中立格在使用时过滤。
 
 默认已启用建造，不需要config.local.json。`base_surrounding_offsets(kind, mirrored=False)`按2×2基地生成3格后排竖排火箭与12格U形墙，墙内留一格维修通路。`mirrored_layout(turn)`按基地中心决定左右，右侧偏移为`(1-dx,dy)`；`default_operator_position(turn)`固定P在中间火箭后侧。平移后过滤越界、基地和非空地中立点。完整参数和示意图见[U形布局](U_LAYOUT.md)。构造依据是用户明确允许的基地周围假设，不标记成官方确认坐标。
+
+敌方连续占墙位超过5回合时，`Settings.wall_detour_cells(turn,gap)`在外侧一格生成临时围挡，`construction_walls()`将其与永久缺墙合并用于施工/筹石/预留。显式verified布局和strict模式不扩区。`site_blockade.py`选择携石负责人在内侧邻格守候，白天原位空出时优先补墙；观测确认后才拆本进程临时墙，临时墙不进入升级阶段。详细状态与日志见[占点防御](SITE_BLOCKADE.md)。
 
 如果提供`verified:true`且有source的自定义布局，它优先于默认布局。若要恢复仅允许确认区域的模式，显式设置`allow_base_surroundings:false`。已有模板中verified:false的空布局会使用默认区域，不再阻止开局建炮。
 

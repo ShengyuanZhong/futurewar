@@ -98,6 +98,10 @@ class TurnService:
                 LOGGER.info("imp_motion round=%s home_side=%s jobs=%s commands=%s", turn.round_no,
                             memory.imp_home_side, memory.imp_tasks,
                             {str(u.unit_id):plan.commands.get(str(u.unit_id)) for u in turn.imps()})
+            if memory.site_occupations or memory.wall_blockades or memory.temporary_wall_sites:
+                LOGGER.info('wall_blockade round=%s occupations=%s gaps=%s temporary=%s watcher=%s watch=%s',
+                            turn.round_no, memory.site_occupations, memory.wall_blockades,
+                            sorted(memory.temporary_wall_sites), memory.blockade_worker_id, memory.blockade_watch)
             for reason in plan.rejections:
                 LOGGER.warning("action_rejected %s", reason)
             return response

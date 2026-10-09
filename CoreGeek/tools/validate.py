@@ -150,7 +150,7 @@ def main():
     round32 = {p.relative_to(ROOT.parent).as_posix():hashlib.sha256(p.read_bytes()).hexdigest()
                for p in sorted((ROOT.parent / '32_docs').glob('*')) if p.is_file()}
     report = {"created_utc": datetime.now(timezone.utc).isoformat(), "python": platform.python_version(),
-              "platform": platform.platform(), "rules_baseline": "legacy v1.0 plus v2.0 imp/destroy and rocket user policy sum(points/current HP); other v2 features pending",
+              "platform": platform.platform(), "rules_baseline": "legacy v1.0 plus v2.0 imp/destroy, rocket sum(points/current HP), and user wall-blockade detours/dawn repair; other v2 features pending",
               "round32_rule_hashes": round32,
               "tests": {"run": result.testsRun, "failures": len(result.failures), "errors": len(result.errors)},
               "synthetic_input_stress": {"seeds": seeds, "teams": ["challenger", "defender"], "cases": count,

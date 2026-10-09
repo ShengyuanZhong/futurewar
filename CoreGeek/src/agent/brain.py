@@ -9,6 +9,7 @@ from .worker_safety import robot_danger
 from .worker_coordinator import WorkerCoordinator
 from .wall_guard import WallGuard
 from .imp_policy import ImpController
+from .site_blockade import SiteBlockade
 from . import upgrade_policy
 from .protocol import (IMP, MINERALS, PIONEER, TOWER_TYPES, Pos, Turn, Unit,
                        attack_command, build_command, collect_command, distance, move_command)
@@ -29,12 +30,14 @@ class Strategy:
         self.guard = WallGuard(self)
         self.coordinator = WorkerCoordinator(self)
         self.imp = ImpController(self)
+        self.site_guard = SiteBlockade(self)
+        self.site_guard.choose_watcher()
 
     def movement_reserved(self, role: Unit | None = None) -> set[Pos]:
         """Use the same future sites in paths, yields and site clearance."""
         reserved = set(self.plan.reserved)
         reserved.update(self.layout.tower_sites)
-        reserved.update(self.missing_walls())
+        reserved.update(self.construction_walls())
         if (role is None or role.kind != PIONEER) and self.layout.operator_pos is not None:
             reserved.add(self.layout.operator_pos)
         return reserved
@@ -78,6 +81,7 @@ class Strategy:
     def run(self) -> None:
         # Resolve the pioneer first, so workers never claim its next step or control cell.
         available = sorted(self.turn.controllable(), key=lambda r: (r.kind != PIONEER, r.kind != IMP,
+                           r.unit_id != self.site_guard.worker_id,
                            -self.coordinator.job(r).get('stalled',0), r.unit_id != self.guard.worker_id, r.unit_id))
         self.opening_stage()
         for role in available:
@@ -116,6 +120,8 @@ class Strategy:
 
     def run_worker(self, role: Unit) -> None:
         """One economic schedule; night adds safety and assigned guard duty."""
+        if self.site_guard.watch(role):
+            return
         if self.coordinator.hold_for_yield(role):
             return
         if self.guard.full_time and not self.turn.is_day:
@@ -127,6 +133,8 @@ class Strategy:
         if self.evade_worker(role):
             return
         if self.clear_build_cell(role):
+            return
+        if self.site_guard.cleanup(role):
             return
         if self.turn.is_day and self.opening_worker(role):
             return
@@ -189,9 +197,13 @@ class Strategy:
         standing = {w.pos for w in self.turn.walls()}
         return [p for p in self.settings.build_cells(self.turn, "wall") if p not in standing]
 
+    def construction_walls(self) -> list[Pos]:
+        guard = getattr(self, 'site_guard', None)
+        return self.missing_walls() + (sorted(guard.temporary_needed) if guard else [])
+
     def stone_targets(self) -> dict[int, int]:
         workers = self.turn.workers()
-        remaining = len(self.missing_walls())
+        remaining = len(self.construction_walls())
         targets = {}
         capacity = {}
         for role in workers:
@@ -224,7 +236,7 @@ class Strategy:
         return "walls"
 
     def clear_build_cell(self, role: Unit) -> bool:
-        sites = set(self.layout.tower_sites) | set(self.missing_walls())
+        sites = set(self.layout.tower_sites) | set(self.construction_walls())
         if role.kind != PIONEER and self.layout.operator_pos is not None:
             sites.add(self.layout.operator_pos)
         if role.pos not in sites:
@@ -292,7 +304,7 @@ class Strategy:
     def build_wall(self, role: Unit) -> bool:
         if not self.turn.is_day:
             return False
-        walls = [p for p in self.missing_walls() if p not in self.turn.blocked(role)
+        walls = [p for p in self.construction_walls() if p not in self.turn.blocked(role)
                  and p not in self.plan.reserved and p not in self.goals and p != role.pos
                  and not self.coordinator.target_owned(role, p, 'build:wall')]
         job = self.coordinator.job(role)
@@ -303,6 +315,9 @@ class Strategy:
                 continue
             if self.wall_keeps_exit(role, target) and self.interact(role, target, build_command(target, "wall")):
                 self.goals.add(target)
+                if (target in self.site_guard.temporary_needed
+                        and self.plan.commands.get(str(role.unit_id), {}).get('action') == 'build'):
+                    self.memory.temporary_wall_sites.add(target)
                 return True
         return False
 

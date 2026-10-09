@@ -94,6 +94,30 @@ class Settings:
         station = turn.station()
         return station is not None and 2 * station.pos.x + 1 > turn.width - 1
 
+    def wall_detour_cells(self, turn, gap: Pos) -> tuple[Pos, ...]:
+        """Outward one-cell bulge around a blocked site in the user's U layout.
+
+        These are user-authorized base-surroundings assumptions, not verified
+        official zones. Never expand an explicit verified layout or strict mode.
+        """
+        base = turn.station()
+        if (not base or not self.allow_base_surroundings
+                or self.layouts.get(turn.team_type, {}).get('verified') is True
+                or gap not in self.build_cells(turn, 'wall')):
+            return ()
+        mirrored = self.mirrored_layout(turn)
+        dx = gap.x - base.pos.x
+        dx = 1 - dx if mirrored else dx
+        dy = gap.y - base.pos.y
+        cells = []
+        for pos in gap.neighbours():
+            outward = ((dx == 3 and (pos.x < gap.x if mirrored else pos.x > gap.x))
+                       or (dy == 2 and pos.y > gap.y)
+                       or (dy == -3 and pos.y < gap.y))
+            if outward and turn.land(pos) and pos not in station_footprint(base.pos):
+                cells.append(pos)
+        return tuple(sorted(cells))
+
     def default_operator_position(self, turn) -> Pos | None:
         """Drawing's P; custom verified layouts retain their own stand selection."""
         station = turn.station()

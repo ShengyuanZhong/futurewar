@@ -27,6 +27,7 @@ class ActionPlan:
         self.tower_count = len(turn.weapons())
         self.summon_used = summon_used
         self.build_targets: set[Pos] = set()
+        self.temporary_wall_sites: set[Pos] = set()
         self.upgrade_targets: set[int] = set()
         self.units = {u.unit_id: u for u in turn.ours if u.health > 0}
         self.rejections: list[str] = []
@@ -36,6 +37,9 @@ class ActionPlan:
 
     def near_zone(self, role: Unit, kind: str) -> bool:
         return self.near(role, [p for p, k in self.turn.zones.items() if k == kind])
+
+    def authorize_wall_detour(self, gap: Pos) -> None:
+        self.temporary_wall_sites.update(self.settings.wall_detour_cells(self.turn, gap))
 
     def add(self, unit_id: int, command: dict[str, Any]) -> bool:
         try:
@@ -102,7 +106,8 @@ class ActionPlan:
             require(role.kind == WORKER and self.turn.is_day, "only workers build during day")
             require(name in TOWER_TYPES + ("wall",), "unknown building")
             require(distance(role.pos, target) == 1, "build out of reach")
-            require(target in self.settings.build_cells(self.turn, name), "unverified or wrong build zone")
+            require(target in self.settings.build_cells(self.turn, name)
+                    or (name == 'wall' and target in self.temporary_wall_sites), "unverified or wrong build zone")
             require(target not in self.reserved, "build target reserved")
             existing = next((u for u in self.turn.ours if u.health > 0 and u.pos == target and u.kind in TOWER_TYPES), None)
             if existing and name in TOWER_TYPES:

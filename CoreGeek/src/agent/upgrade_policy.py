@@ -33,7 +33,8 @@ def second_weapon_pending(weapons):
 
 
 def pending_walls(strategy, group, target):
-    pending = [w for w in strategy.turn.walls() if wall_group(strategy, w) == group and w.level < target]
+    pending = [w for w in strategy.turn.walls() if w.pos not in strategy.memory.temporary_wall_sites
+               and wall_group(strategy, w) == group and w.level < target]
     level = min((w.level for w in pending), default=target)
     return [w for w in pending if w.level == level]
 
@@ -75,7 +76,8 @@ def upgrades_complete(strategy) -> bool:
     sites = strategy.settings.build_cells(turn, 'wall')
     return bool(base and sites and not strategy.missing_walls()
                 and len(turn.weapons()) >= 3 and all(w.level >= 3 for w in turn.weapons())
-                and all(w.level >= wall_target_level(strategy, w) for w in turn.walls()))
+                and all(w.level >= wall_target_level(strategy, w) for w in turn.walls()
+                        if w.pos not in strategy.memory.temporary_wall_sites))
 
 
 def purchase_needs(strategy) -> list[tuple[str, int]]:
