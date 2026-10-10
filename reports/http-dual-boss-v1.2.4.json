@@ -1,0 +1,35 @@
+{
+  "status": 200,
+  "elapsed_ms": 74.899,
+  "actions": 5,
+  "entry": "python CoreGeek/main3.py <port>",
+  "request": "dual-boss-observation-v1.2.4.json",
+  "request_sha256": "d9cc5048a6fa73d030666f4ef7afc9935f62e22870dc0298a72e6ea5003eaf53",
+  "bind_verified_from_startup_log": true,
+  "bash_executed": false,
+  "controlled_robot_commands": {
+    "34009": {
+      "action": "attack",
+      "targetPos": [
+        {
+          "x": 7,
+          "y": 21
+        }
+      ]
+    },
+    "34010": {
+      "action": "attack",
+      "targetPos": [
+        {
+          "x": 7,
+          "y": 21
+        }
+      ]
+    }
+  },
+  "construction_warning": false,
+  "base_surroundings_enabled": true,
+  "raid_scout_logged": true,
+  "task_debug_logged": true,
+  "robot_diagnostic_count": 2
+}

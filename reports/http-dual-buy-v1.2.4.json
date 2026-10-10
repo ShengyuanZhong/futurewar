@@ -1,0 +1,21 @@
+{
+  "status": 200,
+  "elapsed_ms": 118.201,
+  "actions": 4,
+  "entry": "python CoreGeek/main3.py <port>",
+  "request": "dual-buy-observation-v1.2.4.json",
+  "request_sha256": "4c614c124350af9364580ef340c44117ff6a541563838d1a15dd2f393022393c",
+  "bind_verified_from_startup_log": true,
+  "bash_executed": false,
+  "boss_purchase_actor": "502",
+  "boss_purchase_command": {
+    "action": "buy",
+    "name": "BossRobotSummonOrder",
+    "num": 2
+  },
+  "construction_warning": false,
+  "base_surroundings_enabled": true,
+  "raid_scout_logged": true,
+  "task_debug_logged": true,
+  "robot_diagnostic_count": 0
+}

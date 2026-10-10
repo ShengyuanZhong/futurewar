@@ -23,6 +23,7 @@ class BossRaidTests(unittest.TestCase):
             raw['teamOur']['roles'][0].update(pos={'x': own_x, 'y': own_y})
             raw['teamOur']['roles'][1]['pos'] = {'x': own_x + (3 if own_x > 20 else -2), 'y': own_y}
             raw['teamOur']['roles'][1]['backpack'] = [ORDER]
+            raw['teamOur']['goldNum'] = 0  # Isolate a carried single order from affordable top-up.
             raw['teamEnemy']['roles'] = [unit(990, 'station', enemy_x, enemy_y)]
             raw['teamOur']['roles'] = raw['teamOur']['roles'][:4]
             # Add guns beside the current controller to make its return budget real.
@@ -39,6 +40,7 @@ class BossRaidTests(unittest.TestCase):
     def test_missing_enemy_base_uses_full_two_by_two_mirror(self):
         raw = raid_request(); raw['teamEnemy']['roles'] = []
         raw['teamOur']['roles'][1]['backpack'] = [ORDER]
+        raw['teamOur']['goldNum'] = 0
         s, plan = strategy(raw, finished_tasks()); s.run()
         pos = Pos.load(plan.commands['502']['targetPos'][0])
         self.assertEqual(pos,Pos(37,25))
@@ -72,12 +74,14 @@ class BossRaidTests(unittest.TestCase):
         memory.record(s.turn, plan)
         raw['roundNo'] += 1; raw['lastRoundRoleActionResults'] = {'502': True}
         raw['teamOur']['roles'][1]['backpack'] = [ORDER]
+        raw['teamOur']['goldNum'] = 0  # The successful purchase consumed the 120-gold balance.
         memory.observe(Turn.load(raw)); s, plan = strategy(raw, memory); s.run()
         self.assertEqual(plan.commands['502']['action'], 'use')
         self.assertFalse(any(c.get('name') == ORDER and c['action'] == 'buy' for c in plan.commands.values()))
 
     def test_failed_summon_keeps_order_and_tries_a_different_rear_position(self):
         raw = raid_request(); raw['teamOur']['roles'][1]['backpack'] = [ORDER]
+        raw['teamOur']['goldNum'] = 0
         memory = finished_tasks(); s, plan = strategy(raw, memory); s.run()
         first = plan.commands['502']['targetPos'][0]; memory.record(s.turn, plan)
         raw['roundNo'] += 1; raw['lastRoundRoleActionResults'] = {'502': False}
@@ -110,6 +114,7 @@ class BossRaidTests(unittest.TestCase):
 
     def test_failed_summon_releases_its_daily_attempt_and_pending_position(self):
         raw = raid_request(); raw['teamOur']['roles'][1]['backpack'] = [ORDER]
+        raw['teamOur']['goldNum'] = 0
         memory = finished_tasks(); s, plan = strategy(raw, memory); s.run(); memory.record(s.turn, plan)
         self.assertEqual(memory.summon_attempts, 1)
         spawn = Pos.load(plan.commands['502']['targetPos'][0])
@@ -186,9 +191,9 @@ class BossRaidTests(unittest.TestCase):
         raw = raid_request(71, boss=True); memory = finished_tasks()
         s, plan = strategy(raw, memory); s.run(); memory.record(s.turn, plan)
         raw['roundNo'] = 72; raw['teamEnemy']['roles'][2]['health'] = 0
-        update_robot(raw, {'x': 36, 'y': 25})
+        update_robot(raw, {'x': 36, 'y': 24})
         s, plan = strategy(raw, memory); s.run()
-        self.assertEqual(plan.commands['30005'], {'action': 'attack', 'targetPos': [{'x': 33, 'y': 25}]})
+        self.assertEqual(plan.commands['30005'], {'action': 'attack', 'targetPos': [{'x': 34, 'y': 24}]})
         self.assertEqual(memory.robot_raids[30005]['stage'], 'base')
 
     def test_multiple_owned_bosses_never_reserve_the_same_step(self):
@@ -251,7 +256,8 @@ class BossRaidTests(unittest.TestCase):
                 elif action == 'attack' and uid == str(boss_id):
                     target = Pos.load(command['targetPos'][0])
                     self.assertLessEqual(distance(Pos.load(actor['pos']), target), 3)
-                    enemy = next(u for u in raw['teamEnemy']['roles'] if u['health'] > 0 and u['pos'] == target.dump())
+                    enemy = next(u for u in raw['teamEnemy']['roles'] if u['health'] > 0 and target in
+                        (station_footprint(Pos.load(u['pos'])) if u['roleType']=='station' else (Pos.load(u['pos']),)))
                     enemy['health'] = max(0, enemy['health']-40)
                     attacks.append(enemy['roleType'])
             raw['lastRoundRoleActionResults'] = {uid: True for uid in response['roleCommandMap']}

@@ -1,0 +1,24 @@
+{
+  "status": 200,
+  "elapsed_ms": 57.512,
+  "actions": 5,
+  "entry": "python CoreGeek/main3.py <port>",
+  "request": "raid-fallback-observation-v1.2.4.json",
+  "request_sha256": "e1b1bc80fc40c3395cfd0b3cbf8fe6efcdbe7c25622b646a341bececae5717dd",
+  "bind_verified_from_startup_log": true,
+  "bash_executed": false,
+  "controlled_robot_command": {
+    "action": "attack",
+    "targetPos": [
+      {
+        "x": 31,
+        "y": 9
+      }
+    ]
+  },
+  "construction_warning": false,
+  "base_surroundings_enabled": true,
+  "raid_scout_logged": true,
+  "task_debug_logged": true,
+  "robot_diagnostic_count": 1
+}

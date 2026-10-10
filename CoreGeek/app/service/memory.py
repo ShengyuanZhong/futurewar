@@ -31,6 +31,7 @@ class GameMemory:
     task_accept_timeout: int = DEFAULT_TIMEOUT
     last_task_point: tuple[int, int] | None = None
     task_points_attempted: set[tuple[int, int, int]] = field(default_factory=set)
+    task_points_succeeded: set[tuple[int, int, int]] = field(default_factory=set)
     task_context: list[str] = field(default_factory=list)
     task_execution: dict[str, Any] | None = None
     task_last_command: str = ""

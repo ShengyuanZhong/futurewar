@@ -71,7 +71,24 @@ class TaskService:
 
         # Settle the previous submission before clearing context or updating its description.
         controller._record_command_result()
+        submitted = memory.last_commands.get(str(role.id), {})
+        codes = {e.errorCode for e in state.errors}
+        baseline = state._submit_baseline
+        # This records rewarded, explicitly accepted submissions, not merely
+        # disappearing phases. No pass percentage is exposed by the interface.
+        income_elsewhere = any(c.get('action') in ('sell', 'catch', 'summonTreasure')
+                              for c in memory.last_commands.values())
+        reward_evidence = (baseline is not None and
+            (turn.total_score > baseline[1] or (turn.gold > baseline[0] and not income_elsewhere)))
+        successful_point = (state.accepted_task.get('task_position') if state.accepted_task else None)
+        confirmed_submission = (consecutive and state.self_evolve_active and controller._was_submitting()
+            and submitted.get('action') == 'submitAnswer'
+            and state.last_round_action_results.get(role.id) is True
+            and not codes.intersection((1, 2, 5)) and reward_evidence)
         finished = state.self_evolve_active and controller._done_by_result(role)
+        if finished and confirmed_submission and successful_point is not None:
+            submitted_day = (memory.last_round - 1) // 130 + 1
+            memory.task_points_succeeded.add((submitted_day, *successful_point))
         if finished:
             state.suspended = True
         if state.self_evolve_active and (new_task or not turn.phase_task):

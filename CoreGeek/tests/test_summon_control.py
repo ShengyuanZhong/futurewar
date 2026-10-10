@@ -148,6 +148,7 @@ class SummonControlTests(unittest.TestCase):
 
     def test_carried_order_summons_in_the_enemy_rear_then_returns(self):
         raw = raid_request(); raw['teamOur']['roles'][1]['backpack'] = [ORDER]
+        raw['teamOur']['goldNum'] = 0
         memory = finished_tasks(); s, plan = strategy(raw, memory); s.run()
         command = plan.commands['502']
         self.assertEqual(command['action'], 'use')

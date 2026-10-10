@@ -8,6 +8,7 @@ import statistics
 import sys
 import time
 import unittest
+from collections import deque
 from fractions import Fraction
 from datetime import datetime, timezone
 from pathlib import Path
@@ -20,21 +21,120 @@ from app.service.turn_service import TurnService
 from tests.fixtures import request, unit, robot
 
 
-def independent_wall_blocks(start, end, wall):
-    """Slab intersection derived from raw cell squares, independent of combat.py."""
+def independent_cell_interval(start, end, cell, interior=False):
+    """Raw square/segment geometry; interior excludes edge and corner contact."""
     left, right = 0.0, 1.0
-    for origin, finish, middle in ((start.x, end.x, wall.x), (start.y, end.y, wall.y)):
+    for origin, finish, middle in ((start.x, end.x, cell.x), (start.y, end.y, cell.y)):
         delta = finish-origin
         if delta == 0:
-            if abs(origin-middle) > .5:
-                return False
+            if abs(origin-middle) > .5 or (interior and abs(origin-middle) == .5):
+                return None
         else:
             bounds = sorted(((middle-.5-origin)/delta, (middle+.5-origin)/delta))
             left, right = max(left,bounds[0]), min(right,bounds[1])
-    return left <= right
+    return (left, right) if (left < right if interior else left <= right) else None
 
 
-def independent_contract(raw, response):
+def independent_wall_blocks(start, end, wall):
+    """Closed wall contact remains the existing independent legality check."""
+    return independent_cell_interval(start, end, wall) is not None
+
+
+def independent_footprint(unit):
+    point = Pos.load(unit['pos'])
+    return ((point, Pos(point.x+1,point.y), Pos(point.x,point.y-1), Pos(point.x+1,point.y-1))
+            if unit['roleType'] == 'station' else (point,))
+
+
+def independent_occupied(raw):
+    blocked = {Pos.load(z['pos']) for z in raw['mapInfo']['zones'] if z['neutralType'] != 'land'}
+    all_units = (raw['teamOur']['roles'] + raw['teamEnemy']['roles'] + raw['robot']['roles']
+                 + raw['teamOur'].get('summonRobotList', []))
+    blocked.update(p for unit in all_units if unit['health'] > 0 for p in independent_footprint(unit))
+    # A task may be supplied without its corresponding neutral map element.
+    for task in raw['teamOur'].get('playerTasks', []):
+        suffix = '2' if task['taskType'].endswith('2') else '1'
+        name = raw['teamOur']['type'] + 'TaskPoint' + suffix
+        cells = {Pos.load(z['pos']) for z in raw['mapInfo']['zones'] if z['neutralType'] == name}
+        blocked.update(cells or {Pos.load(task['taskPosition'])})
+    return blocked
+
+
+def independent_robot_costs(raw, origin, reserved=()):
+    """Eight-neighbour BFS derived only from observed raw occupancy."""
+    blocked = independent_occupied(raw) | set(reserved)
+    costs, frontier = {origin:0}, deque([origin])
+    while frontier:
+        here = frontier.popleft()
+        for dx in (-1,0,1):
+            for dy in (-1,0,1):
+                if not dx and not dy:
+                    continue
+                there = Pos(here.x+dx,here.y+dy)
+                if not (0 <= there.x < 41 and 0 <= there.y < 32) or there in blocked or there in costs:
+                    continue
+                costs[there] = costs[here]+1
+                frontier.append(there)
+    return costs
+
+
+def independent_planning_clear(raw, origin, target):
+    """Wall legality plus a conservative building-interior planning assumption.
+
+    This additional building test does not claim an official projectile rule.
+    It is independent of production clear_shot, wall_shelters and Routes.
+    """
+    if not 0 < distance(origin,target) <= 3:
+        return False
+    for unit in raw['teamOur']['roles'] + raw['teamEnemy']['roles']:
+        if unit['health'] <= 0:
+            continue
+        if unit['roleType'] == 'wall':
+            if Pos.load(unit['pos']) not in (origin,target) and independent_wall_blocks(origin,target,Pos.load(unit['pos'])):
+                return False
+        elif unit['roleType'] in ('gatling','railgun','rocket','station'):
+            if any(p not in (origin,target) and independent_cell_interval(origin,target,p,interior=True) is not None
+                   for p in independent_footprint(unit)):
+                return False
+    return True
+
+
+def independent_firing_cost(raw, target, costs):
+    candidates = [cost for post,cost in costs.items() if independent_planning_clear(raw,post,target)]
+    return min(candidates) if candidates else None
+
+
+def independent_crew_opportunity(raw, boss, crews, budget=4, reserved=()):
+    """Fresh-turn direct, short walk and cheap wall opportunities, without history."""
+    origin = Pos.load(boss['pos'])
+    direct = [u for u in crews if independent_planning_clear(raw,origin,Pos.load(u['pos']))]
+    costs = independent_robot_costs(raw,origin,reserved)
+    walks = {u['id']:independent_firing_cost(raw,Pos.load(u['pos']),costs) for u in crews}
+    cheap_walls = set()
+    all_walls = [u for u in raw['teamOur']['roles']+raw['teamEnemy']['roles']
+                 if u['health'] > 0 and u['roleType'] == 'wall']
+    enemy_wall_ids = {u['id'] for u in raw['teamEnemy']['roles'] if u['health'] > 0 and u['roleType'] == 'wall'}
+    for crew in crews:
+        if walks[crew['id']] is not None and walks[crew['id']] <= budget:
+            continue
+        target = Pos.load(crew['pos'])
+        intersections = [(interval[0],wall['id']) for wall in all_walls
+                         if Pos.load(wall['pos']) not in (origin,target)
+                         and (interval := independent_cell_interval(origin,target,Pos.load(wall['pos']))) is not None]
+        nearest = min(intersections)[1] if intersections else None
+        for wall in all_walls:
+            if wall['id'] not in enemy_wall_ids:
+                continue
+            if wall['id'] != nearest and distance(Pos.load(wall['pos']),target) > 1:
+                continue
+            walk = independent_firing_cost(raw,Pos.load(wall['pos']),costs)
+            if walk is not None and walk+(wall['health']+39)//40 <= budget:
+                cheap_walls.add(wall['id'])
+    return {'direct':direct, 'walks':walks, 'cheap_walls':cheap_walls,
+            'efficient':bool(direct or cheap_walls or any(w is not None and w <= budget for w in walks.values()))}
+
+
+def independent_contract(raw, response, controller_budget=4):
     """Audit fresh observations; the stress service has no failed-shot history."""
     assert set(response) == {"roleCommandMap", "prompt", "executeCmd"}
     assert isinstance(response["prompt"], str) and isinstance(response["executeCmd"], str)
@@ -52,17 +152,12 @@ def independent_contract(raw, response):
     crew_cells = {Pos.load(u['pos']) for u in cannon_crews}
     enemy_wall_cells = {Pos.load(u['pos']) for u in enemy_roles
                         if u['health'] > 0 and u['roleType'] == 'wall'}
-    all_wall_cells = enemy_wall_cells | {Pos.load(u['pos']) for u in raw['teamOur']['roles']
-                                       if u['health'] > 0 and u['roleType'] == 'wall'}
     for key, boss in owned.items():
         if (boss['roleType'] != 'bossRobot' or boss['health'] <= 0
                 or boss.get('abnormalState') == 'dizzy' or not 71 <= raw['roundNo'] <= 130):
             continue
         origin = Pos.load(boss['pos'])
-        direct = [u for u in cannon_crews
-                  if 0 < distance(origin, Pos.load(u['pos'])) <= 3
-                  and not any(independent_wall_blocks(origin, Pos.load(u['pos']), wall)
-                              for wall in all_wall_cells - {origin, Pos.load(u['pos'])})]
+        direct = [u for u in cannon_crews if independent_planning_clear(raw,origin,Pos.load(u['pos']))]
         if direct:
             command = response['roleCommandMap'].get(key, {})
             assert command.get('action') == 'attack', 'visible cannon crew must be attacked before movement'
@@ -71,18 +166,14 @@ def independent_contract(raw, response):
             weakest = min(u['health'] for u in direct)
             assert target in {Pos.load(u['pos']) for u in direct if u['health'] == weakest}, \
                 'fresh BOSS attack must target a lowest-current-HP direct cannon crew'
-    blocked = {Pos.load(z["pos"]) for z in raw["mapInfo"]["zones"] if z["neutralType"] != "land"}
-    for unit in raw["teamOur"]["roles"] + raw["teamEnemy"]["roles"] + raw["robot"]["roles"]:
-        if unit["health"] <= 0:
-            continue
-        point = Pos.load(unit["pos"])
-        blocked.add(point)
-        if unit["roleType"] == "station":
-            blocked.update((Pos(point.x + 1, point.y), Pos(point.x, point.y - 1), Pos(point.x + 1, point.y - 1)))
-    blocked.update(Pos.load(r['pos']) for r in owned.values() if r['health'] > 0)
+    blocked = independent_occupied(raw)
     used, destinations = set(), set()
     for key, command in response["roleCommandMap"].items():
         assert key in units and units[key]["health"] > 0
+        if key in owned:
+            assert command.get('action') in ('move','attack') and set(command) == {'action','targetPos'}
+            assert len(command['targetPos']) == 1 and owned[key].get('abnormalState') != 'dizzy'
+            assert (raw['roundNo']-1) % 130 >= 70
         actor = command.get("controllerId", key)
         assert isinstance(actor, str) and actor in units and actor not in used
         used.add(actor)
@@ -103,8 +194,12 @@ def independent_contract(raw, response):
                 target = Pos.load(command['targetPos'][0]); origin = Pos.load(owned[key]['pos'])
                 assert 0 < distance(origin,target) <= 3
                 if owned[key]['roleType'] == 'bossRobot' and cannon_crews:
-                    assert target in crew_cells | enemy_wall_cells, \
-                        'alive cannon crew forbids attacks on the base or other units'
+                    base_cells = {p for u in enemy_roles if u['health'] > 0 and u['roleType'] == 'station'
+                                  for p in independent_footprint(u)}
+                    assert target in crew_cells | enemy_wall_cells | base_cells, 'BOSS target must be crew, breach wall or base'
+                    if target in base_cells:
+                        opportunity = independent_crew_opportunity(raw,owned[key],cannon_crews,controller_budget,destinations)
+                        assert not opportunity['efficient'], 'fresh BOSS may siege the base only when cannon crew access exceeds its budget'
                 enemy_cells = set()
                 for enemy in raw['teamEnemy']['roles']:
                     if enemy['health'] > 0:
@@ -115,6 +210,8 @@ def independent_contract(raw, response):
                 walls = [Pos.load(u['pos']) for u in raw['teamOur']['roles']+raw['teamEnemy']['roles']
                          if u['health'] > 0 and u['roleType'] == 'wall' and Pos.load(u['pos']) != target]
                 assert not any(independent_wall_blocks(origin,target,p) for p in walls)
+                if owned[key]['roleType'] == 'bossRobot':
+                    assert independent_planning_clear(raw,origin,target), 'BOSS planning must avoid observed building interiors'
                 continue
             assert units[key]["roleType"] in ("gatling", "railgun", "rocket")
             assert units[actor]["roleType"] == "pioneer"
@@ -167,6 +264,8 @@ def main():
     role_cases = {"with_imp": 0, "legacy_three_roles": 0}
     imp_actions = {"move": 0, "destroy": 0, "wait": 0}
     controlled_cases = 0
+    controlled_dual_cases = 0
+    controlled_units = 0
     controlled_priority_cases = 0
     controlled_actions = {'move': 0, 'attack': 0, 'wait': 0}
     seeds = [17, 20260917]
@@ -195,6 +294,12 @@ def main():
                     boss = robot(30000+index,boss_x,8,health=800,roleType='bossRobot')
                     raw['teamOur']['summonRobotList'] = [boss]
                     robot_exclusions = {(30,8),(31,8),(30,7),(31,7),(32,8),(33,8),(34,8),(boss_x,8)}
+                    if index % 8 == 0:
+                        second = robot(31000+index,boss_x,9,health=800,roleType='bossRobot')
+                        raw['teamOur']['summonRobotList'].append(second)
+                        robot_exclusions.add((boss_x,9))
+                        controlled_dual_cases += 1
+                    controlled_units += len(raw['teamOur']['summonRobotList'])
                     if index % 8 != 0:
                         robot_exclusions.update(((33,10),(34,10)))
                     controlled_cases += 1
@@ -224,7 +329,8 @@ def main():
                     if index % 2 == 0:
                         imp_actions[response['roleCommandMap'].get('805',{}).get('action','wait')] += 1
                     if index % 4 == 0:
-                        controlled_actions[response['roleCommandMap'].get(str(30000+index),{}).get('action','wait')] += 1
+                        for controlled in raw['teamOur']['summonRobotList']:
+                            controlled_actions[response['roleCommandMap'].get(str(controlled['id']),{}).get('action','wait')] += 1
                 except Exception as exc:
                     failures.append({"seed": seed, "team": team, "index": index, "error": repr(exc)})
                 timings.append((time.perf_counter() - started) * 1000)
@@ -240,13 +346,14 @@ def main():
     round32 = {p.relative_to(ROOT.parent).as_posix():hashlib.sha256(p.read_bytes()).hexdigest()
                for p in sorted((ROOT.parent / '32_docs').glob('*')) if p.is_file()}
     report = {"created_utc": datetime.now(timezone.utc).isoformat(), "python": platform.python_version(),
-              "platform": platform.platform(), "rules_baseline": "legacy v1.0 plus v2.0 imp/destroy and owned robot move/attack/summon; user rocket ratio, wall detours, cannon-crew-first BOSS raid and rear spawn pad 2; day-one hero sight mission and worker departure after observed defense completion; summoned robots supply no sight per user staff clarification; other v2 features pending",
+              "platform": platform.platform(), "rules_baseline": "legacy v1.0 plus v2.0 imp/destroy and owned robot move/attack/summon; user rocket ratio, wall detours, cannon-crew-first BOSS raid with bounded chase then base siege, and up to two day-one BOSS summons; rear spawn pad 2; day-one hero sight mission and worker departure after observed defense completion; summoned robots supply no sight per user staff clarification; building-interior LOS is a conservative planning assumption awaiting official match verification; other v2 features pending",
               "round32_rule_hashes": round32,
               "tests": {"run": result.testsRun, "failures": len(result.failures), "errors": len(result.errors)},
               "synthetic_input_stress": {"seeds": seeds, "teams": ["challenger", "defender"], "cases": count,
                   "pressure": "0..150 robots on night observations; no simulated match outcomes", "failures": failures,
                   "loadout_cases": loadout_cases, "role_cases": role_cases, "imp_actions": imp_actions,
                   "controlled_robot_cases": controlled_cases, "controlled_robot_actions": controlled_actions,
+                  "controlled_dual_cases": controlled_dual_cases, "controlled_robot_units": controlled_units,
                   "controlled_robot_priority_cases": controlled_priority_cases,
                   "median_ms": round(statistics.median(timings), 3), "max_ms": round(max(timings), 3)},
               "source_hashes": hashes, "baseline_hashes": baseline,

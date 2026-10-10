@@ -1,0 +1,52 @@
+{
+  "roleCommandMap": {
+    "601": {
+      "action": "attack",
+      "targetPos": [
+        {
+          "x": 25,
+          "y": 10
+        }
+      ],
+      "controllerId": "502"
+    },
+    "501": {
+      "action": "move",
+      "targetPos": [
+        {
+          "x": 33,
+          "y": 11
+        }
+      ]
+    },
+    "504": {
+      "action": "move",
+      "targetPos": [
+        {
+          "x": 34,
+          "y": 8
+        }
+      ]
+    },
+    "34009": {
+      "action": "attack",
+      "targetPos": [
+        {
+          "x": 7,
+          "y": 21
+        }
+      ]
+    },
+    "34010": {
+      "action": "attack",
+      "targetPos": [
+        {
+          "x": 7,
+          "y": 21
+        }
+      ]
+    }
+  },
+  "prompt": "",
+  "executeCmd": ""
+}

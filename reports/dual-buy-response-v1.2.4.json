@@ -1,0 +1,38 @@
+{
+  "roleCommandMap": {
+    "502": {
+      "action": "buy",
+      "name": "BossRobotSummonOrder",
+      "num": 2
+    },
+    "905": {
+      "action": "move",
+      "targetPos": [
+        {
+          "x": 5,
+          "y": 11
+        }
+      ]
+    },
+    "501": {
+      "action": "move",
+      "targetPos": [
+        {
+          "x": 5,
+          "y": 9
+        }
+      ]
+    },
+    "504": {
+      "action": "move",
+      "targetPos": [
+        {
+          "x": 3,
+          "y": 5
+        }
+      ]
+    }
+  },
+  "prompt": "",
+  "executeCmd": ""
+}

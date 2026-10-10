@@ -295,7 +295,7 @@ class RaidScoutTests(unittest.TestCase):
                  unit(995, 'pioneer', 28, 8, health=200)]
         revealed = False
         attacked = False
-        for number in range(20, 76):
+        for number in range(20, 91):
             raw['roundNo'] = number
             # Ground truth is deliberately hidden unless an actual hero sees it.
             observers = [Pos.load(u['pos']) for u in raw['teamOur']['roles']
@@ -309,7 +309,8 @@ class RaidScoutTests(unittest.TestCase):
             if number == 71:
                 boss = robot(BOSS_ID, 34, 10, health=800, roleType='bossRobot')
                 raw['teamOur']['summonRobotList'] = [boss]; raw['robot']['roles'] = [boss]
-            s, plan = strategy(raw, memory)
+            # Isolate shared-sight behaviour from the default four-step siege fallback.
+            s, plan = strategy(raw, memory, Settings(boss_controller_max_walk=30))
             imp = next(iter(s.turn.imps()))
             s.raid_scouts.imp(imp)
             scout = next(w for w in s.turn.workers() if s.raid_scouts.is_worker(w))

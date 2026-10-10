@@ -19,9 +19,12 @@ def main():
     parser.add_argument("--output", type=Path, default=ROOT.parent / "reports" / "http-smoke.json")
     parser.add_argument('--request', type=Path, default=ROOT.parent / 'request.txt')
     parser.add_argument('--robot-id', type=int, help='Assert this controlled robot receives move/attack')
+    parser.add_argument('--robot-ids', type=int, nargs='+', help='Assert multiple owned robots receive native commands')
+    parser.add_argument('--boss-buy-num', type=int, choices=(1,2), help='Assert the BOSS order batch purchase quantity')
     parser.add_argument('--robot-log-output', type=Path, help='Save structured robot diagnostics as JSONL')
     parser.add_argument('--scout-ids', type=int, nargs='+', help='Assert these observers receive separate move commands')
     args = parser.parse_args()
+    robot_ids = list(dict.fromkeys(([args.robot_id] if args.robot_id is not None else []) + (args.robot_ids or [])))
     with socket.socket() as sock:
         sock.bind(("127.0.0.1", 0))
         port = sock.getsockname()[1]
@@ -58,9 +61,13 @@ def main():
             assert response.status == 200
             assert set(result) == {"roleCommandMap", "prompt", "executeCmd"}
             assert isinstance(result["roleCommandMap"], dict)
-            if args.robot_id is not None:
-                command = result['roleCommandMap'][str(args.robot_id)]
+            for uid in robot_ids:
+                command = result['roleCommandMap'][str(uid)]
                 assert command['action'] in ('move', 'attack') and 'controllerId' not in command
+            if args.boss_buy_num is not None:
+                buys = [(uid,c) for uid,c in result['roleCommandMap'].items()
+                        if c['action']=='buy' and c.get('name')=='BossRobotSummonOrder']
+                assert len(buys)==1 and buys[0][1].get('num',1)==args.boss_buy_num
             if args.scout_ids:
                 commands = [result['roleCommandMap'][str(uid)] for uid in args.scout_ids]
                 assert all(c['action']=='move' for c in commands)
@@ -72,6 +79,10 @@ def main():
                       "bash_executed": False}
             if args.robot_id is not None:
                 report['controlled_robot_command'] = result['roleCommandMap'][str(args.robot_id)]
+            if args.robot_ids:
+                report['controlled_robot_commands'] = {str(uid):result['roleCommandMap'][str(uid)] for uid in robot_ids}
+            if args.boss_buy_num is not None:
+                report['boss_purchase_actor'],report['boss_purchase_command'] = buys[0]
             if args.scout_ids:
                 report['scout_commands'] = {str(uid):result['roleCommandMap'][str(uid)] for uid in args.scout_ids}
         finally:
@@ -102,8 +113,8 @@ def main():
                     if marker+' {' in line:
                         robot_logs.append({'log_type':marker,'data':json.loads(line.split(marker+' ',1)[1])})
             report['robot_diagnostic_count'] = sum(row['log_type']=='robot_diagnostic' for row in robot_logs)
-            if args.robot_id is not None:
-                assert any(row['log_type']=='robot_diagnostic' and row['data']['robot']['id']==args.robot_id
+            for uid in robot_ids:
+                assert any(row['log_type']=='robot_diagnostic' and row['data']['robot']['id']==uid
                            for row in robot_logs), 'Robot diagnostic is missing from server stderr'
             if args.robot_log_output is not None:
                 args.robot_log_output.parent.mkdir(parents=True,exist_ok=True)

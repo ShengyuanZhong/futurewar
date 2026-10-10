@@ -1,6 +1,7 @@
 """Robot attacks: observed enemy units, range three, and user-confirmed wall LOS."""
 from .combat import segment_entry
 from .protocol import CONTROLLABLE_TYPES, TOWER_TYPES, distance
+from .worker_safety import wall_shelters
 
 
 def blocking_wall(turn, start, end):
@@ -15,6 +16,22 @@ def enemy_at(turn, pos):
     return next((u for u in turn.enemies if u.health > 0
                  and u.kind in CONTROLLABLE_TYPES + TOWER_TYPES + ('station', 'wall')
                  and pos in turn.footprint(u)), None)
+
+
+def planning_building_blocker(turn, start, end):
+    """Conservatively avoid firing through observed buildings, not a rule gate.
+
+    Exposed base cells are separate endpoints. Mere corner contact is ignored;
+    official building projectile details still require match verification.
+    """
+    hits = []
+    for unit in turn.ours + turn.enemies:
+        if unit.health <= 0 or unit.kind not in TOWER_TYPES + ('station',):
+            continue
+        for cell in turn.footprint(unit):
+            if cell not in (start, end) and wall_shelters(start, end, (cell,)):
+                hits.append((segment_entry(start, end, cell), unit.unit_id, cell, unit))
+    return min(hits, key=lambda h:h[:3])[2:] if hits else None
 
 
 def clear_attack(turn, robot, pos, audit=None):

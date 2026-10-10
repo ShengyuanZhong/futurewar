@@ -103,6 +103,7 @@ class RaidScouts:
         spawn_x = self.base.x + (4 if right else -3)
         excluded = {Pos(spawn_x, self.base.y), Pos(spawn_x, self.base.y-1)}
         excluded.update(self.memory.pending_summon_positions)
+        excluded.update(self.memory.boss_raid.get('spawns', ()))
         if self.memory.boss_raid.get('spawn') is not None:
             excluded.add(self.memory.boss_raid['spawn'])
         route = self.s.route(role)

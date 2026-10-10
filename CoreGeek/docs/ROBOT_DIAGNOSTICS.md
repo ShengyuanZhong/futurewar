@@ -1,5 +1,7 @@
 # BOSS逐回合诊断日志
 
+v1.2.4在原字段上增加controller_budget、controller_budget_remaining、pursuit_rounds、fallback_reason、siege_until、base_cells及planning_blocker，详见[有限追击](BOSS_EFFICIENCY.md)。摘要requested_spawns记录已确认用券的位置，deployed_count是确认使用数，实际存活数看owned_count；target_count是本轮部署目标。
+
 v1.2.3新增[首夜观察者](RAID_SCOUTS.md)及raid_scout日志；下文为v1.2.2建立的BOSS诊断字段，继续保留。
 
 v1.2.2，2026-10-10。本次只增加诊断信息，不改变第一天购买/召唤、第一夜BOSS选敌、走位、破墙和攻击策略；原工人、任务、炮台及施工流程继续保留。策略本身见[BOSS袭击说明](BOSS_RAID.md)，本地检查结果见[v1.2.2验证报告](../../reports/VALIDATION-v1.2.2.md)。本文解释如何使用日志，具体JSON字段与枚举以当前源码输出为准。

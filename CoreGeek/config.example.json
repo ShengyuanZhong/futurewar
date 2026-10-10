@@ -12,6 +12,7 @@
   "enable_news": true,
   "enable_boss_raid": true,
   "enable_robot_diagnostics": true,
+  "boss_controller_max_walk": 4,
   "summon_build_margin": 2,
   "max_body_bytes": 2097152
 }

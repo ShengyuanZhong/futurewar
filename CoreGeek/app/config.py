@@ -35,6 +35,7 @@ class Settings:
     enable_news: bool = True
     enable_boss_raid: bool = True
     enable_robot_diagnostics: bool = True
+    boss_controller_max_walk: int = 4
     summon_build_margin: int = 2
     max_body_bytes: int = 2 * 1024 * 1024
 
@@ -61,6 +62,8 @@ class Settings:
             raise ValueError("repair_stock_per_day must be an integer in 0..100")
         if type(settings.summon_build_margin) is not int or not 0 <= settings.summon_build_margin <= 10:
             raise ValueError('summon_build_margin must be an integer in 0..10')
+        if type(settings.boss_controller_max_walk) is not int or not 0 <= settings.boss_controller_max_walk <= 30:
+            raise ValueError('boss_controller_max_walk must be an integer in 0..30')
         for key in ("allow_base_surroundings", "enable_tasks", "enable_news", "enable_boss_raid", "enable_robot_diagnostics"):
             if type(getattr(settings, key)) is not bool:
                 raise ValueError(f"{key} must be boolean")

@@ -1,6 +1,6 @@
 # 开发与维护文档
 
-更新日期：2026-10-10，程序版本v1.2.3。增加[首夜共享视野协作](RAID_SCOUTS.md)：imp提前去敌后，墙建齐后固定一名工人支援，另一名保留占点防御和原工作；第一夜维持观察，第二天恢复。GameMemory.raid_scouts保存身份、目标、时限与终止状态，raid_scout日志说明出发及待命原因。保留[机器人诊断日志](ROBOT_DIAGNOSTICS.md)、[BOSS袭击](BOSS_RAID.md)、[占点防御](SITE_BLOCKADE.md)、[火箭比值与2+1](ROCKET_SECTORS.md)、[捣乱鬼](IMP_STRATEGY.md)、[工人经济](COMPLETED_ECONOMY.md)及任务流程，复赛接入范围见[索引](ROUND_OF_32_RULES.md)。
+更新日期：2026-10-10，程序版本v1.2.4。增加[有限追击与双BOSS](BOSS_EFFICIENCY.md)：操炮者射击位/连续追位默认预算4，无路或超预算改攻基地，短破墙保留；双任务有奖励确认或经济足够时首日最多两券，按实际库存和反馈分帧部署，保留三炮金币和返程时间。TaskService仅新增task_points_succeeded证据记录，不改任务prompt。GameMemory.boss_raid维护有限购买/使用账本，robot_raids记录每只BOSS的独立预算与4回合基地聚焦；[首夜视野协作](RAID_SCOUTS.md)及[诊断日志](ROBOT_DIAGNOSTICS.md)继续保留。其它策略仍见[占点防御](SITE_BLOCKADE.md)、[火箭比值与2+1](ROCKET_SECTORS.md)、[工人经济](COMPLETED_ECONOMY.md)和[复赛索引](ROUND_OF_32_RULES.md)。
 
 ## 1. 设计目标与边界
 

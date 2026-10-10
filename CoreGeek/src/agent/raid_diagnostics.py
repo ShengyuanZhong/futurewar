@@ -103,7 +103,9 @@ class RaidDiagnostics:
             owned_count=len(self.turn.summon_robots),
             global_boss_ids=[r.robot_id for r in self.turn.robots if r.kind=='bossRobot' and r.health>0][:LIMIT],
             removed=removed[:LIMIT],summon_status=self.memory.boss_raid.get('status'),
-            requested_spawn=self.memory.boss_raid.get('spawn'),summon_round=self.memory.boss_raid.get('summon_round'))
+            requested_spawn=self.memory.boss_raid.get('spawn'),summon_round=self.memory.boss_raid.get('summon_round'),
+            requested_spawns=self.memory.boss_raid.get('spawns',[])[:LIMIT],
+            deployed_count=self.memory.boss_raid.get('deployed_count'),target_count=self.memory.boss_raid.get('target_count'))
         boss_count = sum(r.kind=='bossRobot' and r.health>0 for r in self.turn.robots)
         summary.update(global_boss_count=boss_count,global_boss_omitted=max(0,boss_count-LIMIT),
                        owned_omitted=max(0,len(self.turn.summon_robots)-LIMIT),

@@ -1,0 +1,467 @@
+{
+  "scope": "synthetic transaction/response sequence; R5..70 travel omitted, reachable observer goals supplied at R71; hero sight filtered at range4; no official collisions, mining, task, damage or kill simulation",
+  "buy_num": 2,
+  "use_rounds": [
+    2,
+    3
+  ],
+  "frames": [
+    {
+      "round": 1,
+      "pioneer_backpack": [],
+      "owned_ids": [],
+      "visible_enemy_ids": [
+        990
+      ],
+      "ledger": {
+        "history_known": true,
+        "deployed_count": 0,
+        "acquired_count": 0,
+        "spawns": [],
+        "deployment_ledger_confirmed": true,
+        "held_last": 0,
+        "target_count": 2,
+        "status": "buy_pending",
+        "buy_round": 1,
+        "pending_buy": {
+          "round": 1,
+          "num": 2,
+          "held": 0,
+          "actor_id": 502
+        }
+      },
+      "response": {
+        "roleCommandMap": {
+          "502": {
+            "action": "buy",
+            "name": "BossRobotSummonOrder",
+            "num": 2
+          },
+          "905": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 5,
+                "y": 11
+              }
+            ]
+          },
+          "501": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 5,
+                "y": 9
+              }
+            ]
+          },
+          "504": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 3,
+                "y": 5
+              }
+            ]
+          }
+        },
+        "prompt": "",
+        "executeCmd": ""
+      }
+    },
+    {
+      "round": 2,
+      "pioneer_backpack": [
+        "BossRobotSummonOrder",
+        "BossRobotSummonOrder"
+      ],
+      "owned_ids": [],
+      "visible_enemy_ids": [
+        990
+      ],
+      "ledger": {
+        "history_known": true,
+        "deployed_count": 0,
+        "acquired_count": 2,
+        "spawns": [],
+        "deployment_ledger_confirmed": true,
+        "held_last": 2,
+        "target_count": 2,
+        "status": "summon_pending",
+        "buy_round": 1,
+        "order_acquired": true,
+        "bought_count": 2,
+        "spawn": {
+          "x": 37,
+          "y": 25
+        },
+        "summon_round": 2,
+        "purchase_locked": true,
+        "pending_use": {
+          "round": 2,
+          "spawn": {
+            "x": 37,
+            "y": 25
+          },
+          "held": 2,
+          "actor_id": 502
+        }
+      },
+      "response": {
+        "roleCommandMap": {
+          "502": {
+            "action": "use",
+            "name": "BossRobotSummonOrder",
+            "targetPos": [
+              {
+                "x": 37,
+                "y": 25
+              }
+            ]
+          },
+          "905": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 6,
+                "y": 10
+              }
+            ]
+          },
+          "501": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 5,
+                "y": 10
+              }
+            ]
+          },
+          "504": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 2,
+                "y": 6
+              }
+            ]
+          }
+        },
+        "prompt": "",
+        "executeCmd": ""
+      }
+    },
+    {
+      "round": 3,
+      "pioneer_backpack": [
+        "BossRobotSummonOrder"
+      ],
+      "owned_ids": [],
+      "visible_enemy_ids": [
+        990
+      ],
+      "ledger": {
+        "history_known": true,
+        "deployed_count": 1,
+        "acquired_count": 2,
+        "spawns": [
+          {
+            "x": 37,
+            "y": 25
+          }
+        ],
+        "deployment_ledger_confirmed": true,
+        "held_last": 1,
+        "target_count": 2,
+        "status": "summon_pending",
+        "buy_round": 1,
+        "order_acquired": true,
+        "bought_count": 2,
+        "spawn": {
+          "x": 37,
+          "y": 24
+        },
+        "summon_round": 3,
+        "purchase_locked": true,
+        "pending_use": {
+          "round": 3,
+          "spawn": {
+            "x": 37,
+            "y": 24
+          },
+          "held": 1,
+          "actor_id": 502
+        }
+      },
+      "response": {
+        "roleCommandMap": {
+          "502": {
+            "action": "use",
+            "name": "BossRobotSummonOrder",
+            "targetPos": [
+              {
+                "x": 37,
+                "y": 24
+              }
+            ]
+          },
+          "905": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 7,
+                "y": 10
+              }
+            ]
+          },
+          "501": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 6,
+                "y": 11
+              }
+            ]
+          },
+          "504": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 1,
+                "y": 7
+              }
+            ]
+          }
+        },
+        "prompt": "",
+        "executeCmd": ""
+      }
+    },
+    {
+      "round": 4,
+      "pioneer_backpack": [],
+      "owned_ids": [],
+      "visible_enemy_ids": [
+        990
+      ],
+      "ledger": {
+        "history_known": true,
+        "deployed_count": 2,
+        "acquired_count": 2,
+        "spawns": [
+          {
+            "x": 37,
+            "y": 25
+          },
+          {
+            "x": 37,
+            "y": 24
+          }
+        ],
+        "deployment_ledger_confirmed": true,
+        "held_last": 0,
+        "target_count": 2,
+        "status": "deployed",
+        "buy_round": 1,
+        "order_acquired": true,
+        "bought_count": 2,
+        "spawn": {
+          "x": 37,
+          "y": 24
+        },
+        "summon_round": 3,
+        "purchase_locked": true
+      },
+      "response": {
+        "roleCommandMap": {
+          "502": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 4,
+                "y": 7
+              }
+            ]
+          },
+          "905": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 8,
+                "y": 10
+              }
+            ]
+          },
+          "501": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 7,
+                "y": 11
+              }
+            ]
+          },
+          "504": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 2,
+                "y": 8
+              }
+            ]
+          }
+        },
+        "prompt": "",
+        "executeCmd": ""
+      }
+    },
+    {
+      "round": 71,
+      "pioneer_backpack": [],
+      "owned_ids": [
+        33001,
+        33002
+      ],
+      "visible_enemy_ids": [
+        990,
+        991,
+        992
+      ],
+      "ledger": {
+        "history_known": true,
+        "deployed_count": 2,
+        "acquired_count": 2,
+        "spawns": [
+          {
+            "x": 37,
+            "y": 25
+          },
+          {
+            "x": 37,
+            "y": 24
+          }
+        ],
+        "deployment_ledger_confirmed": true,
+        "held_last": 0,
+        "target_count": 2,
+        "status": "deployed",
+        "buy_round": 1,
+        "order_acquired": true,
+        "bought_count": 2,
+        "spawn": {
+          "x": 37,
+          "y": 24
+        },
+        "summon_round": 3,
+        "purchase_locked": true
+      },
+      "response": {
+        "roleCommandMap": {
+          "504": {
+            "action": "collect",
+            "targetPos": [
+              {
+                "x": 3,
+                "y": 9
+              }
+            ]
+          },
+          "33001": {
+            "action": "attack",
+            "targetPos": [
+              {
+                "x": 36,
+                "y": 25
+              }
+            ]
+          },
+          "33002": {
+            "action": "attack",
+            "targetPos": [
+              {
+                "x": 36,
+                "y": 25
+              }
+            ]
+          }
+        },
+        "prompt": "",
+        "executeCmd": ""
+      }
+    },
+    {
+      "round": 72,
+      "pioneer_backpack": [],
+      "owned_ids": [
+        33001,
+        33002
+      ],
+      "visible_enemy_ids": [
+        990,
+        991,
+        992
+      ],
+      "ledger": {
+        "history_known": true,
+        "deployed_count": 2,
+        "acquired_count": 2,
+        "spawns": [
+          {
+            "x": 37,
+            "y": 25
+          },
+          {
+            "x": 37,
+            "y": 24
+          }
+        ],
+        "deployment_ledger_confirmed": true,
+        "held_last": 0,
+        "target_count": 2,
+        "status": "deployed",
+        "buy_round": 1,
+        "order_acquired": true,
+        "bought_count": 2,
+        "spawn": {
+          "x": 37,
+          "y": 24
+        },
+        "summon_round": 3,
+        "purchase_locked": true
+      },
+      "response": {
+        "roleCommandMap": {
+          "504": {
+            "action": "collect",
+            "targetPos": [
+              {
+                "x": 3,
+                "y": 9
+              }
+            ]
+          },
+          "33001": {
+            "action": "attack",
+            "targetPos": [
+              {
+                "x": 36,
+                "y": 25
+              }
+            ]
+          },
+          "33002": {
+            "action": "attack",
+            "targetPos": [
+              {
+                "x": 36,
+                "y": 25
+              }
+            ]
+          }
+        },
+        "prompt": "",
+        "executeCmd": ""
+      }
+    }
+  ]
+}
