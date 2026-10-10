@@ -17,6 +17,17 @@ def enemy_at(turn, pos):
                  and pos in turn.footprint(u)), None)
 
 
-def clear_attack(turn, robot, pos):
-    return (0 < distance(robot.pos, pos) <= robot.range_of_attack()
-            and enemy_at(turn, pos) is not None and blocking_wall(turn, robot.pos, pos) is None)
+def clear_attack(turn, robot, pos, audit=None):
+    gap = distance(robot.pos,pos)
+    in_range = 0 < gap <= robot.range_of_attack()
+    victim = enemy_at(turn,pos) if in_range else None
+    wall = blocking_wall(turn,robot.pos,pos) if victim is not None else None
+    clear = in_range and victim is not None and wall is None
+    if audit is not None:
+        audit.update(distance=gap, attack_range=robot.range_of_attack(), in_range=in_range,
+                     target_lookup_evaluated=in_range, target_id=victim.unit_id if victim else None,
+                     wall_evaluated=victim is not None,
+                     wall={'id':wall.unit_id,'pos':wall.pos.dump(),'hp':wall.health} if wall else None,
+                     clear=clear, blocked_by='out_of_range' if not in_range else
+                     'no_visible_enemy' if victim is None else 'wall' if wall else None)
+    return clear

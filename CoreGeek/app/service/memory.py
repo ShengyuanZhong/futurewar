@@ -53,6 +53,7 @@ class GameMemory:
     blockade_watch: bool = False
     boss_raid: dict[str, Any] = field(default_factory=dict)
     robot_raids: dict[int, dict[str, Any]] = field(default_factory=dict)
+    robot_motion: dict[int, dict[str, Any]] = field(default_factory=dict)
     pending_summon_positions: set[Pos] = field(default_factory=set)
     imp_home_side: int = 0
     imp_tasks: dict[int, dict[str, Any]] = field(default_factory=dict)

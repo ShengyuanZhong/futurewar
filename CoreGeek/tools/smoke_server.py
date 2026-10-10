@@ -8,6 +8,7 @@ from pathlib import Path
 import socket
 import subprocess
 import sys
+import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -18,13 +19,15 @@ def main():
     parser.add_argument("--output", type=Path, default=ROOT.parent / "reports" / "http-smoke.json")
     parser.add_argument('--request', type=Path, default=ROOT.parent / 'request.txt')
     parser.add_argument('--robot-id', type=int, help='Assert this controlled robot receives move/attack')
+    parser.add_argument('--robot-log-output', type=Path, help='Save structured robot diagnostics as JSONL')
     args = parser.parse_args()
     with socket.socket() as sock:
         sock.bind(("127.0.0.1", 0))
         port = sock.getsockname()[1]
     flags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
+    capture = tempfile.TemporaryFile()
     process = subprocess.Popen([sys.executable, str(ROOT / "main3.py"), str(port)],
-                               cwd=ROOT.parent, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                               cwd=ROOT.parent, stdout=subprocess.PIPE, stderr=capture,
                                creationflags=flags)
     report = {}
     try:
@@ -68,7 +71,10 @@ def main():
             conn.close()
     finally:
         process.terminate()
-        stdout, stderr = process.communicate(timeout=3)
+        stdout, _ = process.communicate(timeout=3)
+        capture.seek(0)
+        stderr = capture.read()
+        capture.close()
         if report:
             report["bind_verified_from_startup_log"] = f"0.0.0.0:{port}".encode() in stderr
             report["construction_warning"] = b"D01" in stderr
@@ -80,6 +86,18 @@ def main():
                 )
             )
             assert report["task_debug_logged"], "Task trace is missing from server stderr"
+            robot_logs = []
+            for line in stderr.decode('utf-8',errors='replace').splitlines():
+                for marker in ('robot_observation', 'robot_diagnostic'):
+                    if marker+' {' in line:
+                        robot_logs.append({'log_type':marker,'data':json.loads(line.split(marker+' ',1)[1])})
+            report['robot_diagnostic_count'] = sum(row['log_type']=='robot_diagnostic' for row in robot_logs)
+            if args.robot_id is not None:
+                assert any(row['log_type']=='robot_diagnostic' and row['data']['robot']['id']==args.robot_id
+                           for row in robot_logs), 'Robot diagnostic is missing from server stderr'
+            if args.robot_log_output is not None:
+                args.robot_log_output.parent.mkdir(parents=True,exist_ok=True)
+                args.robot_log_output.write_text(''.join(json.dumps(row,ensure_ascii=False)+'\n' for row in robot_logs),encoding='utf-8')
             output = args.output
             output.parent.mkdir(parents=True, exist_ok=True)
             output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")

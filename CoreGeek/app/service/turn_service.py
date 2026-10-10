@@ -1,5 +1,6 @@
 """Serialize and transactionally commit a team's memory once per observed turn."""
 import copy
+import json
 import logging
 import threading
 import time
@@ -72,6 +73,7 @@ class TurnService:
             strategy.run()
             if self.settings.enable_news and not turn.phase_task:
                 prompt = self.llm.news_prompt(turn, memory)
+            robot_observation,robot_diagnostics = strategy.raider.diag.finish()
             memory.record(turn, plan)
             response = {"roleCommandMap": plan.commands, "prompt": prompt, "executeCmd": execute}
             self.sessions[key] = Session(memory, turn.round_no, fingerprint, copy.deepcopy(response))
@@ -106,6 +108,10 @@ class TurnService:
                 LOGGER.info('boss_raid round=%s stage=%s robots=%s commands=%s', turn.round_no,
                             memory.boss_raid, memory.robot_raids,
                             {str(r.robot_id): plan.commands.get(str(r.robot_id)) for r in turn.summon_robots})
+            if robot_observation is not None:
+                LOGGER.info('robot_observation %s',json.dumps(robot_observation,ensure_ascii=False,separators=(',',':')))
+            for diagnostic in robot_diagnostics:
+                LOGGER.info('robot_diagnostic %s',json.dumps(diagnostic,ensure_ascii=False,separators=(',',':')))
             for reason in plan.rejections:
                 LOGGER.warning("action_rejected %s", reason)
             return response

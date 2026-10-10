@@ -1,6 +1,6 @@
 # 开发与维护文档
 
-更新日期：2026-10-09，程序版本 v1.2.1。[BOSS袭击](BOSS_RAID.md)每轮重查三类炮台周围工人/先锋，以当前HP清理全部操炮者后再攻基地；新截图支持完整6×6建造区及近后排两点，默认召唤排除余量改2。失败射击按目标ID绑定，不妨碍同格新角色被攻击。第一天购买/回防、[占点防御](SITE_BLOCKADE.md)、[火箭比值与2+1](ROCKET_SECTORS.md)、[捣乱鬼](IMP_STRATEGY.md)、[工人经济](COMPLETED_ECONOMY.md)及任务流程继续保留，复赛接入范围见[索引](ROUND_OF_32_RULES.md)。
+更新日期：2026-10-10，程序版本v1.2.2。增加[机器人诊断日志](ROBOT_DIAGNOSTICS.md)解释乱走和不攻击原因，保持v1.2.1策略。临时RaidDiagnostics记录候选/墙/路径与终止原因，robot_motion只保存四个连续观测位置及前轮目标事实，决策完成后写JSON。保留[BOSS袭击](BOSS_RAID.md)、[占点防御](SITE_BLOCKADE.md)、[火箭比值与2+1](ROCKET_SECTORS.md)、[捣乱鬼](IMP_STRATEGY.md)、[工人经济](COMPLETED_ECONOMY.md)及任务流程，复赛接入范围见[索引](ROUND_OF_32_RULES.md)。
 
 ## 1. 设计目标与边界
 
@@ -41,6 +41,9 @@ CoreGeek/
 │   ├── worker_coordinator.py     # 独立任务、目的格和协作侧移
 │   ├── wall_guard.py             # 阈值维修、双人值守与轮流采购
 │   ├── combat.py                 # 目标与弹道估值、旧匹配接口
+│   ├── robot_raider.py           # 第一夜BOSS优先攻击当前炮旁活工人/先锋
+│   ├── robot_combat.py           # 原生机器人射程、目标和墙遮挡
+│   ├── raid_diagnostics.py       # 只读决策采样与前轮位置/HP事实关联
 │   ├── brain.py                  # 白天/夜间策略编排
 │   └── server.py                 # 旧 server 导入兼容
 ├── tests/                        # 独立可手算案例、服务/HTTP测试

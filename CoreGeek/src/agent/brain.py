@@ -118,11 +118,15 @@ class Strategy:
                 self.move_to_control(role)
             else:
                 self.run_worker(role)
-        for robot in self.turn.summon_robots:
+        for index,robot in enumerate(self.turn.summon_robots):
             if time.monotonic() >= self.deadline:
+                for skipped in self.turn.summon_robots[index:]:
+                    self.raider.diag.set(skipped,reason='skip_deadline_before_robot_loop')
                 break
             if robot.robot_id not in self.plan.used:
                 self.raider.decide(robot)
+            else:
+                self.raider.diag.set(robot,reason='skip_already_acted')
         for role in self.turn.workers():
             if self.coordinator.job(role).get('round') != self.turn.round_no:
                 command = self.plan.commands.get(str(role.unit_id),{})
