@@ -1,0 +1,47 @@
+{
+  "status": 200,
+  "elapsed_ms": 43.639,
+  "actions": 5,
+  "entry": "python CoreGeek/main3.py <port>",
+  "request": "first-night-observation-v1.2.5.json",
+  "request_sha256": "b3dfb4a31cdd599233ba89ae9bc123ca242b0af7d8650687992c6d42d0aaace0",
+  "bind_verified_from_startup_log": true,
+  "bash_executed": false,
+  "controlled_robot_commands": {
+    "31035": {
+      "action": "attack",
+      "targetPos": [
+        {
+          "x": 7,
+          "y": 22
+        }
+      ]
+    },
+    "31036": {
+      "action": "attack",
+      "targetPos": [
+        {
+          "x": 7,
+          "y": 22
+        }
+      ]
+    }
+  },
+  "repair_command": {
+    "action": "use",
+    "name": "WallFixer",
+    "targetPos": [
+      {
+        "x": 28,
+        "y": 10
+      }
+    ]
+  },
+  "repair_worker": 20010,
+  "construction_warning": false,
+  "base_surroundings_enabled": true,
+  "raid_scout_logged": true,
+  "task_debug_logged": true,
+  "robot_diagnostic_count": 2,
+  "defense_diagnostic_count": 1
+}

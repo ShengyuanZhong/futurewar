@@ -1,5 +1,6 @@
 """Day-one hero observers for a summoned BOSS that supplies no sight."""
-from .protocol import IMP, Pos, distance, move_command, station_footprint
+from .protocol import CONTROLLABLE_TYPES, IMP, Pos, distance, move_command, station_footprint
+from .grid import Routes
 from .summoning import enemy_base_position
 
 
@@ -39,8 +40,10 @@ class RaidScouts:
                                       'not_enough_workers' if len(workers) < 2 else 'waiting_for_route')
         # Assign only once, and never replace a dead observer with the sole home worker.
         if (self.state.get('worker_id') is None and len(workers) >= 2
-                and self.state['walls_ready'] and self.turn.is_day):
-            candidates = [w for w in workers if w.unit_id != self.memory.blockade_worker_id]
+                and self.state['walls_ready'] and self.turn.is_day
+                and (not self.s.first_defense.enabled or self.s.first_defense.prepared())):
+            candidates = [w for w in workers if w.unit_id not in
+                          (self.memory.blockade_worker_id,self.s.first_defense.worker_id)]
             if candidates:
                 choices = []
                 for worker in candidates:
@@ -67,6 +70,8 @@ class RaidScouts:
             self.state.update(finished=True, round=self.turn.round_no)
 
     def walls_ready(self):
+        if self.s.first_defense.enabled:
+            return self.s.first_defense.closed()
         cells = self.s.settings.build_cells(self.turn, 'wall')
         return bool(cells) and len(self.turn.weapons()) >= 3 and not self.s.construction_walls()
 
@@ -106,7 +111,8 @@ class RaidScouts:
         excluded.update(self.memory.boss_raid.get('spawns', ()))
         if self.memory.boss_raid.get('spawn') is not None:
             excluded.add(self.memory.boss_raid['spawn'])
-        route = self.s.route(role)
+        route = self.scout_route(role)
+        catchers = [u for u in self.turn.enemies if u.health>0 and u.kind in CONTROLLABLE_TYPES]
         options = []
         upper = min(self.turn.height-1, self.base.y+2)
         lower = max(0, self.base.y-2)
@@ -118,10 +124,22 @@ class RaidScouts:
                     or (role.kind != IMP and self.turn.is_day and route.cost[p] > self.turn.daylight_left)):
                 continue
             coverage = sum(distance(p, target) <= SIGHT for target in targets)
+            catch_distance = min((distance(p,u.pos) for u in catchers),default=10_000)
+            if role.kind == IMP and catch_distance<=1:
+                continue
             if coverage:
-                options.append((-coverage, self.s.danger.get(p, 0), p != old,
+                options.append((role.kind == IMP and catch_distance<3,
+                                -coverage, self.s.danger.get(p, 0), p != old,
                                 distance(p, preferred), route.cost[p], p))
         return min(options)[-1] if options else None
+
+    def scout_route(self, role):
+        if role.kind != IMP:
+            return self.s.route(role)
+        reserved = self.s.movement_reserved(role)
+        reserved.update(p for u in self.turn.enemies if u.health>0 and u.kind in CONTROLLABLE_TYPES
+                        for p in u.pos.neighbours())
+        return Routes(self.turn,role,reserved)
 
     def observe_from(self, role):
         post = self.post(role)
@@ -129,9 +147,18 @@ class RaidScouts:
             self.state.setdefault('posts', {})[role.unit_id] = dict(goal=None, status='unreachable',
                                                                   round=self.turn.round_no)
             # Do not fall through to a distant mine while a first-night sight mission is active.
+            if role.kind == IMP:
+                enemies = [u for u in self.turn.enemies if u.health>0 and u.kind in CONTROLLABLE_TYPES]
+                risk = min((distance(role.pos,u.pos) for u in enemies),default=10_000)
+                cells = [p for p in role.pos.neighbours() if self.turn.land(p)
+                         and p not in self.turn.blocked(role) | self.plan.reserved
+                         and min((distance(p,u.pos) for u in enemies),default=10_000)>risk]
+                if risk<3 and cells:
+                    self.plan.add(role.unit_id,move_command(max(cells,key=lambda p:
+                        (min(distance(p,u.pos) for u in enemies),-distance(p,self.preferred(role)),p))))
             self.plan.used.add(role.unit_id)
             return True
-        route = self.s.route(role)
+        route = self.scout_route(role)
         self.state.setdefault('posts', {})[role.unit_id] = dict(goal=post,
             status='holding' if post == role.pos else 'travelling', round=self.turn.round_no,
             steps=route.cost[post], ready_by_night=route.cost[post] <= self.turn.daylight_left if self.turn.is_day else None,

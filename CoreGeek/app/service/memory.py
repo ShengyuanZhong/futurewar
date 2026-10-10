@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any
 from agent.construction import DefenseLayout
-from agent.protocol import Pos
+from agent.protocol import Pos, Unit
 from .task_context import DEFAULT_TIMEOUT, observe_task, task_timeout
 from .task_state import TaskAgentMemory
 
@@ -48,7 +48,7 @@ class GameMemory:
     dual_repair_active: bool = False
     worker_tasks: dict[int, dict[str, Any]] = field(default_factory=dict)
     site_occupations: dict[Pos, dict[str, int]] = field(default_factory=dict)
-    wall_blockades: dict[Pos, dict[str, int]] = field(default_factory=dict)
+    wall_blockades: dict[Pos, dict[str, Any]] = field(default_factory=dict)
     temporary_wall_sites: set[Pos] = field(default_factory=set)
     blockade_worker_id: int | None = None
     blockade_watch: bool = False
@@ -56,6 +56,8 @@ class GameMemory:
     robot_raids: dict[int, dict[str, Any]] = field(default_factory=dict)
     robot_motion: dict[int, dict[str, Any]] = field(default_factory=dict)
     raid_scouts: dict[str, Any] = field(default_factory=dict)
+    enemy_structures: dict[int, Unit] = field(default_factory=dict)
+    first_night_defense: dict[str, Any] = field(default_factory=dict)
     pending_summon_positions: set[Pos] = field(default_factory=set)
     imp_home_side: int = 0
     imp_tasks: dict[int, dict[str, Any]] = field(default_factory=dict)

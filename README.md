@@ -2,15 +2,19 @@
 
 以初赛基线为基础，按 `32_docs/` v2.0 文档逐项扩展的参赛 HTTP Agent；规则来源见 `DEVELOPMENT_RULES.md`。保留 CoreGeek 的 `main3.py → src/agent` 基础结构，新增 `CoreGeek/app` 应用层。运行仅依赖 Python 标准库，Python 3.10 及以上。
 
-当前程序版本为 `v1.2.4`，基于用户确认的v0.4基准，版本声明见 [CoreGeek/pyproject.toml](CoreGeek/pyproject.toml)。开局仍为三火箭→采石→U形墙，随后集中升满一台火箭；第二天起依次强化正中两墙3级、第二台火箭2级、正面其余四墙2→3级、所有火箭3级，最后把两翼六墙升2级；不升级基地。全部目标达成后，两名工人白天继续采矿售矿、批量购包，黄昏回防，夜间双人维修。阈值仍为严格低于30%。详细坐标、镜像、购买规则和关键函数见[建筑维护](CoreGeek/docs/MAINTENANCE.md)。沿用工人独立任务、让行、城墙掩护与动态备货，见[工人协作](CoreGeek/docs/WORKER_COORDINATION.md)。沿用昼夜统一工人经济流程，夜间可继续采购与配送升级券，维修工可在内侧兼顾升级，详见[昼夜统一调度](CoreGeek/docs/WORKER_SCHEDULE.md)。沿用根据log1/log2统一寻路与建筑位清理的预留集合，修复待建/缺墙位置造成的往返循环，详见[日志定位与修复](CoreGeek/docs/WORKER_PATH_FIX.md)。v0.4基准已[归档](reports/BASELINE-v0.4.md)。0.4.1根据teamA(2)失败记录修正任务经验：过滤退出码0的业务/脚本失败、保留真实JSON层级及字段、补充解析/引号诊断并压缩短任务步骤；详见[失败任务修正](CoreGeek/docs/TASK_FAILURE_LEARNING.md)。战斗和工人策略沿用基准。0.4.2接入用户提供的任务交互日志格式，见[日志开发文档](CoreGeek/docs/TASK_LOGGING.md)。0.4.3整合新版任务控制器与提示词，包含分类经验、临期预算、占位答案拦截和按奖励增量判定成功；双任务点调度沿用上一版，详见[任务模块接入](CoreGeek/docs/TASK_INTEGRATION.md)。
+当前程序版本为 `v1.2.5`，基于用户确认的v0.4基准，版本声明见 [CoreGeek/pyproject.toml](CoreGeek/pyproject.toml)。开局仍为三火箭→采石→U形墙，随后集中升满一台火箭；第二天起依次强化正中两墙3级、第二台火箭2级、正面其余四墙2→3级、所有火箭3级，最后把两翼六墙升2级；不升级基地。全部目标达成后，两名工人白天继续采矿售矿、批量购包，黄昏回防，夜间双人维修。阈值仍为严格低于30%。详细坐标、镜像、购买规则和关键函数见[建筑维护](CoreGeek/docs/MAINTENANCE.md)。沿用工人独立任务、让行、城墙掩护与动态备货，见[工人协作](CoreGeek/docs/WORKER_COORDINATION.md)。沿用昼夜统一工人经济流程，夜间可继续采购与配送升级券，维修工可在内侧兼顾升级，详见[昼夜统一调度](CoreGeek/docs/WORKER_SCHEDULE.md)。沿用根据log1/log2统一寻路与建筑位清理的预留集合，修复待建/缺墙位置造成的往返循环，详见[日志定位与修复](CoreGeek/docs/WORKER_PATH_FIX.md)。v0.4基准已[归档](reports/BASELINE-v0.4.md)。0.4.1根据teamA(2)失败记录修正任务经验：过滤退出码0的业务/脚本失败、保留真实JSON层级及字段、补充解析/引号诊断并压缩短任务步骤；详见[失败任务修正](CoreGeek/docs/TASK_FAILURE_LEARNING.md)。战斗和工人策略沿用基准。0.4.2接入用户提供的任务交互日志格式，见[日志开发文档](CoreGeek/docs/TASK_LOGGING.md)。0.4.3整合新版任务控制器与提示词，包含分类经验、临期预算、占位答案拦截和按奖励增量判定成功；双任务点调度沿用上一版，详见[任务模块接入](CoreGeek/docs/TASK_INTEGRATION.md)。
 
-已进入32强。用户提供的 [32进16需求变更](32_docs/2026云核心网第十届编程大赛-32进16-需求变更.md)、[v2.0任务书](32_docs/任务书.md)、[v2.0接口文档](32_docs/接口文档.md)及[新版报文样例](32_docs/request.txt)是**后续复赛开发**的参照，优先于根目录初赛 v1.0 文档中的冲突条款。v1.0 是变更前封版；当前已接入捣乱鬼move/destroy、召唤坐标和本方机器人move/attack，新增第一夜BOSS策略。小车及其它复赛改动仍待逐项开发，范围见[复赛规则接入索引](CoreGeek/docs/ROUND_OF_32_RULES.md)，封版证据见[v1.0基准记录](reports/BASELINE-v1.0.md)。
+已进入32强。用户提供的 [32进16需求变更](32_docs/2026云核心网第十届编程大赛-32进16-需求变更.md)、[v2.0任务书历史正文](https://github.com/ShengyuanZhong/futurewar/blob/3513456f363b0f48018f35261315af113b546a44/32_docs/%E4%BB%BB%E5%8A%A1%E4%B9%A6.md)、[v2.0接口文档](32_docs/接口文档.md)及[新版报文样例](32_docs/request.txt)是**后续复赛开发**的参照，优先于根目录初赛 v1.0 文档中的冲突条款。v1.0 是变更前封版；当前已接入捣乱鬼move/destroy、召唤坐标和本方机器人move/attack，新增第一夜BOSS策略。小车及其它复赛改动仍待逐项开发，范围见[复赛规则接入索引](CoreGeek/docs/ROUND_OF_32_RULES.md)，封版证据见[v1.0基准记录](reports/BASELINE-v1.0.md)。
+
+v1.2.5根据boss_log3/boss_log4修复[BOSS失败恢复与首日防守](CoreGeek/docs/BOSS_LOG3_4_FIX.md)：记忆真实观察到的敌方建筑，避免隐藏炮台穿行；静态非法射击不再4轮循环重试，连续失败靠近换位、成功射击保持站位。恶意占点改为内绕临时墙，协作采石施工并检查实际封口。首日先留一名工人准备至少一台2级火箭与5个维修包，预留防守金币后再买BOSS券，防守实际就绪后另一工人才可出发观察；首夜守家维修。捣乱鬼观察任务增加邻格避捕。完整参数和开发接口见修复文档。
+
+当前用户提交已删除`32_docs/任务书.md`，本轮未恢复原件；涉及条款读取上一基准Git正文，其余现存v2文档保持不变。来源和边界登记在[修复说明](CoreGeek/docs/BOSS_LOG3_4_FIX.md)。
 
 ## 阅读导航
 
 v1.2.4增加[有限追击与双BOSS](CoreGeek/docs/BOSS_EFFICIENCY.md)：可直射操炮者仍优先；默认只为炮手投入4步/回合追击预算，短破墙可替代长绕路，不可达或超预算时转攻基地，使用2×2基地外露占格选点。第一天两个任务有提交奖励确认，或经济可支付实际两券价格时尝试批购两张，分两个白天回合在不同位置召唤，首夜独立控制。缺钱、时间、容量或合法位置时降为一张，并保留侦察、留守和原升级策略。
 
-v1.2.3增加[首夜视野协作](CoreGeek/docs/RAID_SCOUTS.md)：捣乱鬼第一天提前前往敌基地后侧，一名工人仅在当前三炮和永久墙、所需临时围挡均建齐且能够入夜前到达时出发；固定另一个工人保留占点防御及原经济策略。第一夜两观察者在不同站位持续提供4格共享视野，到位待命，第二天恢复原策略。BOSS不提供视野，观察点的模板不作为真实敌人信息。
+v1.2.3增加[首夜视野协作](CoreGeek/docs/RAID_SCOUTS.md)：捣乱鬼第一天提前前往敌基地后侧，一名工人仅在当前三炮、有效围挡及首夜补给均准备好且能够入夜前到达时出发；固定另一个工人保留占点防御及原经济策略。第一夜两观察者在不同站位持续提供4格共享视野，到位待命，第二天恢复原策略。BOSS不提供视野，观察点的模板不作为真实敌人信息。
 
 v1.2.2增加[机器人诊断日志](CoreGeek/docs/ROBOT_DIAGNOSTICS.md)，保持v1.2.1策略：robot_observation记录本方机器人列表与出生/移出状态，robot_diagnostic逐回合输出实际位移、前轮反馈、候选/HP/墙/射程/cache、射击格筛选及最终决定原因。默认INFO stderr，enable_robot_diagnostics可关闭；动作合法不代表命中，日志不自行判断击杀。
 
@@ -18,7 +22,7 @@ v1.2.1修正[BOSS操控和出生点](CoreGeek/docs/BOSS_RAID.md)：每回合重�
 
 v1.2.0增加[第一天BOSS袭击](CoreGeek/docs/BOSS_RAID.md)：两个任务结束后开拓者赴店，按实价买一张BOSS召唤令并远程指定敌基地后方出生点，再返回操炮位；第一夜独立操控本方BOSS追击敌方操炮者，绕墙找射线，必要时破墙，确认死亡后攻基地。接入summonRobotList归属，己方BOSS不再进入炮台取分和工人危险估值。
 
-v1.1.3增加恶意占点防御：同一敌方角色在同一未建造设施位连续超过5回合，缺墙处白天向外绕建临时墙；一名工人携石在内侧待命，下一次白天位置空出时抢补原墙，确认建成后拆临时墙。临时墙不参与升级。流程、区域假设、函数和日志见[占点防御](CoreGeek/docs/SITE_BLOCKADE.md)。
+v1.1.3增加恶意占点防御：同一敌方角色在同一未建造设施位连续超过5回合，缺墙处白天向内绕建临时墙；一名工人携石在内侧待命，下一次白天位置空出时抢补原墙，确认建成后拆临时墙。临时墙不参与升级。流程、区域假设、函数和日志见[占点防御](CoreGeek/docs/SITE_BLOCKADE.md)。
 
 v1.1.2将己区、敌区火箭选点统一为：中心有活机器人，九宫格内Σ(击杀分/当前剩余HP)最大，使用精确分数求和。三级沿用两发己区、一发敌区，敌区为空时三发防守；详见[火箭半区策略](CoreGeek/docs/ROCKET_SECTORS.md)。上一版v1.1.1的总分选点证据保留在历史报告中。
 
@@ -183,7 +187,8 @@ futurewar/
     │       ├── robot_raider.py      # 原生机器人独立追击操炮者、绕墙/破墙、攻基地
     │       ├── robot_combat.py      # 机器人射程/可见目标/城墙遮挡检查
     │       ├── raid_diagnostics.py  # BOSS逐回合候选/移动/攻击事实与原因日志
-    │       ├── raid_scouts.py       # 首日imp和一名工人的敌后共享视野，另一个工人留守
+    │       ├── raid_scouts.py       # 首日imp避捕与工人敌后共享视野
+    │       ├── first_night_defense.py # 首日有效封口、L2/修包预留、供应与守家维修
     │       ├── summoning.py         # 实际/镜像敌基地、后排出生点与召唤区域约束
     │       ├── brain.py             # 昼夜策略、经济、建造、回防、接任务、宝藏行动
     │       └── server.py            # 旧agent.server入口的兼容转发
@@ -358,6 +363,8 @@ PYTHON=/usr/bin/python3 bash CoreGeek/run.sh 8080
 | `enable_news` | `bool` | `true` | 控制是否生成普通新闻分析prompt；不控制任务内的LLM调用 |
 | `enable_boss_raid` | `bool` | `true` | 首日按任务/经济/时限部署最多两只BOSS，包含共享视野协作与首夜操控 |
 | `enable_robot_diagnostics` | `bool` | `true` | INFO输出两类机器人JSON日志；不改变策略，关闭时不更新诊断位置历史 |
+| `enable_first_night_defense` | `bool` | `true` | 首日有效封口、火箭最低L2和独立守家供应/回防，先预留防守费用 |
+| `first_night_repair_stock` | 整数1–100 | `5` | 首日指定留守工人最低维修包目标，按容量封顶；第2天后沿用原策略 |
 | `boss_controller_max_walk` | `int` | `4` | 炮手射击位及累计追位预算，0–30；0仅处理直接可攻击炮手，长路转攻基地 |
 | `summon_build_margin` | `int`，0–10 | `2` | 新图6×6建造区以footprint距离≤2固定排除；0/1不能缩小，大于2额外保守扩区 |
 | `max_body_bytes` | 正整数，单位为字节 | `2097152` | HTTP请求体上限，即2MiB；过大返回413 |
@@ -381,6 +388,8 @@ PYTHON=/usr/bin/python3 bash CoreGeek/run.sh 8080
   "enable_news": true,
   "enable_boss_raid": true,
   "enable_robot_diagnostics": true,
+  "enable_first_night_defense": true,
+  "first_night_repair_stock": 5,
   "boss_controller_max_walk": 4,
   "summon_build_margin": 2,
   "max_body_bytes": 2097152

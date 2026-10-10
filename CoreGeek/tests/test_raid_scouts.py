@@ -310,7 +310,7 @@ class RaidScoutTests(unittest.TestCase):
                 boss = robot(BOSS_ID, 34, 10, health=800, roleType='bossRobot')
                 raw['teamOur']['summonRobotList'] = [boss]; raw['robot']['roles'] = [boss]
             # Isolate shared-sight behaviour from the default four-step siege fallback.
-            s, plan = strategy(raw, memory, Settings(boss_controller_max_walk=30))
+            s, plan = strategy(raw, memory, Settings(boss_controller_max_walk=30,enable_first_night_defense=False))
             imp = next(iter(s.turn.imps()))
             s.raid_scouts.imp(imp)
             scout = next(w for w in s.turn.workers() if s.raid_scouts.is_worker(w))

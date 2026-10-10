@@ -1,0 +1,2185 @@
+{
+  "scope": "Synthetic negative-feedback sequence, all attacks rejected and all legal moves applied; not an official replay/damage model",
+  "frames": 60,
+  "duplicate_static_shots": [],
+  "known_gun_cells": [
+    {
+      "x": 8,
+      "y": 22
+    },
+    {
+      "x": 8,
+      "y": 20
+    },
+    {
+      "x": 9,
+      "y": 20
+    }
+  ],
+  "observations": [
+    {
+      "round": 71,
+      "commands": {
+        "31035": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 9,
+              "y": 21
+            }
+          ]
+        },
+        "31036": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 9,
+              "y": 21
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 6,
+            "y": 21
+          },
+          "failure_count": 0,
+          "close_required": false
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 6,
+            "y": 22
+          },
+          "failure_count": 0,
+          "close_required": false
+        }
+      ]
+    },
+    {
+      "round": 72,
+      "commands": {
+        "31035": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 6,
+              "y": 20
+            }
+          ]
+        },
+        "31036": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 7,
+              "y": 21
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 6,
+            "y": 21
+          },
+          "failure_count": 1,
+          "close_required": false
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 6,
+            "y": 22
+          },
+          "failure_count": 1,
+          "close_required": false
+        }
+      ]
+    },
+    {
+      "round": 73,
+      "commands": {
+        "31035": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 9,
+              "y": 21
+            }
+          ]
+        },
+        "31036": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 9,
+              "y": 21
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 6,
+            "y": 20
+          },
+          "failure_count": 1,
+          "close_required": false
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 7,
+            "y": 21
+          },
+          "failure_count": 1,
+          "close_required": false
+        }
+      ]
+    },
+    {
+      "round": 74,
+      "commands": {
+        "31035": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 7,
+              "y": 20
+            }
+          ]
+        },
+        "31036": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 8,
+              "y": 21
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 6,
+            "y": 20
+          },
+          "failure_count": 2,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 7,
+            "y": 21
+          },
+          "failure_count": 2,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 75,
+      "commands": {
+        "31035": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 6,
+              "y": 21
+            }
+          ]
+        },
+        "31036": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 9,
+              "y": 21
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 7,
+            "y": 20
+          },
+          "failure_count": 2,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 2,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 76,
+      "commands": {
+        "31035": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 7,
+              "y": 22
+            }
+          ]
+        },
+        "31036": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 9,
+              "y": 22
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 6,
+            "y": 21
+          },
+          "failure_count": 2,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 3,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 77,
+      "commands": {
+        "31035": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 8,
+              "y": 23
+            }
+          ]
+        },
+        "31036": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 7,
+              "y": 20
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 7,
+            "y": 22
+          },
+          "failure_count": 2,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 4,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 78,
+      "commands": {
+        "31035": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 9,
+              "y": 22
+            }
+          ]
+        },
+        "31036": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 8,
+              "y": 19
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 23
+          },
+          "failure_count": 2,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 7,
+            "y": 20
+          },
+          "failure_count": 4,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 79,
+      "commands": {
+        "31035": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 9,
+              "y": 23
+            }
+          ]
+        },
+        "31036": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 9,
+              "y": 19
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 23
+          },
+          "failure_count": 3,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 8,
+            "y": 19
+          },
+          "failure_count": 4,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 80,
+      "commands": {
+        "31035": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 9,
+              "y": 22
+            }
+          ]
+        },
+        "31036": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 20
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 9,
+            "y": 23
+          },
+          "failure_count": 3,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 9,
+            "y": 19
+          },
+          "failure_count": 4,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 81,
+      "commands": {
+        "31035": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 22
+            }
+          ]
+        },
+        "31036": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 9,
+              "y": 21
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 9,
+            "y": 23
+          },
+          "failure_count": 4,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 10,
+            "y": 20
+          },
+          "failure_count": 4,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 82,
+      "commands": {
+        "31035": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 23
+            }
+          ]
+        },
+        "31036": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 21
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 9,
+            "y": 23
+          },
+          "failure_count": 5,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 10,
+            "y": 20
+          },
+          "failure_count": 5,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 83,
+      "commands": {
+        "31035": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 9,
+              "y": 22
+            }
+          ]
+        },
+        "31036": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 11,
+              "y": 20
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 10,
+            "y": 23
+          },
+          "failure_count": 5,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 10,
+            "y": 20
+          },
+          "failure_count": 6,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 84,
+      "commands": {
+        "31035": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 22
+            }
+          ]
+        },
+        "31036": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 21
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 10,
+            "y": 23
+          },
+          "failure_count": 6,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 20
+          },
+          "failure_count": 6,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 85,
+      "commands": {
+        "31035": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 11,
+              "y": 22
+            }
+          ]
+        },
+        "31036": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 11,
+              "y": 21
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 10,
+            "y": 23
+          },
+          "failure_count": 7,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 20
+          },
+          "failure_count": 7,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 86,
+      "commands": {
+        "31035": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 21
+            }
+          ]
+        },
+        "31036": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 21
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 11,
+            "y": 22
+          },
+          "failure_count": 7,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 21
+          },
+          "failure_count": 7,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 87,
+      "commands": {
+        "31035": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 22
+            }
+          ]
+        },
+        "31036": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 22
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 11,
+            "y": 22
+          },
+          "failure_count": 8,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 21
+          },
+          "failure_count": 8,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 88,
+      "commands": {
+        "31035": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 11,
+              "y": 23
+            }
+          ]
+        },
+        "31036": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 22
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 11,
+            "y": 22
+          },
+          "failure_count": 9,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 21
+          },
+          "failure_count": 9,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 89,
+      "commands": {
+        "31035": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 22
+            }
+          ]
+        },
+        "31036": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 11,
+              "y": 22
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 9,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 12,
+            "y": 22
+          },
+          "failure_count": 9,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 90,
+      "commands": {
+        "31035": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 22
+            }
+          ]
+        },
+        "31036": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 21
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 10,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 22
+          },
+          "failure_count": 9,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 91,
+      "commands": {
+        "31035": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 11,
+              "y": 21
+            }
+          ]
+        },
+        "31036": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 22
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 12,
+            "y": 22
+          },
+          "failure_count": 10,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 22
+          },
+          "failure_count": 10,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 92,
+      "commands": {
+        "31035": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 21
+            }
+          ]
+        },
+        "31036": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 23
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 11,
+            "y": 21
+          },
+          "failure_count": 10,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 22
+          },
+          "failure_count": 11,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 93,
+      "commands": {
+        "31035": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 22
+            }
+          ]
+        },
+        "31036": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 9,
+              "y": 22
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 11,
+            "y": 21
+          },
+          "failure_count": 11,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 10,
+            "y": 23
+          },
+          "failure_count": 11,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 94,
+      "commands": {
+        "31035": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 20
+            }
+          ]
+        },
+        "31036": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 22
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 11,
+            "y": 21
+          },
+          "failure_count": 12,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 10,
+            "y": 23
+          },
+          "failure_count": 12,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 95,
+      "commands": {
+        "31035": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 9,
+              "y": 21
+            }
+          ]
+        },
+        "31036": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 9,
+              "y": 23
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 10,
+            "y": 20
+          },
+          "failure_count": 12,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 10,
+            "y": 23
+          },
+          "failure_count": 13,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 96,
+      "commands": {
+        "31035": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 21
+            }
+          ]
+        },
+        "31036": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 9,
+              "y": 22
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 10,
+            "y": 20
+          },
+          "failure_count": 13,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 9,
+            "y": 23
+          },
+          "failure_count": 13,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 97,
+      "commands": {
+        "31035": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 11,
+              "y": 20
+            }
+          ]
+        },
+        "31036": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 22
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 10,
+            "y": 20
+          },
+          "failure_count": 14,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 9,
+            "y": 23
+          },
+          "failure_count": 14,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 98,
+      "commands": {
+        "31035": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 21
+            }
+          ]
+        },
+        "31036": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 8,
+              "y": 23
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 11,
+            "y": 20
+          },
+          "failure_count": 14,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 9,
+            "y": 23
+          },
+          "failure_count": 15,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 99,
+      "commands": {
+        "31035": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 19
+            }
+          ]
+        },
+        "31036": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 9,
+              "y": 22
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 11,
+            "y": 20
+          },
+          "failure_count": 15,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 8,
+            "y": 23
+          },
+          "failure_count": 15,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 100,
+      "commands": {
+        "31035": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 9,
+              "y": 18
+            }
+          ]
+        },
+        "31036": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 9,
+              "y": 23
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 10,
+            "y": 19
+          },
+          "failure_count": 15,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 8,
+            "y": 23
+          },
+          "failure_count": 16,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 101,
+      "commands": {
+        "31035": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 8,
+              "y": 19
+            }
+          ]
+        },
+        "31036": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 23
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 9,
+            "y": 18
+          },
+          "failure_count": 15,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 9,
+            "y": 23
+          },
+          "failure_count": 16,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 102,
+      "commands": {
+        "31035": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 7,
+              "y": 20
+            }
+          ]
+        },
+        "31036": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 11,
+              "y": 23
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 19
+          },
+          "failure_count": 15,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 10,
+            "y": 23
+          },
+          "failure_count": 16,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 103,
+      "commands": {
+        "31035": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 8,
+              "y": 21
+            }
+          ]
+        },
+        "31036": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 22
+            }
+          ]
+        }
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 7,
+            "y": 20
+          },
+          "failure_count": 15,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 16,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 104,
+      "commands": {
+        "31035": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 9,
+              "y": 21
+            }
+          ]
+        },
+        "31036": null
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 15,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 17,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 105,
+      "commands": {
+        "31035": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 9,
+              "y": 22
+            }
+          ]
+        },
+        "31036": null
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 16,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 17,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 106,
+      "commands": {
+        "31035": null,
+        "31036": null
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 17,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 17,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 107,
+      "commands": {
+        "31035": null,
+        "31036": null
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 17,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 17,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 108,
+      "commands": {
+        "31035": null,
+        "31036": null
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 17,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 17,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 109,
+      "commands": {
+        "31035": null,
+        "31036": null
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 17,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 17,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 110,
+      "commands": {
+        "31035": null,
+        "31036": null
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 17,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 17,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 111,
+      "commands": {
+        "31035": null,
+        "31036": null
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 17,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 17,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 112,
+      "commands": {
+        "31035": null,
+        "31036": null
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 17,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 17,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 113,
+      "commands": {
+        "31035": null,
+        "31036": null
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 17,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 17,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 114,
+      "commands": {
+        "31035": null,
+        "31036": null
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 17,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 17,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 115,
+      "commands": {
+        "31035": null,
+        "31036": null
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 17,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 17,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 116,
+      "commands": {
+        "31035": null,
+        "31036": null
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 17,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 17,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 117,
+      "commands": {
+        "31035": null,
+        "31036": null
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 17,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 17,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 118,
+      "commands": {
+        "31035": null,
+        "31036": null
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 17,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 17,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 119,
+      "commands": {
+        "31035": null,
+        "31036": null
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 17,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 17,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 120,
+      "commands": {
+        "31035": null,
+        "31036": null
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 17,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 17,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 121,
+      "commands": {
+        "31035": null,
+        "31036": null
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 17,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 17,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 122,
+      "commands": {
+        "31035": null,
+        "31036": null
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 17,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 17,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 123,
+      "commands": {
+        "31035": null,
+        "31036": null
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 17,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 17,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 124,
+      "commands": {
+        "31035": null,
+        "31036": null
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 17,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 17,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 125,
+      "commands": {
+        "31035": null,
+        "31036": null
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 17,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 17,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 126,
+      "commands": {
+        "31035": null,
+        "31036": null
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 17,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 17,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 127,
+      "commands": {
+        "31035": null,
+        "31036": null
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 17,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 17,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 128,
+      "commands": {
+        "31035": null,
+        "31036": null
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 17,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 17,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 129,
+      "commands": {
+        "31035": null,
+        "31036": null
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 17,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 17,
+          "close_required": true
+        }
+      ]
+    },
+    {
+      "round": 130,
+      "commands": {
+        "31035": null,
+        "31036": null
+      },
+      "robots": [
+        {
+          "id": 31035,
+          "pos": {
+            "x": 8,
+            "y": 21
+          },
+          "failure_count": 17,
+          "close_required": true
+        },
+        {
+          "id": 31036,
+          "pos": {
+            "x": 11,
+            "y": 23
+          },
+          "failure_count": 17,
+          "close_required": true
+        }
+      ]
+    }
+  ]
+}

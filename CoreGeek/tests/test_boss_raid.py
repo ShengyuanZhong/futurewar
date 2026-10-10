@@ -210,7 +210,7 @@ class BossRaidTests(unittest.TestCase):
         self.assertEqual(plan.rejections, [])
 
     def test_api_sequence_buys_once_summons_then_kills_controller_before_base(self):
-        raw = raid_request(); service = TurnService(Settings(enable_news=False))
+        raw = raid_request(); service = TurnService(Settings(enable_news=False,enable_first_night_defense=False))
         key = (raw['teamOur']['teamId'], raw['teamOur']['type'])
         service.sessions[key] = Session(memory=finished_tasks())
         births, buys, uses, attacks = [], [], [], []

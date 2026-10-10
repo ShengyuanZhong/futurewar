@@ -18,15 +18,17 @@ def enemy_at(turn, pos):
                  and pos in turn.footprint(u)), None)
 
 
-def planning_building_blocker(turn, start, end):
-    """Conservatively avoid firing through observed buildings, not a rule gate.
+def planning_building_blocker(turn, start, end, remembered=()):
+    """Avoid interiors of known buildings and visible roles, not a rule gate.
 
     Exposed base cells are separate endpoints. Mere corner contact is ignored;
     official building projectile details still require match verification.
     """
     hits = []
-    for unit in turn.ours + turn.enemies:
-        if unit.health <= 0 or unit.kind not in TOWER_TYPES + ('station',):
+    observed = {unit.unit_id:unit for unit in remembered}
+    observed.update((unit.unit_id,unit) for unit in turn.ours + turn.enemies)
+    for unit in observed.values():
+        if unit.health <= 0 or unit.kind not in CONTROLLABLE_TYPES + TOWER_TYPES + ('station', 'wall'):
             continue
         for cell in turn.footprint(unit):
             if cell not in (start, end) and wall_shelters(start, end, (cell,)):

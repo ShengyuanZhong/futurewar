@@ -1,0 +1,52 @@
+{
+  "roleCommandMap": {
+    "20011": {
+      "action": "move",
+      "targetPos": [
+        {
+          "x": 33,
+          "y": 10
+        }
+      ]
+    },
+    "20010": {
+      "action": "use",
+      "name": "WallFixer",
+      "targetPos": [
+        {
+          "x": 28,
+          "y": 10
+        }
+      ]
+    },
+    "20012": {
+      "action": "move",
+      "targetPos": [
+        {
+          "x": 31,
+          "y": 8
+        }
+      ]
+    },
+    "31035": {
+      "action": "attack",
+      "targetPos": [
+        {
+          "x": 7,
+          "y": 22
+        }
+      ]
+    },
+    "31036": {
+      "action": "attack",
+      "targetPos": [
+        {
+          "x": 7,
+          "y": 22
+        }
+      ]
+    }
+  },
+  "prompt": "",
+  "executeCmd": ""
+}

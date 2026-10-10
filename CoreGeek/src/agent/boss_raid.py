@@ -141,10 +141,12 @@ class BossRaid:
 
     def day_available(self):
         return (self.s.settings.enable_boss_raid and self.turn.day == 1
-                and self.turn.is_day and not self.turn.phase_task)
+                and self.turn.is_day and not self.turn.phase_task
+                and (not self.s.first_defense.enabled or self.s.first_defense.closed()))
 
     def available_gold(self):
-        return max(0, self.plan.gold - max(0, 3-self.plan.tower_count)*25)
+        return max(0, self.plan.gold - max(0, 3-self.plan.tower_count)*25
+                   - self.s.first_defense.reserve_gold())
 
     def held_orders(self, role):
         return min(role.backpack.count(BOSS_ORDER),

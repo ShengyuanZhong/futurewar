@@ -1,5 +1,7 @@
 # BOSS逐回合诊断日志
 
+v1.2.5新增字段：`remembered_structures`为真实曾见静态建筑，`base_attack_failures`为基地明确非法攻击累计，`base_close_required`为近邻恢复策略状态，`verified_base_post/verified_base_target`为已收到合法反馈的站位/落点，`blocked_steps`记录短期禁止的失败移动格。合法反馈仍不等于命中或击杀。首日另有`defense_diagnostic`输出己方基地/墙实际HP及封口、库存、金币预留；排查步骤见[BOSS_LOG3_4_FIX.md](BOSS_LOG3_4_FIX.md)。
+
 v1.2.4在原字段上增加controller_budget、controller_budget_remaining、pursuit_rounds、fallback_reason、siege_until、base_cells及planning_blocker，详见[有限追击](BOSS_EFFICIENCY.md)。摘要requested_spawns记录已确认用券的位置，deployed_count是确认使用数，实际存活数看owned_count；target_count是本轮部署目标。
 
 v1.2.3新增[首夜观察者](RAID_SCOUTS.md)及raid_scout日志；下文为v1.2.2建立的BOSS诊断字段，继续保留。

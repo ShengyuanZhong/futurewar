@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from agent.actions import ActionPlan
 from agent.brain import Strategy
 from agent.protocol import Turn
+from agent.raid_diagnostics import plain
 from app.config import Settings
 from .llm_service import LLMService, digest
 from .memory import GameMemory
@@ -111,6 +112,9 @@ class TurnService:
             if memory.raid_scouts:
                 LOGGER.info('raid_scout round=%s state=%s commands=%s', turn.round_no, memory.raid_scouts,
                             {str(uid): plan.commands.get(str(uid)) for uid in memory.raid_scouts.get('posts', {})})
+            if turn.day == 1:
+                LOGGER.info('defense_diagnostic %s',json.dumps(plain(strategy.first_defense.diagnostic()),
+                    ensure_ascii=False,separators=(',',':')))
             if robot_observation is not None:
                 LOGGER.info('robot_observation %s',json.dumps(robot_observation,ensure_ascii=False,separators=(',',':')))
             for diagnostic in robot_diagnostics:

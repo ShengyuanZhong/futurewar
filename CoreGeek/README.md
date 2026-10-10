@@ -1,8 +1,10 @@
 # CoreGeek 参赛 Agent
 
-当前程序版本为 v1.2.4：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后两翼六墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回墙内，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
+当前程序版本为 v1.2.5：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后两翼六墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回墙内，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
 
 此目录可作为参赛程序目录提交。沿用示例的 `main3.py`、`src/agent/protocol.py`、`grid.py`、`brain.py`；HTTP 处理与跨回合协作放在 `app`。新增代码无第三方运行依赖。
+
+v1.2.5根据boss_log3/boss_log4修复[BOSS失败恢复与首日防守](docs/BOSS_LOG3_4_FIX.md)：记忆真实观察到的敌方建筑，避免隐藏炮台穿行；静态非法射击不再4轮循环重试，连续失败靠近换位、成功射击保持站位。恶意占点改为内绕临时墙，协作采石施工并检查实际封口。首日先留一名工人准备至少一台2级火箭与5个维修包，预留防守金币后再买BOSS券，防守实际就绪后另一工人才可出发观察；首夜守家维修。捣乱鬼观察任务增加邻格避捕。完整参数和开发接口见修复文档。
 
 v1.2.4加入[有限追击与双BOSS](docs/BOSS_EFFICIENCY.md)：近处直射炮手优先，默认4步/回合预算，短破墙可替代绕路，无路或超预算时攻基地并选择外露占格。任务双提交有奖励确认或财力足够时首日批购两券，分两个白天回合使用不同位置，首夜各BOSS独立行动；不足时单券降级，观察者和留守工人职责保留。
 
@@ -176,6 +178,7 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | [src/agent/boss_raid.py](src/agent/boss_raid.py) | `BossRaid(strategy).pioneer(role)` | 两任务结束后买一张BOSS券、远程召唤、回到原操炮位 |
 | [src/agent/robot_raider.py](src/agent/robot_raider.py) | `RobotRaider(strategy).decide(robot)` | 第一夜BOSS独立追击、搜索、绕墙/破墙与攻基地 |
 | [src/agent/raid_diagnostics.py](src/agent/raid_diagnostics.py) | `RaidDiagnostics(strategy).set/event/finish` | 复用观测和路径检查，记录目标、移动/攻击反馈与最终指令；字段/参数见[诊断说明](docs/ROBOT_DIAGNOSTICS.md) |
+| [src/agent/first_night_defense.py](src/agent/first_night_defense.py) | `FirstNightDefense(strategy).closed/prepared/reserve_gold/worker` | 首日守家身份、实测封口、至少一台L2和修包预算/供应/夜修，见[接口说明](docs/BOSS_LOG3_4_FIX.md) |
 | [src/agent/raid_scouts.py](src/agent/raid_scouts.py) | `RaidScouts(strategy).imp/worker/post` | 首夜两观察者的固定分工、墙ready门槛与敌后站位；参数见[视野协作](docs/RAID_SCOUTS.md) |
 | [src/agent/summoning.py](src/agent/summoning.py) | `rear_spawn_position(turn, settings, pending=(), failed=())` | 实际敌基地优先，选择非建造区的后方出生点 |
 | [src/agent/server.py](src/agent/server.py) | `Handler/serve` | 转发新网络层，兼容demo旧导入 |

@@ -14,7 +14,7 @@ from tests.test_u_layout import point
 
 def strategy(raw, memory=None, settings=None):
     turn = Turn.load(raw)
-    plan = ActionPlan(turn, settings or Settings())
+    plan = ActionPlan(turn, settings or Settings(enable_first_night_defense=False))
     return Strategy(turn, plan, memory or GameMemory(opening_complete=True)), plan
 
 

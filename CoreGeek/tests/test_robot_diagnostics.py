@@ -3,7 +3,6 @@ import copy
 import json
 import time
 import unittest
-from dataclasses import asdict
 from unittest.mock import patch
 
 from app.config import Settings
@@ -245,10 +244,11 @@ class RobotDiagnosticTests(unittest.TestCase):
             self.assertTrue(active_trace)
             self.assertEqual(silent_observation, [])
             self.assertEqual(silent_trace, [])
-            active_memory = asdict(enabled.sessions[key].memory)
-            silent_memory = asdict(disabled.sessions[key].memory)
-            active_memory.pop('robot_motion')
-            silent_memory.pop('robot_motion')
+            # asdict turns hashable Pos dictionary keys into unhashable dicts.
+            active_memory = copy.deepcopy(enabled.sessions[key].memory)
+            silent_memory = copy.deepcopy(disabled.sessions[key].memory)
+            active_memory.robot_motion = {}
+            silent_memory.robot_motion = {}
             self.assertEqual(active_memory, silent_memory)
 
 

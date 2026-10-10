@@ -13,6 +13,7 @@ from .site_blockade import SiteBlockade
 from .boss_raid import BOSS_ORDER, BossRaid
 from .robot_raider import RobotRaider
 from .raid_scouts import RaidScouts
+from .first_night_defense import FirstNightDefense
 from .summoning import rear_spawn_position
 from . import upgrade_policy
 from .protocol import (IMP, MINERALS, PIONEER, TOWER_TYPES, Pos, Turn, Unit,
@@ -36,6 +37,7 @@ class Strategy:
         self.imp = ImpController(self)
         self.site_guard = SiteBlockade(self)
         self.site_guard.choose_watcher()
+        self.first_defense = FirstNightDefense(self)
         self.boss_raid = BossRaid(self)
         self.raider = RobotRaider(self)
         self.raid_scouts = RaidScouts(self)
@@ -89,6 +91,7 @@ class Strategy:
         # Resolve the pioneer first, so workers never claim its next step or control cell.
         available = sorted(self.turn.controllable(), key=lambda r: (r.kind != PIONEER, r.kind != IMP,
                            r.unit_id != self.site_guard.worker_id,
+                           r.unit_id != self.first_defense.worker_id,
                            -self.coordinator.job(r).get('stalled',0), r.unit_id != self.guard.worker_id, r.unit_id))
         self.opening_stage()
         for role in available:
@@ -140,6 +143,8 @@ class Strategy:
     def run_worker(self, role: Unit) -> None:
         """One economic schedule; night adds safety and assigned guard duty."""
         if self.site_guard.watch(role):
+            return
+        if self.first_defense.worker(role):
             return
         if self.raid_scouts.worker(role):
             return
@@ -327,6 +332,7 @@ class Strategy:
             return False
         walls = [p for p in self.construction_walls() if p not in self.turn.blocked(role)
                  and p not in self.plan.reserved and p not in self.goals and p != role.pos
+                 and not self.site_guard.failed(p)
                  and not self.coordinator.target_owned(role, p, 'build:wall')]
         job = self.coordinator.job(role)
         previous = job.get('target') if job.get('kind') == 'build:wall' else None
@@ -500,6 +506,7 @@ class Strategy:
         shops = [p for p, k in self.turn.zones.items() if k == "weaponShop"]
         reserve = max(0, 3 - self.plan.tower_count) * 25 if self.settings.build_cells(self.turn, "rocket") else 0
         reserve += self.guard.budget_reserve()
+        reserve += self.first_defense.reserve_gold()
         reserve += self.boss_raid.budget_reserve()
         planned = Counter(i for r in self.turn.controllable() for i in r.backpack)
         for command in self.plan.commands.values():

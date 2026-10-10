@@ -23,6 +23,7 @@ def main():
     parser.add_argument('--boss-buy-num', type=int, choices=(1,2), help='Assert the BOSS order batch purchase quantity')
     parser.add_argument('--robot-log-output', type=Path, help='Save structured robot diagnostics as JSONL')
     parser.add_argument('--scout-ids', type=int, nargs='+', help='Assert these observers receive separate move commands')
+    parser.add_argument('--repair-id', type=int, help='Assert this worker uses WallFixer at the supplied critical wall')
     args = parser.parse_args()
     robot_ids = list(dict.fromkeys(([args.robot_id] if args.robot_id is not None else []) + (args.robot_ids or [])))
     with socket.socket() as sock:
@@ -72,6 +73,9 @@ def main():
                 commands = [result['roleCommandMap'][str(uid)] for uid in args.scout_ids]
                 assert all(c['action']=='move' for c in commands)
                 assert len({tuple(c['targetPos'][0].values()) for c in commands}) == len(commands)
+            if args.repair_id is not None:
+                repair = result['roleCommandMap'][str(args.repair_id)]
+                assert repair['action']=='use' and repair.get('name')=='WallFixer'
             report = {"status": response.status, "elapsed_ms": round(elapsed, 3),
                       "actions": len(result["roleCommandMap"]), "entry": "python CoreGeek/main3.py <port>",
                       "request": 'unmodified request.txt' if args.request.resolve() == (ROOT.parent/'request.txt').resolve() else args.request.name,
@@ -85,6 +89,9 @@ def main():
                 report['boss_purchase_actor'],report['boss_purchase_command'] = buys[0]
             if args.scout_ids:
                 report['scout_commands'] = {str(uid):result['roleCommandMap'][str(uid)] for uid in args.scout_ids}
+            if args.repair_id is not None:
+                report['repair_command'] = repair
+                report['repair_worker'] = args.repair_id
         finally:
             conn.close()
     finally:
@@ -109,10 +116,13 @@ def main():
             assert report["task_debug_logged"], "Task trace is missing from server stderr"
             robot_logs = []
             for line in stderr.decode('utf-8',errors='replace').splitlines():
-                for marker in ('robot_observation', 'robot_diagnostic'):
+                for marker in ('robot_observation', 'robot_diagnostic', 'defense_diagnostic'):
                     if marker+' {' in line:
                         robot_logs.append({'log_type':marker,'data':json.loads(line.split(marker+' ',1)[1])})
             report['robot_diagnostic_count'] = sum(row['log_type']=='robot_diagnostic' for row in robot_logs)
+            report['defense_diagnostic_count'] = sum(row['log_type']=='defense_diagnostic' for row in robot_logs)
+            if args.repair_id is not None:
+                assert report['defense_diagnostic_count']==1, 'First-night defense diagnostic is missing'
             for uid in robot_ids:
                 assert any(row['log_type']=='robot_diagnostic' and row['data']['robot']['id']==uid
                            for row in robot_logs), 'Robot diagnostic is missing from server stderr'

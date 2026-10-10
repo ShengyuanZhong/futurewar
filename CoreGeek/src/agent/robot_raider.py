@@ -2,7 +2,7 @@
 import math
 import time
 from .grid import Routes
-from .protocol import PIONEER, WORKER, TOWER_TYPES, Pos, distance, move_command
+from .protocol import CONTROLLABLE_TYPES, PIONEER, WORKER, TOWER_TYPES, Pos, distance, move_command
 from .robot_combat import blocking_wall, clear_attack, enemy_at, planning_building_blocker
 from .raid_diagnostics import RaidDiagnostics, LIMIT, entity
 
@@ -15,9 +15,83 @@ class RobotRaider:
         self.s = strategy
         self.turn, self.plan, self.memory = strategy.turn, strategy.plan, strategy.memory
         self.diag = RaidDiagnostics(strategy)
+        self.observe_structures()
         live = {r.robot_id for r in self.turn.summon_robots if r.health > 0}
         self.memory.robot_raids = {uid: job for uid, job in self.memory.robot_raids.items()
                                    if uid in live and not self.turn.is_day and self.turn.day == 1}
+
+    def seen_cell(self, cell):
+        # Summoned robots supply no vision; ordinary roles/buildings do (v2 §4.3).
+        return any(u.health>0 and u.kind in CONTROLLABLE_TYPES + TOWER_TYPES + ('station','wall')
+                   and distance(u.pos,cell)<=4 for u in self.turn.ours)
+
+    def observe_structures(self):
+        kinds = TOWER_TYPES + ('station', 'wall')
+        current = {u.unit_id:u for u in self.turn.enemies}
+        old_geometry = {(u.unit_id,u.kind,u.pos) for u in self.memory.enemy_structures.values()}
+        for uid, unit in list(self.memory.enemy_structures.items()):
+            present = current.get(uid)
+            if (present is not None and (present.health <= 0 or present.kind not in kinds)
+                    or present is None and (unit.kind in ('station','wall')
+                        or all(self.seen_cell(p) for p in self.turn.footprint(unit)))):
+                self.memory.enemy_structures.pop(uid, None)
+        for unit in current.values():
+            if unit.kind in kinds and unit.health > 0:
+                for uid, remembered in list(self.memory.enemy_structures.items()):
+                    if uid != unit.unit_id and remembered.pos == unit.pos:
+                        self.memory.enemy_structures.pop(uid)
+                self.memory.enemy_structures[unit.unit_id] = unit
+        new_geometry = {(u.unit_id,u.kind,u.pos) for u in self.memory.enemy_structures.values()}
+        if old_geometry != new_geometry:
+            for job in self.memory.robot_raids.values():
+                job['failed_firing'] = {}
+
+    def planning_blocker(self, start, target):
+        return planning_building_blocker(self.turn,start,target,self.memory.enemy_structures.values())
+
+    def needs_close(self, robot, target):
+        old = self.memory.robot_raids.get(robot.robot_id,{})
+        victim = enemy_at(self.turn,target)
+        return (victim is not None and victim.kind == 'station'
+                and old.get('base_attack_failures',0) >= 2
+                and (robot.pos,target) != (old.get('verified_base_post'),old.get('verified_base_target')))
+
+    def observe_feedback(self, robot, old):
+        failed = {key:until for key,until in old.get('failed_firing',{}).items()
+                  if until > self.turn.round_no}
+        counts = old.setdefault('blocked_step_counts',{})
+        for p in list(counts):
+            if self.seen_cell(p) and p not in self.turn.occupied_cells():
+                counts.pop(p)
+        blocked = {p:until for p,until in old.get('blocked_steps',{}).items()
+                   if until > self.turn.round_no and not (self.seen_cell(p)
+                         and p not in self.turn.occupied_cells())}
+        result = self.turn.action_results.get(str(robot.robot_id))
+        if old.get('round') == self.turn.round_no-1:
+            if old.get('action') == 'attack' and old.get('position') == robot.pos:
+                victim = enemy_at(self.turn,old['target'])
+                static = ((victim is not None and victim.kind in ('station','wall') + TOWER_TYPES)
+                          or old.get('stage') in ('base','breach'))
+                if result is False:
+                    failed[old.get('attack_target_id'),old['target'],robot.pos] = (
+                        131 if static else self.turn.round_no+4)
+                    if old.get('stage') == 'base':
+                        old['base_attack_failures'] = old.get('base_attack_failures',0)+1
+                    if (robot.pos,old['target']) == (old.get('verified_base_post'),old.get('verified_base_target')):
+                        old.pop('verified_base_post',None)
+                        old.pop('verified_base_target',None)
+                elif result is True and old.get('stage') == 'base':
+                    old['base_attack_failures'] = 0
+                    old['verified_base_post'],old['verified_base_target'] = robot.pos,old['target']
+            elif (old.get('action') == 'move' and result is False
+                  and old.get('position') == robot.pos):
+                target = old['target']
+                counts[target] = counts.get(target,0)+1
+                blocked[target] = 131 if counts[target] >= 2 and not self.seen_cell(target) else self.turn.round_no+3
+            elif (old.get('action') == 'move' and result is True and robot.pos == old.get('target')):
+                counts.pop(robot.pos,None)
+                blocked.pop(robot.pos,None)
+        old['failed_firing'],old['blocked_steps'] = failed,blocked
 
     def firing_key(self, target, post):
         victim = enemy_at(self.turn,target)
@@ -25,7 +99,7 @@ class RobotRaider:
 
     def clear_shot(self, robot, target, audit=None):
         clear = clear_attack(self.turn, robot, target, audit)
-        blocker = planning_building_blocker(self.turn, robot.pos, target) if clear else None
+        blocker = self.planning_blocker(robot.pos, target) if clear else None
         if audit is not None:
             audit.update(planning_clear=clear and blocker is None,
                 planning_blocker=dict(entity(blocker[1]),cell=blocker[0]) if blocker else None)
@@ -33,7 +107,7 @@ class RobotRaider:
 
     def firing_plan(self, robot, points, route):
         options = []
-        counts = dict(examined=0,same_target=0,unreachable=0,failed_cache=0,wall_blocked=0,building_blocked=0,legal=0)
+        counts = dict(examined=0,same_target=0,unreachable=0,failed_cache=0,wall_blocked=0,building_blocked=0,close_required=0,legal=0)
         old = self.memory.robot_raids.get(robot.robot_id, {})
         for target in points:
             for x in range(max(0, target.x-3), min(self.turn.width, target.x+4)):
@@ -48,6 +122,12 @@ class RobotRaider:
                     if post == target:
                         counts['same_target'] += 1
                         continue
+                    victim = enemy_at(self.turn,target)
+                    if (victim is not None and victim.kind == 'station'
+                            and old.get('base_attack_failures',0) >= 2 and distance(post,target)>1
+                            and (post,target) != (old.get('verified_base_post'),old.get('verified_base_target'))):
+                        counts['close_required'] += 1
+                        continue
                     if post not in route.cost:
                         counts['unreachable'] += 1
                         continue
@@ -57,11 +137,13 @@ class RobotRaider:
                     if blocking_wall(self.turn, post, target) is not None:
                         counts['wall_blocked'] += 1
                         continue
-                    if planning_building_blocker(self.turn, post, target) is not None:
+                    if self.planning_blocker(post, target) is not None:
                         counts['building_blocked'] += 1
                         continue
                     counts['legal'] += 1
-                    options.append((route.cost[post], post != old.get('goal'), post, target))
+                    verified = (post,target) == (old.get('verified_base_post'),old.get('verified_base_target'))
+                    options.append((route.cost[post] if not verified else -1,
+                                    post != old.get('goal'), post, target))
         best = min(options) if options else None
         self.diag.event(robot,'firing_sweep',targets=points,counts=counts,timed_out=False,
                         best={'cost':best[0],'post':best[2],'target':best[3]} if best else None)
@@ -124,17 +206,28 @@ class RobotRaider:
 
     def pursue(self, robot, points, route, stage, **extra):
         self.diag.set(robot,intent=stage,target_points=points)
-        failed = self.memory.robot_raids.get(robot.robot_id, {}).get('failed_firing', {})
+        old = self.memory.robot_raids.get(robot.robot_id,{})
+        failed = old.get('failed_firing', {})
+        verified = old.get('verified_base_post')
+        verified_target = old.get('verified_base_target')
+        if (stage == 'base' and verified in route.cost and verified != robot.pos
+                and verified_target in points and self.planning_blocker(verified,verified_target) is None
+                and blocking_wall(self.turn,verified,verified_target) is None
+                and self.firing_key(verified_target,verified) not in failed):
+            step = route.step({verified})
+            if step is not None:
+                return self.issue(robot,'move',step,verified,stage,**extra)
         direct = []
         for p in points:
             audit = {} if self.diag.enabled else None
             clear = self.clear_shot(robot,p,audit)
             cache = self.firing_key(p,robot.pos) in failed if clear else False
             self.diag.event(robot,'attack_check',target=p,check=audit,cache_hit=cache)
-            if clear and not cache:
+            if clear and not cache and (not self.needs_close(robot,p) or distance(robot.pos,p)<=1):
                 direct.append(p)
         if direct:
-            target = min(direct, key=lambda p: (distance(robot.pos, p), p))
+            old = self.memory.robot_raids.get(robot.robot_id,{})
+            target = min(direct, key=lambda p: (p != old.get('verified_base_target'),distance(robot.pos,p),p))
             return self.issue(robot, 'attack', target, robot.pos, stage, **extra)
         firing = self.firing_plan(robot, points, route)
         if firing:
@@ -175,7 +268,10 @@ class RobotRaider:
                       'unsupported_robot_type' if robot.kind!='bossRobot' else 'stunned')
             self.diag.set(robot,reason='skip_'+reason)
             return False
-        route = Routes(self.turn, robot, self.plan.reserved)
+        old = self.memory.robot_raids.setdefault(robot.robot_id,{})
+        self.observe_feedback(robot, old)
+        remembered = {p for u in self.memory.enemy_structures.values() for p in self.turn.footprint(u)}
+        route = Routes(self.turn, robot, self.plan.reserved | remembered | set(old.get('blocked_steps',{})))
         if self.diag.enabled:
             neighbours = [p for p in robot.pos.neighbours() if self.turn.in_bounds(p)]
             occupants = {p:[] for p in neighbours}
@@ -188,7 +284,6 @@ class RobotRaider:
                 'adjacent':[{'pos':p,'terrain':self.turn.zones.get(p,'land'),
                     'land':self.turn.land(p),'reachable':p in route.cost,
                     'reserved':p in self.plan.reserved,'occupants':occupants[p]} for p in neighbours]})
-        old = self.memory.robot_raids.setdefault(robot.robot_id, {})
         budget = self.s.settings.boss_controller_max_walk
         consecutive = old.get('round') == self.turn.round_no - 1
         chasing = old.get('pursuit_kind',old.get('stage')) == 'controller'
@@ -198,16 +293,16 @@ class RobotRaider:
         self.diag.set(robot,controller_budget=budget,pursuit_rounds=effort,
                       controller_budget_remaining=max(0,budget-effort),
                       siege_until=old.get('siege_until',0))
-        failed = {key: until for key, until in old.get('failed_firing', {}).items() if until > self.turn.round_no}
-        if (old.get('round') == self.turn.round_no-1 and old.get('action') == 'attack'
-                and old.get('position') == robot.pos
-                and self.turn.action_results.get(str(robot.robot_id)) is False):
-            failed[old.get('attack_target_id'),old['target'],robot.pos] = self.turn.round_no+4
-        old['failed_firing'] = failed
+        failed = old['failed_firing']
+        self.diag.set(robot,base_attack_failures=old.get('base_attack_failures',0),
+            base_close_required=old.get('base_attack_failures',0)>=2,
+            verified_base_post=old.get('verified_base_post'),verified_base_target=old.get('verified_base_target'),
+            remembered_structures=[entity(u) for u in self.memory.enemy_structures.values()][:LIMIT],
+            blocked_steps=[{'pos':p,'until_round':until} for p,until in old.get('blocked_steps',{}).items()][:LIMIT])
         self.diag.set(robot,failed_cache=[{'target_id':key[0],'target_pos':key[1],'post':key[2],'until_round':until}
                                          for key,until in list(failed.items())[:LIMIT]],
                       failed_cache_omitted=max(0,len(failed)-LIMIT))
-        weapons = [u for u in self.turn.enemies if u.health > 0 and u.kind in TOWER_TYPES]
+        weapons = [u for u in self.memory.enemy_structures.values() if u.health > 0 and u.kind in TOWER_TYPES]
         crew = [u for u in self.turn.enemies if u.kind in (PIONEER, WORKER)
                 and any(distance(u.pos,w.pos) <= 1 for w in weapons)]
         old['operator_snapshot'] = tuple((u.unit_id,u.health) for u in crew)

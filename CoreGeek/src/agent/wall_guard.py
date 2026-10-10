@@ -242,7 +242,13 @@ class WallGuard:
             return False
         # No urgent repair / no kits: hold inside; relocate only to a safer lane cell.
         home = self.home(role)
-        if home is not None and not s.danger.get(home,0):
+        home_reachable = home in reachable
+        if home is not None and not home_reachable and not s.danger.get(home,0):
+            # Keep cooperative yields when a worker blocks the route, but never
+            # wait for a static temporary wall to vacate the old home cell.
+            relaxed = s.coordinator.diagnostic_route(role,cells if role.pos in cells else None)
+            home_reachable = home in relaxed.cost
+        if home is not None and home_reachable and not s.danger.get(home,0):
             goals = {home}
         elif role.pos in reachable:
             safer = {p for p in reachable if s.danger.get(p, 0) < s.danger.get(role.pos, 0)}

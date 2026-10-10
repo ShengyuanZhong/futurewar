@@ -147,7 +147,7 @@ class ULayoutTests(unittest.TestCase):
                 for tower, cooldown in zip(raw["teamOur"]["roles"][-3:], cooldowns):
                     tower["cooldown"] = cooldown
                 turn = Turn.load(copy.deepcopy(raw))
-                plan = ActionPlan(turn, Settings())
+                plan = ActionPlan(turn, Settings(enable_first_night_defense=False))
                 Strategy(turn, plan, memory).run()
                 self.assertEqual(plan.rejections, [])
                 shots = [(key, cmd) for key, cmd in plan.commands.items() if cmd["action"] == "attack"]

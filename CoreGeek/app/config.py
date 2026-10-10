@@ -35,6 +35,8 @@ class Settings:
     enable_news: bool = True
     enable_boss_raid: bool = True
     enable_robot_diagnostics: bool = True
+    enable_first_night_defense: bool = True
+    first_night_repair_stock: int = 5
     boss_controller_max_walk: int = 4
     summon_build_margin: int = 2
     max_body_bytes: int = 2 * 1024 * 1024
@@ -53,10 +55,10 @@ class Settings:
         settings = cls(**raw)
         if len(settings.loadout) != 3 or any(k not in TOWER_TYPES for k in settings.loadout):
             raise ValueError("loadout must contain exactly three official weapon names")
-        for key in ("sell_batch", "return_margin", "max_body_bytes", "repair_start_day", "repair_stock", "repair_threshold_percent"):
+        for key in ("sell_batch", "return_margin", "max_body_bytes", "repair_start_day", "repair_stock", "repair_threshold_percent", "first_night_repair_stock"):
             if type(getattr(settings, key)) is not int or getattr(settings, key) <= 0:
                 raise ValueError(f"{key} must be a positive integer")
-        if settings.repair_start_day > 10 or settings.repair_stock > 100 or settings.repair_threshold_percent > 100:
+        if settings.repair_start_day > 10 or settings.repair_stock > 100 or settings.first_night_repair_stock > 100 or settings.repair_threshold_percent > 100:
             raise ValueError("repair settings exceed days, worker capacity or percentage")
         if type(settings.repair_stock_per_day) is not int or not 0 <= settings.repair_stock_per_day <= 100:
             raise ValueError("repair_stock_per_day must be an integer in 0..100")
@@ -64,7 +66,7 @@ class Settings:
             raise ValueError('summon_build_margin must be an integer in 0..10')
         if type(settings.boss_controller_max_walk) is not int or not 0 <= settings.boss_controller_max_walk <= 30:
             raise ValueError('boss_controller_max_walk must be an integer in 0..30')
-        for key in ("allow_base_surroundings", "enable_tasks", "enable_news", "enable_boss_raid", "enable_robot_diagnostics"):
+        for key in ("allow_base_surroundings", "enable_tasks", "enable_news", "enable_boss_raid", "enable_robot_diagnostics", "enable_first_night_defense"):
             if type(getattr(settings, key)) is not bool:
                 raise ValueError(f"{key} must be boolean")
         for team, layout in settings.layouts.items():
@@ -102,8 +104,8 @@ class Settings:
         station = turn.station()
         return station is not None and 2 * station.pos.x + 1 > turn.width - 1
 
-    def wall_detour_cells(self, turn, gap: Pos) -> tuple[Pos, ...]:
-        """Outward one-cell bulge around a blocked site in the user's U layout.
+    def wall_detour_cells(self, turn, gap: Pos, outward: bool = False) -> tuple[Pos, ...]:
+        """Inner bypass around a blocked site; outward is historical geometry.
 
         These are user-authorized base-surroundings assumptions, not verified
         official zones. Never expand an explicit verified layout or strict mode.
@@ -117,14 +119,26 @@ class Settings:
         dx = gap.x - base.pos.x
         dx = 1 - dx if mirrored else dx
         dy = gap.y - base.pos.y
-        cells = []
-        for pos in gap.neighbours():
-            outward = ((dx == 3 and (pos.x < gap.x if mirrored else pos.x > gap.x))
-                       or (dy == 2 and pos.y > gap.y)
-                       or (dy == -3 and pos.y < gap.y))
-            if outward and turn.land(pos) and pos not in station_footprint(base.pos):
-                cells.append(pos)
-        return tuple(sorted(cells))
+        if outward:
+            cells = [pos for pos in gap.neighbours()
+                     if ((dx == 3 and (pos.x < gap.x if mirrored else pos.x > gap.x))
+                         or (dy == 2 and pos.y > gap.y)
+                         or (dy == -3 and pos.y < gap.y))]
+        else:
+            inward_x = 1 if mirrored else -1
+            if dx == 3 and dy in (2, -3):
+                cells = [Pos(gap.x + inward_x, gap.y + (-1 if dy == 2 else 1))]
+            elif dx == 3:
+                cells = [Pos(gap.x + inward_x, gap.y + offset) for offset in (-1, 0, 1)]
+            elif dy in (2, -3):
+                cells = [Pos(gap.x + offset, gap.y + (-1 if dy == 2 else 1))
+                         for offset in (-1, 0, 1)]
+            else:
+                cells = []
+        excluded = set(station_footprint(base.pos)) | set(self.build_cells(turn, 'wall'))
+        excluded.update(self.build_cells(turn, 'rocket'))
+        excluded.update(u.pos for u in turn.ours + turn.enemies if u.kind in TOWER_TYPES)
+        return tuple(sorted(pos for pos in cells if turn.land(pos) and pos not in excluded))
 
     def default_operator_position(self, turn) -> Pos | None:
         """Drawing's P; custom verified layouts retain their own stand selection."""

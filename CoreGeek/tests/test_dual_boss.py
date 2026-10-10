@@ -31,7 +31,8 @@ def memory_for(raw, attempted=True):
 def policy_step(raw, memory, settings=None):
     turn = Turn.load(raw)
     memory.observe(turn)
-    plan = ActionPlan(turn, settings or Settings(), memory.summon_attempts, memory.pending_summon_positions)
+    # Isolate the deployment ledger from the separately tested first-night budget.
+    plan = ActionPlan(turn, settings or Settings(enable_first_night_defense=False), memory.summon_attempts, memory.pending_summon_positions)
     s = Strategy(turn, plan, memory)
     actor = next(iter(s.turn.alive(('pioneer',))), None)
     if actor:
@@ -363,7 +364,7 @@ class DualBossTests(unittest.TestCase):
 
     def test_service_cache_does_not_count_pending_feedback_twice(self):
         raw = raid_request(); raw['teamOur']['goldNum'] = 240
-        service = TurnService(Settings(enable_news=False))
+        service = TurnService(Settings(enable_news=False,enable_first_night_defense=False))
         key = (raw['teamOur']['teamId'], raw['teamOur']['type'])
         service.sessions[key] = Session(memory=memory_for(raw))
         response = service.decide(copy.deepcopy(raw))

@@ -16,7 +16,7 @@ def opening_settings():
         "verified": True, "source": "synthetic regression only",
         "weapons": [{"x": -1, "y": 1}, {"x": 0, "y": 1}, {"x": 1, "y": 1}],
         "walls": [{"x": -2, "y": 0}, {"x": -2, "y": -1}, {"x": 3, "y": 0}, {"x": 3, "y": 1}],
-    }}, enable_news=False)
+    }}, enable_news=False,enable_first_night_defense=False)
 
 
 def opening_request(round_no=1, towers=False):

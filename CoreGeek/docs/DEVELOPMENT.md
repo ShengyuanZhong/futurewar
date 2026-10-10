@@ -1,5 +1,7 @@
 # 开发与维护文档
 
+v1.2.5首日防守与BOSS反馈恢复的根因、日志证据、验证边界见[BOSS_LOG3_4_FIX.md](BOSS_LOG3_4_FIX.md)。新模块`src/agent/first_night_defense.py`在`SiteBlockade`之后、`BossRaid/RaidScouts`之前构造，独立维护首日守家身份、有效封口、实测供应和预算；`brain.run_worker()`先施工占点围挡，再首日补给/回防，再侦察和既有工人流程。`GameMemory.enemy_structures`保存已观察静态建筑快照，供机器人路线及射线规划；不修改`Turn.enemies`和官方动作门禁。下一段保留v1.2.4开发记录，当前行为以本补充及修复文档为准。
+
 更新日期：2026-10-10，程序版本v1.2.4。增加[有限追击与双BOSS](BOSS_EFFICIENCY.md)：操炮者射击位/连续追位默认预算4，无路或超预算改攻基地，短破墙保留；双任务有奖励确认或经济足够时首日最多两券，按实际库存和反馈分帧部署，保留三炮金币和返程时间。TaskService仅新增task_points_succeeded证据记录，不改任务prompt。GameMemory.boss_raid维护有限购买/使用账本，robot_raids记录每只BOSS的独立预算与4回合基地聚焦；[首夜视野协作](RAID_SCOUTS.md)及[诊断日志](ROBOT_DIAGNOSTICS.md)继续保留。其它策略仍见[占点防御](SITE_BLOCKADE.md)、[火箭比值与2+1](ROCKET_SECTORS.md)、[工人经济](COMPLETED_ECONOMY.md)和[复赛索引](ROUND_OF_32_RULES.md)。
 
 ## 1. 设计目标与边界
@@ -44,7 +46,8 @@ CoreGeek/
 │   ├── robot_raider.py           # 第一夜BOSS优先攻击当前炮旁活工人/先锋
 │   ├── robot_combat.py           # 原生机器人射程、目标和墙遮挡
 │   ├── raid_diagnostics.py       # 只读决策采样与前轮位置/HP事实关联
-│   ├── raid_scouts.py            # 首夜双观察者的固定分工、真实墙门槛和站位覆盖
+│   ├── raid_scouts.py            # 首夜双观察者分工、实测准备和imp避捕
+│   ├── first_night_defense.py    # 首日守家供应、预算、回防与内侧巡修
 │   ├── brain.py                  # 白天/夜间策略编排
 │   └── server.py                 # 旧 server 导入兼容
 ├── tests/                        # 独立可手算案例、服务/HTTP测试
@@ -103,7 +106,7 @@ flowchart LR
 
 默认已启用建造，不需要config.local.json。`base_surrounding_offsets(kind, mirrored=False)`按2×2基地生成3格后排竖排火箭与12格U形墙，墙内留一格维修通路。`mirrored_layout(turn)`按基地中心决定左右，右侧偏移为`(1-dx,dy)`；`default_operator_position(turn)`固定P在中间火箭后侧。平移后过滤越界、基地和非空地中立点。完整参数和示意图见[U形布局](U_LAYOUT.md)。构造依据是用户明确允许的基地周围假设，不标记成官方确认坐标。
 
-敌方连续占墙位超过5回合时，`Settings.wall_detour_cells(turn,gap)`在外侧一格生成临时围挡，`construction_walls()`将其与永久缺墙合并用于施工/筹石/预留。显式verified布局和strict模式不扩区。`site_blockade.py`选择携石负责人在内侧邻格守候，白天原位空出时优先补墙；观测确认后才拆本进程临时墙，临时墙不进入升级阶段。详细状态与日志见[占点防御](SITE_BLOCKADE.md)。
+敌方连续占墙位超过5回合时，`Settings.wall_detour_cells(turn,gap)`在内侧生成临时围挡（直边三块，正面角一块），`construction_walls()`将其与永久缺墙合并用于施工/筹石/预留。显式verified布局和strict模式不扩区。`site_blockade.py`选择携石负责人在临时围墙内侧可达邻格守候，白天原位空出时优先寻路补墙；观测确认后才拆本进程临时墙，临时墙不进入升级阶段。详细状态与日志见[占点防御](SITE_BLOCKADE.md)。
 
 如果提供`verified:true`且有source的自定义布局，它优先于默认布局。若要恢复仅允许确认区域的模式，显式设置`allow_base_surroundings:false`。已有模板中verified:false的空布局会使用默认区域，不再阻止开局建炮。
 
