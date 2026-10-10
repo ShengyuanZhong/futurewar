@@ -20,6 +20,7 @@ def main():
     parser.add_argument('--request', type=Path, default=ROOT.parent / 'request.txt')
     parser.add_argument('--robot-id', type=int, help='Assert this controlled robot receives move/attack')
     parser.add_argument('--robot-log-output', type=Path, help='Save structured robot diagnostics as JSONL')
+    parser.add_argument('--scout-ids', type=int, nargs='+', help='Assert these observers receive separate move commands')
     args = parser.parse_args()
     with socket.socket() as sock:
         sock.bind(("127.0.0.1", 0))
@@ -60,6 +61,10 @@ def main():
             if args.robot_id is not None:
                 command = result['roleCommandMap'][str(args.robot_id)]
                 assert command['action'] in ('move', 'attack') and 'controllerId' not in command
+            if args.scout_ids:
+                commands = [result['roleCommandMap'][str(uid)] for uid in args.scout_ids]
+                assert all(c['action']=='move' for c in commands)
+                assert len({tuple(c['targetPos'][0].values()) for c in commands}) == len(commands)
             report = {"status": response.status, "elapsed_ms": round(elapsed, 3),
                       "actions": len(result["roleCommandMap"]), "entry": "python CoreGeek/main3.py <port>",
                       "request": 'unmodified request.txt' if args.request.resolve() == (ROOT.parent/'request.txt').resolve() else args.request.name,
@@ -67,6 +72,8 @@ def main():
                       "bash_executed": False}
             if args.robot_id is not None:
                 report['controlled_robot_command'] = result['roleCommandMap'][str(args.robot_id)]
+            if args.scout_ids:
+                report['scout_commands'] = {str(uid):result['roleCommandMap'][str(uid)] for uid in args.scout_ids}
         finally:
             conn.close()
     finally:
@@ -79,6 +86,9 @@ def main():
             report["bind_verified_from_startup_log"] = f"0.0.0.0:{port}".encode() in stderr
             report["construction_warning"] = b"D01" in stderr
             report["base_surroundings_enabled"] = b"construction_mode=base_surroundings" in stderr
+            report['raid_scout_logged'] = b' | raid_scout round=' in stderr
+            if args.scout_ids:
+                assert report['raid_scout_logged'], 'Scout trace is missing from server stderr'
             report["task_debug_logged"] = all(
                 marker in stderr for marker in (
                     b"[TASK-DEBUG R", b"phaseTask :", b"llmResp   :",

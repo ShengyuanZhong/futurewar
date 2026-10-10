@@ -1,6 +1,6 @@
 # 开发与维护文档
 
-更新日期：2026-10-10，程序版本v1.2.2。增加[机器人诊断日志](ROBOT_DIAGNOSTICS.md)解释乱走和不攻击原因，保持v1.2.1策略。临时RaidDiagnostics记录候选/墙/路径与终止原因，robot_motion只保存四个连续观测位置及前轮目标事实，决策完成后写JSON。保留[BOSS袭击](BOSS_RAID.md)、[占点防御](SITE_BLOCKADE.md)、[火箭比值与2+1](ROCKET_SECTORS.md)、[捣乱鬼](IMP_STRATEGY.md)、[工人经济](COMPLETED_ECONOMY.md)及任务流程，复赛接入范围见[索引](ROUND_OF_32_RULES.md)。
+更新日期：2026-10-10，程序版本v1.2.3。增加[首夜共享视野协作](RAID_SCOUTS.md)：imp提前去敌后，墙建齐后固定一名工人支援，另一名保留占点防御和原工作；第一夜维持观察，第二天恢复。GameMemory.raid_scouts保存身份、目标、时限与终止状态，raid_scout日志说明出发及待命原因。保留[机器人诊断日志](ROBOT_DIAGNOSTICS.md)、[BOSS袭击](BOSS_RAID.md)、[占点防御](SITE_BLOCKADE.md)、[火箭比值与2+1](ROCKET_SECTORS.md)、[捣乱鬼](IMP_STRATEGY.md)、[工人经济](COMPLETED_ECONOMY.md)及任务流程，复赛接入范围见[索引](ROUND_OF_32_RULES.md)。
 
 ## 1. 设计目标与边界
 
@@ -44,6 +44,7 @@ CoreGeek/
 │   ├── robot_raider.py           # 第一夜BOSS优先攻击当前炮旁活工人/先锋
 │   ├── robot_combat.py           # 原生机器人射程、目标和墙遮挡
 │   ├── raid_diagnostics.py       # 只读决策采样与前轮位置/HP事实关联
+│   ├── raid_scouts.py            # 首夜双观察者的固定分工、真实墙门槛和站位覆盖
 │   ├── brain.py                  # 白天/夜间策略编排
 │   └── server.py                 # 旧 server 导入兼容
 ├── tests/                        # 独立可手算案例、服务/HTTP测试

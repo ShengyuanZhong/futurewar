@@ -108,6 +108,9 @@ class TurnService:
                 LOGGER.info('boss_raid round=%s stage=%s robots=%s commands=%s', turn.round_no,
                             memory.boss_raid, memory.robot_raids,
                             {str(r.robot_id): plan.commands.get(str(r.robot_id)) for r in turn.summon_robots})
+            if memory.raid_scouts:
+                LOGGER.info('raid_scout round=%s state=%s commands=%s', turn.round_no, memory.raid_scouts,
+                            {str(uid): plan.commands.get(str(uid)) for uid in memory.raid_scouts.get('posts', {})})
             if robot_observation is not None:
                 LOGGER.info('robot_observation %s',json.dumps(robot_observation,ensure_ascii=False,separators=(',',':')))
             for diagnostic in robot_diagnostics:

@@ -12,6 +12,7 @@ from .imp_policy import ImpController
 from .site_blockade import SiteBlockade
 from .boss_raid import BOSS_ORDER, BossRaid
 from .robot_raider import RobotRaider
+from .raid_scouts import RaidScouts
 from .summoning import rear_spawn_position
 from . import upgrade_policy
 from .protocol import (IMP, MINERALS, PIONEER, TOWER_TYPES, Pos, Turn, Unit,
@@ -37,6 +38,7 @@ class Strategy:
         self.site_guard.choose_watcher()
         self.boss_raid = BossRaid(self)
         self.raider = RobotRaider(self)
+        self.raid_scouts = RaidScouts(self)
 
     def movement_reserved(self, role: Unit | None = None) -> set[Pos]:
         """Use the same future sites in paths, yields and site clearance."""
@@ -95,7 +97,8 @@ class Strategy:
             if time.monotonic() >= self.deadline:
                 break
             if role.kind == IMP:
-                self.imp.decide(role)
+                if not self.raid_scouts.imp(role):
+                    self.imp.decide(role)
                 continue
             maximum = 200 if role.kind == PIONEER else 220
             if role.health <= maximum // 2 and "Medicine" in role.backpack:
@@ -137,6 +140,8 @@ class Strategy:
     def run_worker(self, role: Unit) -> None:
         """One economic schedule; night adds safety and assigned guard duty."""
         if self.site_guard.watch(role):
+            return
+        if self.raid_scouts.worker(role):
             return
         if self.coordinator.hold_for_yield(role):
             return

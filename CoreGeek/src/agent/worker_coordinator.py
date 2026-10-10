@@ -121,6 +121,9 @@ class WorkerCoordinator:
     def yield_blocker(self, requester, blocker, goal):
         if blocker.unit_id in self.plan.used:
             return False
+        scouts = getattr(self.s, 'raid_scouts', None)
+        if scouts is not None and scouts.is_worker(blocker):
+            return False
         if self.s.site_guard.is_waiting(blocker):
             return False
         guard = self.s.guard

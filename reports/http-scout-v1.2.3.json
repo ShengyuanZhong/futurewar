@@ -1,0 +1,35 @@
+{
+  "status": 200,
+  "elapsed_ms": 48.132,
+  "actions": 3,
+  "entry": "python CoreGeek/main3.py <port>",
+  "request": "raid-scout-observation-v1.2.3.json",
+  "request_sha256": "6ad34af1b025d80d750a76f8a42ee9107bf618585b5ff1d06d8db1b4c830aaa0",
+  "bind_verified_from_startup_log": true,
+  "bash_executed": false,
+  "scout_commands": {
+    "505": {
+      "action": "move",
+      "targetPos": [
+        {
+          "x": 5,
+          "y": 11
+        }
+      ]
+    },
+    "501": {
+      "action": "move",
+      "targetPos": [
+        {
+          "x": 5,
+          "y": 9
+        }
+      ]
+    }
+  },
+  "construction_warning": false,
+  "base_surroundings_enabled": true,
+  "raid_scout_logged": true,
+  "task_debug_logged": true,
+  "robot_diagnostic_count": 0
+}

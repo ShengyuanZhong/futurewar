@@ -1,0 +1,2371 @@
+{
+  "kind": "synthetic filtered-observation sequence, no official damage/collision/kill simulation",
+  "sight": 4,
+  "robot_supplies_sight": false,
+  "enemy_layout": "front guns from boss_log1 coordinates",
+  "first_visible_round": 47,
+  "both_in_position_round": 54,
+  "boss_attack_round": 74,
+  "rows": [
+    {
+      "round": 25,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 4,
+        "y": 12
+      },
+      "worker_pos": {
+        "x": 4,
+        "y": 9
+      },
+      "visible_enemy_ids": [],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 5,
+            "y": 11
+          }
+        ]
+      },
+      "worker_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 5,
+            "y": 9
+          }
+        ]
+      },
+      "home_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 6
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 26,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 5,
+        "y": 11
+      },
+      "worker_pos": {
+        "x": 5,
+        "y": 9
+      },
+      "visible_enemy_ids": [],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 6,
+            "y": 10
+          }
+        ]
+      },
+      "worker_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 5,
+            "y": 10
+          }
+        ]
+      },
+      "home_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 7
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 27,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 6,
+        "y": 10
+      },
+      "worker_pos": {
+        "x": 5,
+        "y": 10
+      },
+      "visible_enemy_ids": [],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 7,
+            "y": 10
+          }
+        ]
+      },
+      "worker_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 6,
+            "y": 11
+          }
+        ]
+      },
+      "home_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 2,
+            "y": 8
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 28,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 7,
+        "y": 10
+      },
+      "worker_pos": {
+        "x": 6,
+        "y": 11
+      },
+      "visible_enemy_ids": [],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 8,
+            "y": 10
+          }
+        ]
+      },
+      "worker_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 7,
+            "y": 11
+          }
+        ]
+      },
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 29,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 8,
+        "y": 10
+      },
+      "worker_pos": {
+        "x": 7,
+        "y": 11
+      },
+      "visible_enemy_ids": [],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 9,
+            "y": 10
+          }
+        ]
+      },
+      "worker_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 8,
+            "y": 11
+          }
+        ]
+      },
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 30,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 9,
+        "y": 10
+      },
+      "worker_pos": {
+        "x": 8,
+        "y": 11
+      },
+      "visible_enemy_ids": [],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 10,
+            "y": 9
+          }
+        ]
+      },
+      "worker_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 9,
+            "y": 11
+          }
+        ]
+      },
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 31,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 10,
+        "y": 9
+      },
+      "worker_pos": {
+        "x": 9,
+        "y": 11
+      },
+      "visible_enemy_ids": [],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 11,
+            "y": 8
+          }
+        ]
+      },
+      "worker_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 10,
+            "y": 10
+          }
+        ]
+      },
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 32,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 11,
+        "y": 8
+      },
+      "worker_pos": {
+        "x": 10,
+        "y": 10
+      },
+      "visible_enemy_ids": [],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 12,
+            "y": 7
+          }
+        ]
+      },
+      "worker_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 11,
+            "y": 9
+          }
+        ]
+      },
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 33,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 12,
+        "y": 7
+      },
+      "worker_pos": {
+        "x": 11,
+        "y": 9
+      },
+      "visible_enemy_ids": [],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 13,
+            "y": 6
+          }
+        ]
+      },
+      "worker_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 12,
+            "y": 8
+          }
+        ]
+      },
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 34,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 13,
+        "y": 6
+      },
+      "worker_pos": {
+        "x": 12,
+        "y": 8
+      },
+      "visible_enemy_ids": [],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 14,
+            "y": 5
+          }
+        ]
+      },
+      "worker_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 13,
+            "y": 7
+          }
+        ]
+      },
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 35,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 14,
+        "y": 5
+      },
+      "worker_pos": {
+        "x": 13,
+        "y": 7
+      },
+      "visible_enemy_ids": [],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 15,
+            "y": 4
+          }
+        ]
+      },
+      "worker_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 14,
+            "y": 6
+          }
+        ]
+      },
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 36,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 15,
+        "y": 4
+      },
+      "worker_pos": {
+        "x": 14,
+        "y": 6
+      },
+      "visible_enemy_ids": [],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 16,
+            "y": 3
+          }
+        ]
+      },
+      "worker_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 15,
+            "y": 5
+          }
+        ]
+      },
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 37,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 16,
+        "y": 3
+      },
+      "worker_pos": {
+        "x": 15,
+        "y": 5
+      },
+      "visible_enemy_ids": [],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 17,
+            "y": 2
+          }
+        ]
+      },
+      "worker_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 16,
+            "y": 4
+          }
+        ]
+      },
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 38,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 17,
+        "y": 2
+      },
+      "worker_pos": {
+        "x": 16,
+        "y": 4
+      },
+      "visible_enemy_ids": [],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 18,
+            "y": 1
+          }
+        ]
+      },
+      "worker_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 17,
+            "y": 3
+          }
+        ]
+      },
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 39,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 18,
+        "y": 1
+      },
+      "worker_pos": {
+        "x": 17,
+        "y": 3
+      },
+      "visible_enemy_ids": [],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 19,
+            "y": 0
+          }
+        ]
+      },
+      "worker_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 18,
+            "y": 2
+          }
+        ]
+      },
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 40,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 19,
+        "y": 0
+      },
+      "worker_pos": {
+        "x": 18,
+        "y": 2
+      },
+      "visible_enemy_ids": [],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 20,
+            "y": 1
+          }
+        ]
+      },
+      "worker_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 19,
+            "y": 1
+          }
+        ]
+      },
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 41,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 20,
+        "y": 1
+      },
+      "worker_pos": {
+        "x": 19,
+        "y": 1
+      },
+      "visible_enemy_ids": [],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 21,
+            "y": 2
+          }
+        ]
+      },
+      "worker_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 20,
+            "y": 0
+          }
+        ]
+      },
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 42,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 21,
+        "y": 2
+      },
+      "worker_pos": {
+        "x": 20,
+        "y": 0
+      },
+      "visible_enemy_ids": [],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 22,
+            "y": 3
+          }
+        ]
+      },
+      "worker_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 21,
+            "y": 0
+          }
+        ]
+      },
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 43,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 22,
+        "y": 3
+      },
+      "worker_pos": {
+        "x": 21,
+        "y": 0
+      },
+      "visible_enemy_ids": [],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 23,
+            "y": 4
+          }
+        ]
+      },
+      "worker_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 22,
+            "y": 0
+          }
+        ]
+      },
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 44,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 23,
+        "y": 4
+      },
+      "worker_pos": {
+        "x": 22,
+        "y": 0
+      },
+      "visible_enemy_ids": [],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 24,
+            "y": 5
+          }
+        ]
+      },
+      "worker_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 23,
+            "y": 0
+          }
+        ]
+      },
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 45,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 24,
+        "y": 5
+      },
+      "worker_pos": {
+        "x": 23,
+        "y": 0
+      },
+      "visible_enemy_ids": [
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 25,
+            "y": 6
+          }
+        ]
+      },
+      "worker_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 24,
+            "y": 0
+          }
+        ]
+      },
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 46,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 25,
+        "y": 6
+      },
+      "worker_pos": {
+        "x": 24,
+        "y": 0
+      },
+      "visible_enemy_ids": [
+        993,
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 26,
+            "y": 7
+          }
+        ]
+      },
+      "worker_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 25,
+            "y": 1
+          }
+        ]
+      },
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 47,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 26,
+        "y": 7
+      },
+      "worker_pos": {
+        "x": 25,
+        "y": 1
+      },
+      "visible_enemy_ids": [
+        991,
+        993,
+        992,
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 27,
+            "y": 8
+          }
+        ]
+      },
+      "worker_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 26,
+            "y": 2
+          }
+        ]
+      },
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 48,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 27,
+        "y": 8
+      },
+      "worker_pos": {
+        "x": 26,
+        "y": 2
+      },
+      "visible_enemy_ids": [
+        991,
+        993,
+        994,
+        992,
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 28,
+            "y": 9
+          }
+        ]
+      },
+      "worker_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 27,
+            "y": 3
+          }
+        ]
+      },
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 49,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 28,
+        "y": 9
+      },
+      "worker_pos": {
+        "x": 27,
+        "y": 3
+      },
+      "visible_enemy_ids": [
+        991,
+        993,
+        994,
+        992,
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 29,
+            "y": 10
+          }
+        ]
+      },
+      "worker_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 28,
+            "y": 4
+          }
+        ]
+      },
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 50,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 29,
+        "y": 10
+      },
+      "worker_pos": {
+        "x": 28,
+        "y": 4
+      },
+      "visible_enemy_ids": [
+        991,
+        993,
+        994,
+        992,
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 30,
+            "y": 11
+          }
+        ]
+      },
+      "worker_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 29,
+            "y": 5
+          }
+        ]
+      },
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 51,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 30,
+        "y": 11
+      },
+      "worker_pos": {
+        "x": 29,
+        "y": 5
+      },
+      "visible_enemy_ids": [
+        991,
+        993,
+        994,
+        992,
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 31,
+            "y": 12
+          }
+        ]
+      },
+      "worker_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 30,
+            "y": 6
+          }
+        ]
+      },
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 52,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 31,
+        "y": 12
+      },
+      "worker_pos": {
+        "x": 30,
+        "y": 6
+      },
+      "visible_enemy_ids": [
+        991,
+        993,
+        994,
+        992,
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 32,
+            "y": 12
+          }
+        ]
+      },
+      "worker_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 31,
+            "y": 7
+          }
+        ]
+      },
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 53,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_pos": {
+        "x": 31,
+        "y": 7
+      },
+      "visible_enemy_ids": [
+        991,
+        993,
+        994,
+        992,
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": null,
+      "worker_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 32,
+            "y": 8
+          }
+        ]
+      },
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 54,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_pos": {
+        "x": 32,
+        "y": 8
+      },
+      "visible_enemy_ids": [
+        991,
+        993,
+        994,
+        992,
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": null,
+      "worker_command": null,
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 55,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_pos": {
+        "x": 32,
+        "y": 8
+      },
+      "visible_enemy_ids": [
+        991,
+        993,
+        994,
+        992,
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": null,
+      "worker_command": null,
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 56,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_pos": {
+        "x": 32,
+        "y": 8
+      },
+      "visible_enemy_ids": [
+        991,
+        993,
+        994,
+        992,
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": null,
+      "worker_command": null,
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 57,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_pos": {
+        "x": 32,
+        "y": 8
+      },
+      "visible_enemy_ids": [
+        991,
+        993,
+        994,
+        992,
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": null,
+      "worker_command": null,
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 58,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_pos": {
+        "x": 32,
+        "y": 8
+      },
+      "visible_enemy_ids": [
+        991,
+        993,
+        994,
+        992,
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": null,
+      "worker_command": null,
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 59,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_pos": {
+        "x": 32,
+        "y": 8
+      },
+      "visible_enemy_ids": [
+        991,
+        993,
+        994,
+        992,
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": null,
+      "worker_command": null,
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 60,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_pos": {
+        "x": 32,
+        "y": 8
+      },
+      "visible_enemy_ids": [
+        991,
+        993,
+        994,
+        992,
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": null,
+      "worker_command": null,
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 61,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_pos": {
+        "x": 32,
+        "y": 8
+      },
+      "visible_enemy_ids": [
+        991,
+        993,
+        994,
+        992,
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": null,
+      "worker_command": null,
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 62,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_pos": {
+        "x": 32,
+        "y": 8
+      },
+      "visible_enemy_ids": [
+        991,
+        993,
+        994,
+        992,
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": null,
+      "worker_command": null,
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 63,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_pos": {
+        "x": 32,
+        "y": 8
+      },
+      "visible_enemy_ids": [
+        991,
+        993,
+        994,
+        992,
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": null,
+      "worker_command": null,
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 64,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_pos": {
+        "x": 32,
+        "y": 8
+      },
+      "visible_enemy_ids": [
+        991,
+        993,
+        994,
+        992,
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": null,
+      "worker_command": null,
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 65,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_pos": {
+        "x": 32,
+        "y": 8
+      },
+      "visible_enemy_ids": [
+        991,
+        993,
+        994,
+        992,
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": null,
+      "worker_command": null,
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 66,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_pos": {
+        "x": 32,
+        "y": 8
+      },
+      "visible_enemy_ids": [
+        991,
+        993,
+        994,
+        992,
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": null,
+      "worker_command": null,
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 67,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_pos": {
+        "x": 32,
+        "y": 8
+      },
+      "visible_enemy_ids": [
+        991,
+        993,
+        994,
+        992,
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": null,
+      "worker_command": null,
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 68,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_pos": {
+        "x": 32,
+        "y": 8
+      },
+      "visible_enemy_ids": [
+        991,
+        993,
+        994,
+        992,
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": null,
+      "worker_command": null,
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 69,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_pos": {
+        "x": 32,
+        "y": 8
+      },
+      "visible_enemy_ids": [
+        991,
+        993,
+        994,
+        992,
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": null,
+      "worker_command": null,
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 70,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_pos": {
+        "x": 32,
+        "y": 8
+      },
+      "visible_enemy_ids": [
+        991,
+        993,
+        994,
+        992,
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": null,
+      "worker_command": null,
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": null
+    },
+    {
+      "round": 71,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_pos": {
+        "x": 32,
+        "y": 8
+      },
+      "visible_enemy_ids": [
+        991,
+        993,
+        994,
+        992,
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": null,
+      "worker_command": null,
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 33,
+            "y": 9
+          }
+        ]
+      }
+    },
+    {
+      "round": 72,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_pos": {
+        "x": 32,
+        "y": 8
+      },
+      "visible_enemy_ids": [
+        991,
+        993,
+        994,
+        992,
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": null,
+      "worker_command": null,
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 32,
+            "y": 9
+          }
+        ]
+      }
+    },
+    {
+      "round": 73,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_pos": {
+        "x": 32,
+        "y": 8
+      },
+      "visible_enemy_ids": [
+        991,
+        993,
+        994,
+        992,
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": null,
+      "worker_command": null,
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 31,
+            "y": 8
+          }
+        ]
+      }
+    },
+    {
+      "round": 74,
+      "worker_id": 501,
+      "home_worker_id": 504,
+      "imp_pos": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_pos": {
+        "x": 32,
+        "y": 8
+      },
+      "visible_enemy_ids": [
+        991,
+        993,
+        994,
+        992,
+        995
+      ],
+      "imp_goal": {
+        "x": 32,
+        "y": 12
+      },
+      "worker_goal": {
+        "x": 32,
+        "y": 8
+      },
+      "imp_command": null,
+      "worker_command": null,
+      "home_command": {
+        "action": "collect",
+        "targetPos": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ]
+      },
+      "boss_command": {
+        "action": "attack",
+        "targetPos": [
+          {
+            "x": 28,
+            "y": 11
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -2,11 +2,13 @@
 
 以初赛基线为基础，按 `32_docs/` v2.0 文档逐项扩展的参赛 HTTP Agent；规则来源见 `DEVELOPMENT_RULES.md`。保留 CoreGeek 的 `main3.py → src/agent` 基础结构，新增 `CoreGeek/app` 应用层。运行仅依赖 Python 标准库，Python 3.10 及以上。
 
-当前程序版本为 `v1.2.2`，基于用户确认的v0.4基准，版本声明见 [CoreGeek/pyproject.toml](CoreGeek/pyproject.toml)。开局仍为三火箭→采石→U形墙，随后集中升满一台火箭；第二天起依次强化正中两墙3级、第二台火箭2级、正面其余四墙2→3级、所有火箭3级，最后把两翼六墙升2级；不升级基地。全部目标达成后，两名工人白天继续采矿售矿、批量购包，黄昏回防，夜间双人维修。阈值仍为严格低于30%。详细坐标、镜像、购买规则和关键函数见[建筑维护](CoreGeek/docs/MAINTENANCE.md)。沿用工人独立任务、让行、城墙掩护与动态备货，见[工人协作](CoreGeek/docs/WORKER_COORDINATION.md)。沿用昼夜统一工人经济流程，夜间可继续采购与配送升级券，维修工可在内侧兼顾升级，详见[昼夜统一调度](CoreGeek/docs/WORKER_SCHEDULE.md)。沿用根据log1/log2统一寻路与建筑位清理的预留集合，修复待建/缺墙位置造成的往返循环，详见[日志定位与修复](CoreGeek/docs/WORKER_PATH_FIX.md)。v0.4基准已[归档](reports/BASELINE-v0.4.md)。0.4.1根据teamA(2)失败记录修正任务经验：过滤退出码0的业务/脚本失败、保留真实JSON层级及字段、补充解析/引号诊断并压缩短任务步骤；详见[失败任务修正](CoreGeek/docs/TASK_FAILURE_LEARNING.md)。战斗和工人策略沿用基准。0.4.2接入用户提供的任务交互日志格式，见[日志开发文档](CoreGeek/docs/TASK_LOGGING.md)。0.4.3整合新版任务控制器与提示词，包含分类经验、临期预算、占位答案拦截和按奖励增量判定成功；双任务点调度沿用上一版，详见[任务模块接入](CoreGeek/docs/TASK_INTEGRATION.md)。
+当前程序版本为 `v1.2.3`，基于用户确认的v0.4基准，版本声明见 [CoreGeek/pyproject.toml](CoreGeek/pyproject.toml)。开局仍为三火箭→采石→U形墙，随后集中升满一台火箭；第二天起依次强化正中两墙3级、第二台火箭2级、正面其余四墙2→3级、所有火箭3级，最后把两翼六墙升2级；不升级基地。全部目标达成后，两名工人白天继续采矿售矿、批量购包，黄昏回防，夜间双人维修。阈值仍为严格低于30%。详细坐标、镜像、购买规则和关键函数见[建筑维护](CoreGeek/docs/MAINTENANCE.md)。沿用工人独立任务、让行、城墙掩护与动态备货，见[工人协作](CoreGeek/docs/WORKER_COORDINATION.md)。沿用昼夜统一工人经济流程，夜间可继续采购与配送升级券，维修工可在内侧兼顾升级，详见[昼夜统一调度](CoreGeek/docs/WORKER_SCHEDULE.md)。沿用根据log1/log2统一寻路与建筑位清理的预留集合，修复待建/缺墙位置造成的往返循环，详见[日志定位与修复](CoreGeek/docs/WORKER_PATH_FIX.md)。v0.4基准已[归档](reports/BASELINE-v0.4.md)。0.4.1根据teamA(2)失败记录修正任务经验：过滤退出码0的业务/脚本失败、保留真实JSON层级及字段、补充解析/引号诊断并压缩短任务步骤；详见[失败任务修正](CoreGeek/docs/TASK_FAILURE_LEARNING.md)。战斗和工人策略沿用基准。0.4.2接入用户提供的任务交互日志格式，见[日志开发文档](CoreGeek/docs/TASK_LOGGING.md)。0.4.3整合新版任务控制器与提示词，包含分类经验、临期预算、占位答案拦截和按奖励增量判定成功；双任务点调度沿用上一版，详见[任务模块接入](CoreGeek/docs/TASK_INTEGRATION.md)。
 
 已进入32强。用户提供的 [32进16需求变更](32_docs/2026云核心网第十届编程大赛-32进16-需求变更.md)、[v2.0任务书](32_docs/任务书.md)、[v2.0接口文档](32_docs/接口文档.md)及[新版报文样例](32_docs/request.txt)是**后续复赛开发**的参照，优先于根目录初赛 v1.0 文档中的冲突条款。v1.0 是变更前封版；当前已接入捣乱鬼move/destroy、召唤坐标和本方机器人move/attack，新增第一夜BOSS策略。小车及其它复赛改动仍待逐项开发，范围见[复赛规则接入索引](CoreGeek/docs/ROUND_OF_32_RULES.md)，封版证据见[v1.0基准记录](reports/BASELINE-v1.0.md)。
 
 ## 阅读导航
+
+v1.2.3增加[首夜视野协作](CoreGeek/docs/RAID_SCOUTS.md)：捣乱鬼第一天提前前往敌基地后侧，一名工人仅在当前三炮和永久墙、所需临时围挡均建齐且能够入夜前到达时出发；固定另一个工人保留占点防御及原经济策略。第一夜两观察者在不同站位持续提供4格共享视野，到位待命，第二天恢复原策略。BOSS不提供视野，观察点的模板不作为真实敌人信息。
 
 v1.2.2增加[机器人诊断日志](CoreGeek/docs/ROBOT_DIAGNOSTICS.md)，保持v1.2.1策略：robot_observation记录本方机器人列表与出生/移出状态，robot_diagnostic逐回合输出实际位移、前轮反馈、候选/HP/墙/射程/cache、射击格筛选及最终决定原因。默认INFO stderr，enable_robot_diagnostics可关闭；动作合法不代表命中，日志不自行判断击杀。
 
@@ -77,6 +79,8 @@ bash run.sh 8080
 | [占点防御](CoreGeek/docs/SITE_BLOCKADE.md) | 连续占点识别、临时绕建、携石待命、白天抢补及确认后拆墙 |
 | [第一天BOSS袭击](CoreGeek/docs/BOSS_RAID.md) | 买券/召唤/返岗、归属解析、夜间追击/绕墙/破墙及原生机器人指令 |
 | [机器人诊断日志](CoreGeek/docs/ROBOT_DIAGNOSTICS.md) | 乱走/不攻击的原因、反馈/HP事实、结构化字段和实战资料保留 |
+| [首夜视野协作](CoreGeek/docs/RAID_SCOUTS.md) | 两名观察者的分工、墙建齐门槛、敌后站位、预算和第一夜维持视野 |
+| [v1.2.3验证报告](reports/VALIDATION-v1.2.3.md) | 视野协作、占点留守、夜间稳定及回归/HTTP检查 |
 | [v1.2.2验证报告](reports/VALIDATION-v1.2.2.md) | 日志开关策略一致性、诊断回归及HTTP/压力检查 |
 | [v1.2.1历史报告](reports/VALIDATION-v1.2.1.md) | 逐回合操炮者优先、新图召唤几何及压力检查 |
 | [v1.2.0历史报告](reports/VALIDATION-v1.2.0.md) | 原BOSS流程、归属/攻击回归及压力检查 |
@@ -100,9 +104,9 @@ bash run.sh 8080
 
 ```powershell
 python CoreGeek/run_tests.py
-python CoreGeek/tools/smoke_server.py --output reports/http-smoke-v1.2.2.json
-python CoreGeek/tools/replay.py request.txt --output reports/sample-response-v1.2.2.json
-python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v1.2.2.json
+python CoreGeek/tools/smoke_server.py --output reports/http-smoke-v1.2.3.json
+python CoreGeek/tools/replay.py request.txt --output reports/sample-response-v1.2.3.json
+python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v1.2.3.json
 ```
 
 `replay.py` 只计算响应，不执行响应中的沙盒命令或 LLM 请求。验证脚本生成的压力结果是合成观测检查，不是比赛模拟、官方难度或胜率。
@@ -126,9 +130,9 @@ futurewar/
 ├── reports/
 │   ├── VALIDATION.md                 # 人类可读的历史验证报告
 │   ├── BASELINE-v1.0.md              # 当前程序封版与复赛适配边界
-│   ├── validation-v1.2.2.json          # 封版测试、压力、环境与源码哈希
-│   ├── http-smoke-v1.2.2.json          # 封版真实进程HTTP验证
-│   ├── sample-response-v1.2.2.json     # 封版对初赛样例的响应
+│   ├── validation-v1.2.3.json          # 封版测试、压力、环境与源码哈希
+│   ├── http-smoke-v1.2.3.json          # 封版真实进程HTTP验证
+│   ├── sample-response-v1.2.3.json     # 封版对初赛样例的响应
 │   ├── validation.json               # 测试/压力结果、环境、源码和规则文件SHA256
 │   ├── http-smoke.json               # 实际启动进程后的HTTP检查结果
 │   └── sample-response.json          # 原请求样例生成的离线响应
@@ -175,6 +179,7 @@ futurewar/
     │       ├── robot_raider.py      # 原生机器人独立追击操炮者、绕墙/破墙、攻基地
     │       ├── robot_combat.py      # 机器人射程/可见目标/城墙遮挡检查
     │       ├── raid_diagnostics.py  # BOSS逐回合候选/移动/攻击事实与原因日志
+    │       ├── raid_scouts.py       # 首日imp和一名工人的敌后共享视野，另一个工人留守
     │       ├── summoning.py         # 实际/镜像敌基地、后排出生点与召唤区域约束
     │       ├── brain.py             # 昼夜策略、经济、建造、回防、接任务、宝藏行动
     │       └── server.py            # 旧agent.server入口的兼容转发
@@ -558,6 +563,7 @@ empty_response() -> dict
 | 任务控制器 | `task_agent` | TaskAgentMemory：任务状态、接受点快照、SOP/Skill、失败冷却、挂起状态 |
 | 工人独立任务 | `worker_tasks` | 按实际工人ID保存任务、目标、目的格、停滞、让路等待及最多4个实际位置的往返诊断 |
 | 机器人诊断 | `robot_motion` | 前轮实际位置/HP/攻击目标及最近4个连续位置，仅用于日志，不参与策略 |
+| 首夜观察协作 | `raid_scouts` | 固定侦察工人和留守工人ID、观察目标、墙ready、到位进度及任务终止标记 |
 | 捣乱鬼 | `imp_home_side`、`imp_tasks` | 基地所在半区与各imp的目标、站位、前轮位置/回合；死亡、跳轮或复活位移后重新规划 |
 | 维修消耗与阶段 | `repair_usage_today`、`repair_usage_previous`、`dual_repair_active` | 记录确认成功的用包量和曾进入双维修阶段的状态 |
 | 维修与采购工 | `repair_worker_id`、`repair_supplier_id` | 主维修工、完成阶段唯一采购工；采购往返期间保持身份，死亡/消失时接替 |
@@ -945,10 +951,10 @@ if step is not None:
 
 ```powershell
 python CoreGeek/run_tests.py
-python CoreGeek/tools/replay.py request.txt --output reports/sample-response-v1.2.2.json
+python CoreGeek/tools/replay.py request.txt --output reports/sample-response-v1.2.3.json
 python CoreGeek/tools/replay.py observations.jsonl --output reports/replayed-responses.json --config CoreGeek/config.local.json
-python CoreGeek/tools/smoke_server.py --output reports/http-smoke-v1.2.2.json
-python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v1.2.2.json
+python CoreGeek/tools/smoke_server.py --output reports/http-smoke-v1.2.3.json
+python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v1.2.3.json
 ```
 
 上述JSONL命令需要先准备`observations.jsonl`。工具会覆盖指定的同名输出；新版本应另取报告文件名，保留历史证据。`validate.py`不会自动重写人工说明，修改代码后需另存对应版本的说明。本版压力观测同时覆盖三火箭和混合旧炮，增加“仅开拓者攻击”和输入冷却为0的断言。
@@ -965,9 +971,10 @@ python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v1.2.2.
 | `test_services.py` | LLM日计数、任务往返、跨日、重复请求、事务与会话隔离 | 任何跨回合状态变更 |
 | `test_http_config.py` | HTTP响应/错误、请求上限、配置文件检查 | 启动入口、网络层、配置变化 |
 | `test_robot_diagnostics.py` | 实际位移/HP、反馈关联、墙遮挡/站位、截止原因、日志开关一致性 | 机器人诊断与日志修改 |
+| `test_raid_scouts.py` | 墙建齐后出发、固定留守者、观察覆盖、昼夜保持及第二天恢复 | 首夜BOSS视野协作 |
 | `fixtures.py` | 统一合成数据构造，布局专供测试 | 不能当官方地图坐标或规则来源 |
 
-v1.2.2记录356个测试通过、80份合成观测检查通过（20份含本方可控BOSS），见[当前验证报告](reports/VALIDATION-v1.2.2.md)。v1.0封版回归见[基准报告](reports/BASELINE-v1.0.md)；[v0.4.3历史报告](reports/VALIDATION-v0.4.3.md)保留222项测试证据。这些本地检查不代表所有复赛规则已适配或官方比赛胜率。
+v1.2.3记录373个测试通过、80份合成观测检查通过（20份含本方可控BOSS），新增17项首夜观察协作测试，见[当前验证报告](reports/VALIDATION-v1.2.3.md)。[v1.2.2历史报告](reports/VALIDATION-v1.2.2.md)保留356项证据。v1.0封版回归见[基准报告](reports/BASELINE-v1.0.md)；[v0.4.3历史报告](reports/VALIDATION-v0.4.3.md)保留222项测试证据。这些本地检查不代表所有复赛规则已适配或官方比赛胜率。
 
 `validate.independent_contract(raw, response)`是压力工具中的附加结构断言，检查角色互斥、移动占用和攻击时机等。它不是完整判题器，不能代替官方平台对动作执行结果和比分的裁定。
 
@@ -1024,6 +1031,7 @@ v1.2.2记录356个测试通过、80份合成观测检查通过（20份含本方�
 | `[TASK-DEBUG R...]` | 本轮任务输入、LLM/沙盒反馈与实际返回的prompt/executeCmd |
 | `robot_observation` | 本方机器人归属列表、召唤状态及移出记录，JSON单行 |
 | `robot_diagnostic` | 单机器人实际位移/HP、候选与遮挡、前轮反馈及最终指令原因，详见[字段说明](CoreGeek/docs/ROBOT_DIAGNOSTICS.md) |
+| `raid_scout` | 固定观察者/留守者、墙是否建齐、站位/剩余步数/入夜预算与本轮指令 |
 | `action_rejected` | 本地候选动作没有通过统一校验 |
 | `protocol_error` | 请求结构、数据或回合序列错误 |
 | `decision_failed` | 非预期内部错误，记录traceback并返回空动作 |

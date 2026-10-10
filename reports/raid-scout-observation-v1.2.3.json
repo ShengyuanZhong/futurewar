@@ -1,0 +1,396 @@
+{
+  "roundNo": 25,
+  "mapInfo": {
+    "width": 41,
+    "height": 32,
+    "zones": [
+      {
+        "neutralType": "weaponShop",
+        "pos": {
+          "x": 2,
+          "y": 7
+        }
+      },
+      {
+        "neutralType": "stone",
+        "pos": {
+          "x": 3,
+          "y": 9
+        }
+      },
+      {
+        "neutralType": "vendor",
+        "pos": {
+          "x": 3,
+          "y": 8
+        }
+      }
+    ]
+  },
+  "teamOur": {
+    "type": "challenger",
+    "teamId": "6324",
+    "teamName": "Challenger",
+    "goldNum": 0,
+    "totalScore": 280,
+    "playerTasks": [],
+    "roles": [
+      {
+        "id": 503,
+        "roleType": "station",
+        "pos": {
+          "x": 6,
+          "y": 7
+        },
+        "health": 1500,
+        "level": 1,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 0,
+        "backpack": []
+      },
+      {
+        "id": 502,
+        "roleType": "pioneer",
+        "pos": {
+          "x": 4,
+          "y": 7
+        },
+        "health": 200,
+        "level": 0,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 40,
+        "backpack": []
+      },
+      {
+        "id": 501,
+        "roleType": "worker",
+        "pos": {
+          "x": 4,
+          "y": 9
+        },
+        "health": 220,
+        "level": 0,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 100,
+        "backpack": []
+      },
+      {
+        "id": 504,
+        "roleType": "worker",
+        "pos": {
+          "x": 4,
+          "y": 5
+        },
+        "health": 220,
+        "level": 0,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 100,
+        "backpack": []
+      },
+      {
+        "id": 601,
+        "roleType": "rocket",
+        "pos": {
+          "x": 5,
+          "y": 6
+        },
+        "health": 1000,
+        "level": 1,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 0,
+        "backpack": []
+      },
+      {
+        "id": 602,
+        "roleType": "rocket",
+        "pos": {
+          "x": 5,
+          "y": 7
+        },
+        "health": 1000,
+        "level": 1,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 0,
+        "backpack": []
+      },
+      {
+        "id": 603,
+        "roleType": "rocket",
+        "pos": {
+          "x": 5,
+          "y": 8
+        },
+        "health": 1000,
+        "level": 1,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 0,
+        "backpack": []
+      },
+      {
+        "id": 701,
+        "roleType": "wall",
+        "pos": {
+          "x": 6,
+          "y": 4
+        },
+        "health": 1000,
+        "level": 1,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 0,
+        "backpack": []
+      },
+      {
+        "id": 702,
+        "roleType": "wall",
+        "pos": {
+          "x": 6,
+          "y": 9
+        },
+        "health": 1000,
+        "level": 1,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 0,
+        "backpack": []
+      },
+      {
+        "id": 703,
+        "roleType": "wall",
+        "pos": {
+          "x": 7,
+          "y": 4
+        },
+        "health": 1000,
+        "level": 1,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 0,
+        "backpack": []
+      },
+      {
+        "id": 704,
+        "roleType": "wall",
+        "pos": {
+          "x": 7,
+          "y": 9
+        },
+        "health": 1000,
+        "level": 1,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 0,
+        "backpack": []
+      },
+      {
+        "id": 705,
+        "roleType": "wall",
+        "pos": {
+          "x": 8,
+          "y": 4
+        },
+        "health": 1000,
+        "level": 1,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 0,
+        "backpack": []
+      },
+      {
+        "id": 706,
+        "roleType": "wall",
+        "pos": {
+          "x": 8,
+          "y": 9
+        },
+        "health": 1000,
+        "level": 1,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 0,
+        "backpack": []
+      },
+      {
+        "id": 707,
+        "roleType": "wall",
+        "pos": {
+          "x": 9,
+          "y": 4
+        },
+        "health": 1000,
+        "level": 1,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 0,
+        "backpack": []
+      },
+      {
+        "id": 708,
+        "roleType": "wall",
+        "pos": {
+          "x": 9,
+          "y": 5
+        },
+        "health": 1000,
+        "level": 1,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 0,
+        "backpack": []
+      },
+      {
+        "id": 709,
+        "roleType": "wall",
+        "pos": {
+          "x": 9,
+          "y": 6
+        },
+        "health": 1000,
+        "level": 1,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 0,
+        "backpack": []
+      },
+      {
+        "id": 710,
+        "roleType": "wall",
+        "pos": {
+          "x": 9,
+          "y": 7
+        },
+        "health": 1000,
+        "level": 1,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 0,
+        "backpack": []
+      },
+      {
+        "id": 711,
+        "roleType": "wall",
+        "pos": {
+          "x": 9,
+          "y": 8
+        },
+        "health": 1000,
+        "level": 1,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 0,
+        "backpack": []
+      },
+      {
+        "id": 712,
+        "roleType": "wall",
+        "pos": {
+          "x": 9,
+          "y": 9
+        },
+        "health": 1000,
+        "level": 1,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 0,
+        "backpack": []
+      },
+      {
+        "id": 505,
+        "roleType": "imp",
+        "pos": {
+          "x": 4,
+          "y": 12
+        },
+        "health": 500,
+        "level": 1,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 0,
+        "backpack": []
+      }
+    ],
+    "summonRobotList": []
+  },
+  "teamEnemy": {
+    "roles": [
+      {
+        "id": 990,
+        "roleType": "station",
+        "pos": {
+          "x": 30,
+          "y": 10
+        },
+        "health": 1500,
+        "level": 1,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 0,
+        "backpack": []
+      }
+    ]
+  },
+  "robot": {
+    "roles": []
+  },
+  "phaseTask": "",
+  "lastRoundRoleActionResults": {},
+  "lastSummonTreasureResult": 0,
+  "llmResp": "",
+  "worldNews": {
+    "officialNews": "",
+    "folkLegends": ""
+  },
+  "lastCmdResult": "",
+  "vendorShopList": [
+    {
+      "name": "stone",
+      "price": 1
+    },
+    {
+      "name": "iron",
+      "price": 3
+    },
+    {
+      "name": "copper",
+      "price": 5
+    }
+  ],
+  "weaponShopList": [
+    {
+      "name": "WeaponUpgradeVoucher1",
+      "price": 100
+    },
+    {
+      "name": "WeaponUpgradeVoucher2",
+      "price": 150
+    },
+    {
+      "name": "WallUpgradeVoucher1",
+      "price": 20
+    },
+    {
+      "name": "WallUpgradeVoucher2",
+      "price": 30
+    },
+    {
+      "name": "StationUpgradeVoucher1",
+      "price": 100
+    },
+    {
+      "name": "StationUpgradeVoucher2",
+      "price": 150
+    },
+    {
+      "name": "WallFixer",
+      "price": 10
+    }
+  ],
+  "errors": []
+}

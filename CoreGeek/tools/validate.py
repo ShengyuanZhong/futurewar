@@ -240,7 +240,7 @@ def main():
     round32 = {p.relative_to(ROOT.parent).as_posix():hashlib.sha256(p.read_bytes()).hexdigest()
                for p in sorted((ROOT.parent / '32_docs').glob('*')) if p.is_file()}
     report = {"created_utc": datetime.now(timezone.utc).isoformat(), "python": platform.python_version(),
-              "platform": platform.platform(), "rules_baseline": "legacy v1.0 plus v2.0 imp/destroy and owned robot move/attack/summon; user rocket ratio, wall detours, per-observation cannon-crew-first BOSS raid and screenshot-derived rear spawn pad 2; other v2 features pending",
+              "platform": platform.platform(), "rules_baseline": "legacy v1.0 plus v2.0 imp/destroy and owned robot move/attack/summon; user rocket ratio, wall detours, cannon-crew-first BOSS raid and rear spawn pad 2; day-one hero sight mission and worker departure after observed defense completion; summoned robots supply no sight per user staff clarification; other v2 features pending",
               "round32_rule_hashes": round32,
               "tests": {"run": result.testsRun, "failures": len(result.failures), "errors": len(result.errors)},
               "synthetic_input_stress": {"seeds": seeds, "teams": ["challenger", "defender"], "cases": count,
@@ -253,6 +253,7 @@ def main():
               "construction_policy": "user-authorized base-surroundings fallback enabled by default; explicit verified layouts take precedence; not official geography",
               "unverified": ["D01 complete official construction coordinates; rear spawn pad 2 is user-screenshot evidence, not official region data", "D07 trajectory cell-boundary ties and round conventions",
                              "enemy heroes and weapons outside shared sight cannot be inferred dead; the raid audits currently observed crews",
+                             "scout observation neighbourhood and travel ETA are planning heuristics; actual official sight, collisions and raid damage require match validation",
                              "full matches and held-out maps", "official LLM/sandbox/judger integration", "Linux bash entry on target runtime"],
               "scope": "protocol and rule regression plus synthetic observation stress; not official certification or win rate"}
     args.output.parent.mkdir(parents=True, exist_ok=True)

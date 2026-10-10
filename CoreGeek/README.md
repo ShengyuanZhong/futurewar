@@ -1,8 +1,10 @@
 # CoreGeek 参赛 Agent
 
-当前程序版本为 v1.2.2：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后两翼六墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回墙内，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
+当前程序版本为 v1.2.3：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后两翼六墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回墙内，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
 
 此目录可作为参赛程序目录提交。沿用示例的 `main3.py`、`src/agent/protocol.py`、`grid.py`、`brain.py`；HTTP 处理与跨回合协作放在 `app`。新增代码无第三方运行依赖。
+
+v1.2.3增加[首夜视野协作](docs/RAID_SCOUTS.md)：第一天imp提前侦察敌基地后侧；一名工人仅在三炮、永久墙和所需临时围挡全部观测建齐且入夜前可到达时加入。另一名工人保留占点防御和经济工作，固定身份；首夜到位待命、维持共享视野，第二天恢复原策略。BOSS不提供视野，也不会凭模板伪造隐藏目标。
 
 v1.2.2新增[机器人诊断日志](docs/ROBOT_DIAGNOSTICS.md)，策略保持v1.2.1。默认输出robot_observation与robot_diagnostic两类INFO JSON，包括实际位置/位移、HP、敌炮/角色可见集合、距离/墙/失败缓存、射击位置和最终原因；enable_robot_diagnostics=false可关闭。
 
@@ -87,9 +89,9 @@ python main3.py 8080 --config config.local.json
 
 ```powershell
 python run_tests.py
-python tools/smoke_server.py --output ../reports/http-smoke-v1.2.2.json
-python tools/replay.py ../request.txt --output ../reports/sample-response-v1.2.2.json
-python tools/validate.py --cases 20 --output ../reports/validation-v1.2.2.json
+python tools/smoke_server.py --output ../reports/http-smoke-v1.2.3.json
+python tools/replay.py ../request.txt --output ../reports/sample-response-v1.2.3.json
+python tools/validate.py --cases 20 --output ../reports/validation-v1.2.3.json
 ```
 
 回放输入支持单个 JSON、JSON 数组、每行一份观测的 JSONL。单个队伍按回合递增；同回合相同内容返回缓存，不同内容拒绝，以免状态被重复推进。
@@ -172,6 +174,7 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | [src/agent/boss_raid.py](src/agent/boss_raid.py) | `BossRaid(strategy).pioneer(role)` | 两任务结束后买一张BOSS券、远程召唤、回到原操炮位 |
 | [src/agent/robot_raider.py](src/agent/robot_raider.py) | `RobotRaider(strategy).decide(robot)` | 第一夜BOSS独立追击、搜索、绕墙/破墙与攻基地 |
 | [src/agent/raid_diagnostics.py](src/agent/raid_diagnostics.py) | `RaidDiagnostics(strategy).set/event/finish` | 复用观测和路径检查，记录目标、移动/攻击反馈与最终指令；字段/参数见[诊断说明](docs/ROBOT_DIAGNOSTICS.md) |
+| [src/agent/raid_scouts.py](src/agent/raid_scouts.py) | `RaidScouts(strategy).imp/worker/post` | 首夜两观察者的固定分工、墙ready门槛与敌后站位；参数见[视野协作](docs/RAID_SCOUTS.md) |
 | [src/agent/summoning.py](src/agent/summoning.py) | `rear_spawn_position(turn, settings, pending=(), failed=())` | 实际敌基地优先，选择非建造区的后方出生点 |
 | [src/agent/server.py](src/agent/server.py) | `Handler/serve` | 转发新网络层，兼容demo旧导入 |
 

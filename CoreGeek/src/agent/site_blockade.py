@@ -54,6 +54,9 @@ class SiteBlockade:
 
     def choose_watcher(self):
         workers = self.turn.workers()
+        if self.turn.day == 1 and self.s.settings.enable_boss_raid and len(workers) >= 2:
+            scout = self.memory.raid_scouts.get('worker_id')
+            workers = tuple(w for w in workers if w.unit_id != scout)
         gaps = [gap for gap in self.memory.wall_blockades if self.posts(gap)]
         if not workers or not gaps:
             self.memory.blockade_worker_id = None

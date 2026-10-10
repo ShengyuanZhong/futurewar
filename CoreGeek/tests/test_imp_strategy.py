@@ -25,7 +25,8 @@ def imp_request(number=1, lower_base=False):
 
 def strategy(raw, memory=None):
     turn = Turn.load(raw)
-    plan = ActionPlan(turn, Settings(enable_news=False))
+    # Isolate the unchanged mineral policy from the day-one BOSS sight mission.
+    plan = ActionPlan(turn, Settings(enable_news=False, enable_boss_raid=False))
     return Strategy(turn, plan, memory or GameMemory()), plan
 
 
@@ -171,12 +172,12 @@ class ImpStrategyTests(unittest.TestCase):
         raw = imp_request()
         raw['phaseTask'] = 'Read task_fixture.md'
         raw['teamOur']['roles'].append(unit(502,'pioneer',14,13))
-        result = TurnService(Settings(enable_news=False)).decide(raw)
+        result = TurnService(Settings(enable_news=False, enable_boss_raid=False)).decide(raw)
         self.assertTrue(result['prompt'])
         self.assertEqual(result['roleCommandMap']['905']['action'], 'destroy')
 
     def test_service_keeps_imps_separate_and_logs_their_commands(self):
-        service = TurnService(Settings(enable_news=False))
+        service = TurnService(Settings(enable_news=False, enable_boss_raid=False))
         raw = imp_request()
         first_team = raw['teamOur']['teamId']
         with self.assertLogs('app.service.turn_service',level='INFO') as logged:
