@@ -41,9 +41,11 @@ class RaidScouts:
         # Assign only once, and never replace a dead observer with the sole home worker.
         if (self.state.get('worker_id') is None and len(workers) >= 2
                 and self.state['walls_ready'] and self.turn.is_day
-                and (not self.s.first_defense.enabled or self.s.first_defense.prepared())):
+                and (not self.s.first_defense.enabled or self.s.first_defense.prepared()
+                     or (self.s.gap_guard.gaps and self.s.gap_guard.other_walls_ready()
+                         and self.s.gap_guard.worker_id is not None))):
             candidates = [w for w in workers if w.unit_id not in
-                          (self.memory.blockade_worker_id,self.s.first_defense.worker_id)]
+                          (self.s.gap_guard.worker_id,self.s.first_defense.worker_id)]
             if candidates:
                 choices = []
                 for worker in candidates:
@@ -70,6 +72,8 @@ class RaidScouts:
             self.state.update(finished=True, round=self.turn.round_no)
 
     def walls_ready(self):
+        if self.s.gap_guard.gaps:
+            return self.s.gap_guard.other_walls_ready()
         if self.s.first_defense.enabled:
             return self.s.first_defense.closed()
         cells = self.s.settings.build_cells(self.turn, 'wall')
@@ -77,7 +81,7 @@ class RaidScouts:
 
     def is_worker(self, role):
         return (self.active and role.unit_id == self.state.get('worker_id')
-                and len(self.turn.workers()) >= 2 and role.unit_id != self.memory.blockade_worker_id
+                and len(self.turn.workers()) >= 2 and role.unit_id != self.s.gap_guard.worker_id
                 and (not self.turn.is_day or self.state['walls_ready']))
 
     def watch_cells(self):
@@ -186,9 +190,9 @@ class RaidScouts:
     def worker(self, role):
         if not self.active or role.unit_id != self.state.get('worker_id'):
             return False
-        if (len(self.turn.workers()) < 2 or role.unit_id == self.memory.blockade_worker_id
+        if (len(self.turn.workers()) < 2 or role.unit_id == self.s.gap_guard.worker_id
                 or (self.turn.is_day and not self.state['walls_ready'])):
             self.state.get('posts', {}).pop(role.unit_id, None)
-            self.state['worker_status'] = 'home_defense' if len(self.turn.workers()) < 2 else 'paused_for_walls_or_blockade'
+            self.state['worker_status'] = 'home_defense' if len(self.turn.workers()) < 2 else 'paused_for_walls_or_gap'
             return False
         return self.observe_from(role)

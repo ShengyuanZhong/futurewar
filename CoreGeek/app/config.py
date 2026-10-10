@@ -3,7 +3,7 @@ import json
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from agent.protocol import Pos, TOWER_TYPES, station_footprint
+from agent.protocol import Pos, TOWER_TYPES, distance, station_footprint
 
 
 def base_surrounding_offsets(kind: str, mirrored: bool = False) -> tuple[Pos, ...]:
@@ -97,48 +97,13 @@ class Settings:
             return ()
         base = set(station_footprint(station.pos))
         cells = (Pos(station.pos.x + p.x, station.pos.y + p.y) for p in offsets)
-        return tuple(p for p in cells if turn.land(p) and p not in base)
+        ring = 2 if kind == 'wall' else 1
+        return tuple(p for p in cells if turn.land(p) and min(distance(p,b) for b in base) == ring)
 
     def mirrored_layout(self, turn) -> bool:
         """Choose by actual base centre versus map centre, independent of team label."""
         station = turn.station()
         return station is not None and 2 * station.pos.x + 1 > turn.width - 1
-
-    def wall_detour_cells(self, turn, gap: Pos, outward: bool = False) -> tuple[Pos, ...]:
-        """Inner bypass around a blocked site; outward is historical geometry.
-
-        These are user-authorized base-surroundings assumptions, not verified
-        official zones. Never expand an explicit verified layout or strict mode.
-        """
-        base = turn.station()
-        if (not base or not self.allow_base_surroundings
-                or self.layouts.get(turn.team_type, {}).get('verified') is True
-                or gap not in self.build_cells(turn, 'wall')):
-            return ()
-        mirrored = self.mirrored_layout(turn)
-        dx = gap.x - base.pos.x
-        dx = 1 - dx if mirrored else dx
-        dy = gap.y - base.pos.y
-        if outward:
-            cells = [pos for pos in gap.neighbours()
-                     if ((dx == 3 and (pos.x < gap.x if mirrored else pos.x > gap.x))
-                         or (dy == 2 and pos.y > gap.y)
-                         or (dy == -3 and pos.y < gap.y))]
-        else:
-            inward_x = 1 if mirrored else -1
-            if dx == 3 and dy in (2, -3):
-                cells = [Pos(gap.x + inward_x, gap.y + (-1 if dy == 2 else 1))]
-            elif dx == 3:
-                cells = [Pos(gap.x + inward_x, gap.y + offset) for offset in (-1, 0, 1)]
-            elif dy in (2, -3):
-                cells = [Pos(gap.x + offset, gap.y + (-1 if dy == 2 else 1))
-                         for offset in (-1, 0, 1)]
-            else:
-                cells = []
-        excluded = set(station_footprint(base.pos)) | set(self.build_cells(turn, 'wall'))
-        excluded.update(self.build_cells(turn, 'rocket'))
-        excluded.update(u.pos for u in turn.ours + turn.enemies if u.kind in TOWER_TYPES)
-        return tuple(sorted(pos for pos in cells if turn.land(pos) and pos not in excluded))
 
     def default_operator_position(self, turn) -> Pos | None:
         """Drawing's P; custom verified layouts retain their own stand selection."""

@@ -101,10 +101,9 @@ class TurnService:
                 LOGGER.info("imp_motion round=%s home_side=%s jobs=%s commands=%s", turn.round_no,
                             memory.imp_home_side, memory.imp_tasks,
                             {str(u.unit_id):plan.commands.get(str(u.unit_id)) for u in turn.imps()})
-            if memory.site_occupations or memory.wall_blockades or memory.temporary_wall_sites:
-                LOGGER.info('wall_blockade round=%s occupations=%s gaps=%s temporary=%s watcher=%s watch=%s',
-                            turn.round_no, memory.site_occupations, memory.wall_blockades,
-                            sorted(memory.temporary_wall_sites), memory.blockade_worker_id, memory.blockade_watch)
+            if memory.wall_gap_defense:
+                LOGGER.info('gap_defense %s',json.dumps(plain(strategy.gap_guard.diagnostic()),
+                    ensure_ascii=False,separators=(',',':')))
             if memory.boss_raid or memory.robot_raids:
                 LOGGER.info('boss_raid round=%s stage=%s robots=%s commands=%s', turn.round_no,
                             memory.boss_raid, memory.robot_raids,

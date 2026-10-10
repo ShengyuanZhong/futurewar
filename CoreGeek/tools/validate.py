@@ -346,7 +346,7 @@ def main():
     round32 = {p.relative_to(ROOT.parent).as_posix():hashlib.sha256(p.read_bytes()).hexdigest()
                for p in sorted((ROOT.parent / '32_docs').glob('*')) if p.is_file()}
     report = {"created_utc": datetime.now(timezone.utc).isoformat(), "python": platform.python_version(),
-              "platform": platform.platform(), "rules_baseline": "legacy v1.0 plus v2.0 imp/destroy and owned robot move/attack/summon; user rocket ratio, wall detours, cannon-crew-first BOSS raid with bounded chase then base siege, and up to two day-one BOSS summons; rear spawn pad 2; day-one hero sight mission and worker departure after observed defense completion; summoned robots supply no sight per user staff clarification; remembered static buildings and visible-hero interior LOS are conservative planning assumptions; persistent static-shot feedback and close base recovery; observed inner wall bypass and first-night L2/kit budget, guard and scout catch avoidance; other v2 features pending",
+              "platform": platform.platform(), "rules_baseline": "legacy v1.0 plus v2.0 imp/destroy and owned robot move/attack/summon; user rocket ratio, wall detours, cannon-crew-first BOSS raid with bounded chase then base siege, and up to two day-one BOSS summons; rear spawn pad 2; day-one hero sight mission and worker departure after observed defense completion; summoned robots supply no sight per user staff clarification; remembered static buildings and visible-hero interior LOS are conservative planning assumptions; persistent static-shot feedback and close base recovery; user-confirmed footprint distance-one weapons/distance-two walls, no detours; worker/imp gap relay, BOSS budget before first-night supplies, guard and scout catch avoidance; other v2 features pending",
               "round32_rule_hashes": round32,
               "tests": {"run": result.testsRun, "failures": len(result.failures), "errors": len(result.errors)},
               "synthetic_input_stress": {"seeds": seeds, "teams": ["challenger", "defender"], "cases": count,
@@ -357,7 +357,7 @@ def main():
                   "controlled_robot_priority_cases": controlled_priority_cases,
                   "median_ms": round(statistics.median(timings), 3), "max_ms": round(max(timings), 3)},
               "source_hashes": hashes, "baseline_hashes": baseline,
-              "construction_policy": "user-authorized base-surroundings fallback enabled by default; explicit verified layouts take precedence; not official geography",
+              "construction_policy": "user-confirmed ring geometry: weapons at footprint Chebyshev distance one, walls distance two; configured layouts are filtered by these rings; U blueprint unchanged",
               "unverified": ["D01 complete official construction coordinates; rear spawn pad 2 is user-screenshot evidence, not official region data", "D07 trajectory cell-boundary ties and round conventions",
                              "hidden heroes cannot be attacked or inferred dead; remembered static buildings support planning and visible-crew recognition, not attack target invention",
                              "scout observation neighbourhood and travel ETA are planning heuristics; actual official sight, collisions and raid damage require match validation",

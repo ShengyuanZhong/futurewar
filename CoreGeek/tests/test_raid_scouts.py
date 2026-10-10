@@ -7,7 +7,7 @@ from app.config import Settings
 from app.service.turn_service import Session, TurnService
 from tests.fixtures import robot, unit
 from tests.test_maintenance import fortified
-from tests.test_site_blockade import GAP
+GAP = Pos(9,7)
 from tests.test_summon_control import finished_tasks
 from tests.test_worker_safety import strategy
 
@@ -79,11 +79,12 @@ class RaidScoutTests(unittest.TestCase):
                 self.assertEqual(memory.raid_scouts.get('worker_id') is not None, missing == 'none')
                 self.assertTrue(s.raid_scouts.imp(next(iter(s.turn.imps()))))
 
-    def test_unbuilt_temporary_wall_and_empty_wall_configuration_are_not_ready(self):
+    def test_missing_wall_and_empty_wall_configuration_are_not_ready(self):
         raw = scout_request()
         s, _ = strategy(raw, scout_memory())
         self.assertTrue(s.raid_scouts.walls_ready())
-        s.site_guard.temporary_needed.add(Pos(10, 7))
+        raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles'] if u['pos'] != GAP.dump()]
+        s, _ = strategy(raw,scout_memory())
         self.assertFalse(s.raid_scouts.walls_ready())
         s, _ = strategy(raw, scout_memory(), Settings(allow_base_surroundings=False))
         self.assertFalse(s.raid_scouts.walls_ready())
@@ -135,7 +136,7 @@ class RaidScoutTests(unittest.TestCase):
         self.assertEqual(memory.raid_scouts['home_worker_id'], HOME_ID)
         self.assertFalse(s.raid_scouts.is_worker(next(w for w in s.turn.workers() if w.unit_id == HOME_ID)))
 
-    def test_home_worker_keeps_site_blockade_priority(self):
+    def test_home_worker_keeps_body_gap_priority(self):
         raw, memory = scout_request(), scout_memory()
         strategy(raw, memory)
         raw['roundNo'] = 71
@@ -144,11 +145,10 @@ class RaidScoutTests(unittest.TestCase):
         role(raw, HOME_ID).update(pos={'x': 8, 'y': 7}, backpack=['stone'])
         ready_roles(raw)
         raw['teamEnemy']['roles'].append(unit(901, 'worker', GAP.x, GAP.y, health=500))
-        memory.wall_blockades[GAP] = {'enemy_id': 901, 'confirmed_round': 65}
         s, plan = strategy(raw, memory); s.run()
-        self.assertEqual(memory.blockade_worker_id, HOME_ID)
+        self.assertEqual(s.gap_guard.worker_id, HOME_ID)
         self.assertEqual(s.coordinator.job(next(w for w in s.turn.workers() if w.unit_id == HOME_ID))['kind'],
-                         'blockade_watch')
+                         'gap_wait')
         self.assertIn(HOME_ID, plan.used)
         self.assertEqual(memory.raid_scouts['worker_id'], WORKER_ID)
         self.assertEqual(memory.worker_tasks[WORKER_ID]['kind'], 'raid_scout')

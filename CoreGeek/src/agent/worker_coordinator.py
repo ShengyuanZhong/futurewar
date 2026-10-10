@@ -124,7 +124,7 @@ class WorkerCoordinator:
         scouts = getattr(self.s, 'raid_scouts', None)
         if scouts is not None and scouts.is_worker(blocker):
             return False
-        if self.s.site_guard.is_waiting(blocker):
+        if self.s.gap_guard.is_waiting(blocker):
             return False
         guard = self.s.guard
         # Do not interrupt a worker who can immediately repair a critical wall.

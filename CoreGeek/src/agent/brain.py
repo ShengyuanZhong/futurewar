@@ -9,7 +9,7 @@ from .worker_safety import robot_danger
 from .worker_coordinator import WorkerCoordinator
 from .wall_guard import WallGuard
 from .imp_policy import ImpController
-from .site_blockade import SiteBlockade
+from .gap_defense import WallGapDefense
 from .boss_raid import BOSS_ORDER, BossRaid
 from .robot_raider import RobotRaider
 from .raid_scouts import RaidScouts
@@ -35,8 +35,8 @@ class Strategy:
         self.guard = WallGuard(self)
         self.coordinator = WorkerCoordinator(self)
         self.imp = ImpController(self)
-        self.site_guard = SiteBlockade(self)
-        self.site_guard.choose_watcher()
+        self.gap_guard = WallGapDefense(self)
+        self.gap_guard.choose_responders()
         self.first_defense = FirstNightDefense(self)
         self.boss_raid = BossRaid(self)
         self.raider = RobotRaider(self)
@@ -47,6 +47,9 @@ class Strategy:
         reserved = set(self.plan.reserved)
         reserved.update(self.layout.tower_sites)
         reserved.update(self.construction_walls())
+        guard = getattr(self,'gap_guard',None)
+        if role is not None and guard and guard.enter_gap(role):
+            reserved.discard(guard.gap)
         if (role is None or role.kind != PIONEER) and self.layout.operator_pos is not None:
             reserved.add(self.layout.operator_pos)
         return reserved
@@ -90,7 +93,7 @@ class Strategy:
     def run(self) -> None:
         # Resolve the pioneer first, so workers never claim its next step or control cell.
         available = sorted(self.turn.controllable(), key=lambda r: (r.kind != PIONEER, r.kind != IMP,
-                           r.unit_id != self.site_guard.worker_id,
+                           r.unit_id != self.gap_guard.worker_id,
                            r.unit_id != self.first_defense.worker_id,
                            -self.coordinator.job(r).get('stalled',0), r.unit_id != self.guard.worker_id, r.unit_id))
         self.opening_stage()
@@ -100,7 +103,7 @@ class Strategy:
             if time.monotonic() >= self.deadline:
                 break
             if role.kind == IMP:
-                if not self.raid_scouts.imp(role):
+                if not self.gap_guard.imp(role) and not self.raid_scouts.imp(role):
                     self.imp.decide(role)
                 continue
             maximum = 200 if role.kind == PIONEER else 220
@@ -142,7 +145,7 @@ class Strategy:
 
     def run_worker(self, role: Unit) -> None:
         """One economic schedule; night adds safety and assigned guard duty."""
-        if self.site_guard.watch(role):
+        if self.gap_guard.worker(role):
             return
         if self.first_defense.worker(role):
             return
@@ -159,8 +162,6 @@ class Strategy:
         if self.evade_worker(role):
             return
         if self.clear_build_cell(role):
-            return
-        if self.site_guard.cleanup(role):
             return
         if self.turn.is_day and self.opening_worker(role):
             return
@@ -224,8 +225,7 @@ class Strategy:
         return [p for p in self.settings.build_cells(self.turn, "wall") if p not in standing]
 
     def construction_walls(self) -> list[Pos]:
-        guard = getattr(self, 'site_guard', None)
-        return self.missing_walls() + (sorted(guard.temporary_needed) if guard else [])
+        return self.missing_walls()
 
     def stone_targets(self) -> dict[int, int]:
         workers = self.turn.workers()
@@ -332,7 +332,6 @@ class Strategy:
             return False
         walls = [p for p in self.construction_walls() if p not in self.turn.blocked(role)
                  and p not in self.plan.reserved and p not in self.goals and p != role.pos
-                 and not self.site_guard.failed(p)
                  and not self.coordinator.target_owned(role, p, 'build:wall')]
         job = self.coordinator.job(role)
         previous = job.get('target') if job.get('kind') == 'build:wall' else None
@@ -342,9 +341,6 @@ class Strategy:
                 continue
             if self.wall_keeps_exit(role, target) and self.interact(role, target, build_command(target, "wall")):
                 self.goals.add(target)
-                if (target in self.site_guard.temporary_needed
-                        and self.plan.commands.get(str(role.unit_id), {}).get('action') == 'build'):
-                    self.memory.temporary_wall_sites.add(target)
                 return True
         return False
 
@@ -462,8 +458,14 @@ class Strategy:
         landmarks = [p for p, k in self.turn.zones.items() if k == "vendor" or k.startswith(self.turn.team_type + "TaskPoint")]
         goals = adjacent_cells(self.turn, landmarks)
         for actor in self.turn.controllable():
-            before = Routes(self.turn, actor, self.plan.reserved)
-            after = Routes(self.turn, actor, self.plan.reserved | {target})
+            reserved = set(self.plan.reserved)
+            command = self.plan.commands.get(str(actor.unit_id),{})
+            if command.get('action') == 'move':
+                # This actor's own reserved destination is its exit, not an
+                # obstacle. Other actors' destinations remain reserved.
+                reserved.discard(Pos.load(command['targetPos'][0]))
+            before = Routes(self.turn, actor, reserved)
+            after = Routes(self.turn, actor, reserved | {target})
             if before.nearest(goals) is not None and after.nearest(goals) is None:
                 return False
             if (actor.kind == PIONEER and self.layout.operator_pos in before.cost

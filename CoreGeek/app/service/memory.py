@@ -47,11 +47,7 @@ class GameMemory:
     repair_supplier_id: int | None = None
     dual_repair_active: bool = False
     worker_tasks: dict[int, dict[str, Any]] = field(default_factory=dict)
-    site_occupations: dict[Pos, dict[str, int]] = field(default_factory=dict)
-    wall_blockades: dict[Pos, dict[str, Any]] = field(default_factory=dict)
-    temporary_wall_sites: set[Pos] = field(default_factory=set)
-    blockade_worker_id: int | None = None
-    blockade_watch: bool = False
+    wall_gap_defense: dict[str, Any] = field(default_factory=dict)
     boss_raid: dict[str, Any] = field(default_factory=dict)
     robot_raids: dict[int, dict[str, Any]] = field(default_factory=dict)
     robot_motion: dict[int, dict[str, Any]] = field(default_factory=dict)

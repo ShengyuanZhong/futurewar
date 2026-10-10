@@ -23,7 +23,7 @@ class FirstNightDefense:
             workers = self.turn.workers()
             alive = {w.unit_id for w in workers}
             # Only read memory here: BossRaid and RaidScouts do not exist yet.
-            preferences = (self.memory.blockade_worker_id,
+            preferences = (self.s.gap_guard.worker_id,
                            self.memory.raid_scouts.get('home_worker_id'), self.state.get('worker_id'))
             self.worker_id = next((uid for uid in preferences if uid in alive), None)
             if self.worker_id is None and workers:
@@ -37,20 +37,16 @@ class FirstNightDefense:
         return next((w for w in self.turn.workers() if w.unit_id == self.worker_id),None)
 
     def closed(self):
-        """An occupied permanent gap needs a completely observed nonempty detour."""
+        """Physical walls only. A body guard does not turn a gap into a building."""
         if not self.enabled or len(self.turn.weapons()) < 3:
             return False
         permanent = set(self.settings.build_cells(self.turn,'wall'))
         if not permanent:
             return False
-        standing = {w.pos for w in self.turn.walls()}
-        site = getattr(self.s,'site_guard',None)
-        detours = getattr(site,'detours',{})
-        for gap in permanent-standing:
-            seal = set(detours.get(gap,()))
-            if gap not in self.memory.wall_blockades or not seal or not seal <= standing:
-                return False
-        return not (set(getattr(site,'required',()))-standing)
+        return permanent <= {w.pos for w in self.turn.walls()}
+
+    def construction_ready(self):
+        return self.closed() or (self.enabled and self.s.gap_guard.other_walls_ready())
 
     def stock_target(self, role=None):
         role = role or self.guard_role()
@@ -96,12 +92,12 @@ class FirstNightDefense:
 
     def prepared(self):
         role = self.guard_role()
-        return bool(self.closed() and role and self.weapon_ready()
+        return bool(self.construction_ready() and role and self.weapon_ready()
                     and role.backpack.count(FIXER) >= self.stock_target(role))
 
     def needs_supply(self, role):
         return bool(self.enabled and self.turn.is_day and role.unit_id == self.worker_id
-                    and self.closed() and not self.prepared())
+                    and self.construction_ready() and not self.prepared())
 
     def home_cells(self):
         return self.s.guard.inner_cells()
@@ -160,23 +156,9 @@ class FirstNightDefense:
         self.state['status'] = reason
         if self.s.guard.nighttime(role,urgent_only=True):
             return True
-        site = getattr(self.s,'site_guard',None)
-        if role.unit_id == self.memory.blockade_worker_id and site is not None:
-            gap = site.watch_gap or next(iter(self.memory.wall_blockades),None)
-            if gap is not None:
-                cells = self.home_cells()
-                allowed = cells if role.pos in cells else None
-                route = self.s.route(role,allowed=allowed)
-                posts = set(site.posts(gap)) & set(route.cost)
-                if allowed is not None:
-                    posts &= allowed
-                safe = {p for p in posts if not self.s.danger.get(p,0)}
-                if safe:
-                    self.s.coordinator.move_to(role,safe,'first_night_blockade',gap,
-                                               allowed=allowed,allow_risk=True)
-                    self.state['status'] = 'blockade_guard'
-                    self.plan.used.add(role.unit_id)
-                    return True
+        if self.s.gap_guard.active_role(role):
+            self.state['status'] = 'gap_guard'
+            return self.s.gap_guard.move_or_hold(role,self.s.gap_guard.posts(),'gap_wait')
         self.s.guard.nighttime(role)
         # A failed path or already holding must not fall through to distant mining.
         self.plan.used.add(role.unit_id)
@@ -225,6 +207,8 @@ class FirstNightDefense:
             return False
         free = max(0,role.capacity-len(role.backpack))
         construction = max(0,3-self.plan.tower_count)*25
+        boss = getattr(self.s,'boss_raid',None)
+        construction += boss.budget_reserve() if boss else 0
         for name,count in needed:
             price = self.turn.shop_prices.get(name)
             if price is None:
@@ -247,7 +231,7 @@ class FirstNightDefense:
         trip = self.trip(role,adjacent_cells(self.turn,vendors))
         if trip is None:
             return False
-        keep_stone = bool(self.memory.wall_blockades)
+        keep_stone = bool(self.s.gap_guard.gaps)
         if self.plan.near_zone(role,'vendor'):
             return self.s.sell(role,keep_stone=keep_stone)
         minerals = Counter(name for name in role.backpack if name in MINERALS and name in self.turn.vendor_prices
@@ -292,7 +276,7 @@ class FirstNightDefense:
                 self.state['status'] = 'night_repair_or_upgrade'
                 return True
             return self.return_home(role,'night_guard')
-        if not self.closed():
+        if not self.construction_ready():
             self.state['status'] = 'waiting_for_closure'
             return False
         if self.s.guard.nighttime(role,urgent_only=True):
@@ -343,16 +327,12 @@ class FirstNightDefense:
         permanent = set(self.settings.build_cells(self.turn,'wall'))
         if not permanent:
             permanent = {Pos.load(p) for p in self.state.get('permanent_plan',())}
-        site = getattr(self.s,'site_guard',None)
-        required = set(getattr(site,'required',()))
         def building(unit):
             return {'id':unit.unit_id,'pos':unit.pos.dump(),'hp':unit.health,'level':unit.level}
-        failures = [{'gap':gap.dump(),'sites':[{'pos':pos.dump(),**record} for pos,record in
-                     list(incident.get('failed_sites',{}).items())[:32]]}
-                    for gap,incident in list(self.memory.wall_blockades.items())[:32]]
         snapshot = dict(self.state)
         snapshot['permanent_plan'] = snapshot.get('permanent_plan',[])[:32]
         return dict(snapshot,enabled=self.enabled,worker_id=self.worker_id,closed=self.closed(),
+                    construction_ready=self.construction_ready(),
                     prepared=self.prepared(),reserve_gold=self.reserve_gold(),weapon_ready=self.weapon_ready(),
                     stock_target=self.stock_target(role),stock_held=role.backpack.count(FIXER) if role else 0,
                     station=building(base) if base else None,walls=[building(w) for w in walls[:32]],
@@ -360,8 +340,4 @@ class FirstNightDefense:
                     walls_count=len(walls),walls_omitted=max(0,len(walls)-32),
                     permanent_missing=[p.dump() for p in sorted(permanent-standing)[:32]],
                     permanent_missing_count=len(permanent-standing),
-                    temporary_needed=[p.dump() for p in sorted(required-standing)[:32]],
-                    temporary_needed_count=len(required-standing),
-                    temporary_observed=[p.dump() for p in sorted(required & standing)[:32]],
-                    temporary_observed_count=len(required & standing),
-                    temporary_failures=failures)
+                    occupied_gaps=[p.dump() for p in sorted(self.s.gap_guard.gaps)[:32]])

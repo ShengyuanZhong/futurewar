@@ -65,8 +65,8 @@ class DualBossTests(unittest.TestCase):
         self.assertEqual(memory.boss_raid['acquired_count'], 0)
 
     def test_actual_price_and_unbuilt_weapon_reserve_control_dual_threshold(self):
-        for gold, price, guns, expected in ((260, 130, 3, 2), (259, 130, 3, None),
-                                          (315, 120, 0, 2), (314, 120, 0, None)):
+        for gold, price, guns, expected in ((260, 130, 3, 2), (259, 130, 3, 1), (129,130,3,None),
+                                          (315, 120, 0, 2), (314, 120, 0, 1), (194,120,0,None)):
             with self.subTest(gold=gold, price=price, guns=guns):
                 raw = raid_request(); raw['teamOur']['goldNum'] = gold
                 raw['weaponShopList'][-1]['price'] = price
@@ -83,7 +83,7 @@ class DualBossTests(unittest.TestCase):
         memory = memory_for(raw)
         s, plan = policy_step(raw, memory)
         self.assertEqual(self.command(plan), {})
-        self.assertEqual(s.boss_raid.budget_reserve(), 0)
+        self.assertEqual(s.boss_raid.budget_reserve(), 240)
 
     def test_two_attempts_without_two_successes_keep_single_order_fallback(self):
         raw = raid_request(); memory = memory_for(raw)
@@ -93,7 +93,7 @@ class DualBossTests(unittest.TestCase):
         raw = raid_request(); memory = memory_for(raw, attempted=False)
         memory.task_points_attempted = {(1, 3, 9)}
         s, plan = policy_step(raw, memory)
-        self.assertEqual(self.command(plan), {})
+        self.assertEqual(self.command(plan), {'action':'buy','name':ORDER,'num':1})
 
     def test_confirmed_two_successes_enable_preparation_without_overbuying(self):
         raw = raid_request(); raw['teamOur']['goldNum'] = 50

@@ -245,7 +245,7 @@ class WallGuard:
         home_reachable = home in reachable
         if home is not None and not home_reachable and not s.danger.get(home,0):
             # Keep cooperative yields when a worker blocks the route, but never
-            # wait for a static temporary wall to vacate the old home cell.
+            # wait for a static building to vacate an unavailable home cell.
             relaxed = s.coordinator.diagnostic_route(role,cells if role.pos in cells else None)
             home_reachable = home in relaxed.cost
         if home is not None and home_reachable and not s.danger.get(home,0):

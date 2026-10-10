@@ -1,8 +1,8 @@
 # 开发与维护文档
 
-v1.2.5首日防守与BOSS反馈恢复的根因、日志证据、验证边界见[BOSS_LOG3_4_FIX.md](BOSS_LOG3_4_FIX.md)。新模块`src/agent/first_night_defense.py`在`SiteBlockade`之后、`BossRaid/RaidScouts`之前构造，独立维护首日守家身份、有效封口、实测供应和预算；`brain.run_worker()`先施工占点围挡，再首日补给/回防，再侦察和既有工人流程。`GameMemory.enemy_structures`保存已观察静态建筑快照，供机器人路线及射线规划；不修改`Turn.enemies`和官方动作门禁。下一段保留v1.2.4开发记录，当前行为以本补充及修复文档为准。
+v1.2.6新增[合法建造、缺口接力与BOSS采购](GAP_DEFENSE.md)。`WallGapDefense`替代并删除`SiteBlockade`，只建合法原墙，工人夜间占缺口、imp接替。`FirstNightDefense`管理首日补给，但BOSS不再依赖物理封墙和补给完成；工人采购先保留BOSS预算。静态建筑记忆和攻击反馈恢复继续保留。
 
-更新日期：2026-10-10，程序版本v1.2.4。增加[有限追击与双BOSS](BOSS_EFFICIENCY.md)：操炮者射击位/连续追位默认预算4，无路或超预算改攻基地，短破墙保留；双任务有奖励确认或经济足够时首日最多两券，按实际库存和反馈分帧部署，保留三炮金币和返程时间。TaskService仅新增task_points_succeeded证据记录，不改任务prompt。GameMemory.boss_raid维护有限购买/使用账本，robot_raids记录每只BOSS的独立预算与4回合基地聚焦；[首夜视野协作](RAID_SCOUTS.md)及[诊断日志](ROBOT_DIAGNOSTICS.md)继续保留。其它策略仍见[占点防御](SITE_BLOCKADE.md)、[火箭比值与2+1](ROCKET_SECTORS.md)、[工人经济](COMPLETED_ECONOMY.md)和[复赛索引](ROUND_OF_32_RULES.md)。
+更新日期：2026-10-10，程序版本v1.2.4。增加[有限追击与双BOSS](BOSS_EFFICIENCY.md)：操炮者射击位/连续追位默认预算4，无路或超预算改攻基地，短破墙保留；双任务有奖励确认或经济足够时首日最多两券，按实际库存和反馈分帧部署，保留三炮金币和返程时间。TaskService仅新增task_points_succeeded证据记录，不改任务prompt。GameMemory.boss_raid维护有限购买/使用账本，robot_raids记录每只BOSS的独立预算与4回合基地聚焦；[首夜视野协作](RAID_SCOUTS.md)及[诊断日志](ROBOT_DIAGNOSTICS.md)继续保留。其它策略仍见[缺口接力](GAP_DEFENSE.md)、[火箭比值与2+1](ROCKET_SECTORS.md)、[工人经济](COMPLETED_ECONOMY.md)和[复赛索引](ROUND_OF_32_RULES.md)。
 
 ## 1. 设计目标与边界
 
@@ -42,6 +42,7 @@ CoreGeek/
 │   ├── upgrade_policy.py         # 单炮集中升级、分组墙目标与完成判断
 │   ├── worker_coordinator.py     # 独立任务、目的格和协作侧移
 │   ├── wall_guard.py             # 阈值维修、双人值守与轮流采购
+│   ├── gap_defense.py            # 仅合法墙、工人缺口阻挡和imp死亡接力
 │   ├── combat.py                 # 目标与弹道估值、旧匹配接口
 │   ├── robot_raider.py           # 第一夜BOSS优先攻击当前炮旁活工人/先锋
 │   ├── robot_combat.py           # 原生机器人射程、目标和墙遮挡
@@ -92,7 +93,7 @@ flowchart LR
 | 配置 | 默认值 | 含义 |
 |---|---|---|
 | `layouts` | `{}` | challenger/defender 分别登记建造区域 |
-| `allow_base_surroundings` | true | 无已确认阵营布局时，按用户假设生成基地周围建造格 |
+| `allow_base_surroundings` | true | 生成合法第一圈武器/第二圈墙内的默认阵型，不能任意扩大建造区 |
 | `loadout` | rocket、rocket、rocket | 三座武器的目标组合；显式旧配置仍覆盖默认值 |
 | `sell_batch` | 12 | 不在小贩旁时开始运矿销售的携带数量 |
 | `return_margin` | 4 | 回防预留轮数，也是宝藏准备时间余量 |
@@ -102,11 +103,11 @@ flowchart LR
 
 每个 `layouts` 项固定包含 `verified`、`source`、`weapons`、`walls`。两个位置数组用相对基地**左上角**偏移：实际坐标为 `(base.x + offset.x, base.y + offset.y)`，y 正方向向上；基地本身占 `(x,y),(x+1,y),(x,y-1),(x+1,y-1)`。
 
-例如数学上基地 `(10,24)` 加偏移 `(-1,0)` 等于 `(9,24)`；这只解释坐标算法，不证明该格属于官方蓝区。不得从示例测试推断地图区域。阵营偏移分别登记，不自动假设镜像。武器与墙列表不能重叠或重复；越界、基地内、中立格在使用时过滤。
+基地pos按左上角换算2×2 footprint，绝对建造格还需通过圈层、边界和land检查。配置武器/墙列表不能重复或重叠；所有布局武器到footprint最小切比雪夫距离必须1，城墙必须2。
 
-默认已启用建造，不需要config.local.json。`base_surrounding_offsets(kind, mirrored=False)`按2×2基地生成3格后排竖排火箭与12格U形墙，墙内留一格维修通路。`mirrored_layout(turn)`按基地中心决定左右，右侧偏移为`(1-dx,dy)`；`default_operator_position(turn)`固定P在中间火箭后侧。平移后过滤越界、基地和非空地中立点。完整参数和示意图见[U形布局](U_LAYOUT.md)。构造依据是用户明确允许的基地周围假设，不标记成官方确认坐标。
+默认已启用建造：`base_surrounding_offsets(kind, mirrored=False)`在合法圈层内生成后排三炮和12格U墙；`mirrored_layout`按实际基地中心决定左右，右侧偏移为(1-dx,dy)，P位和一格维修通道保留。详见[U形布局](U_LAYOUT.md)及[当前圈层说明](GAP_DEFENSE.md)。
 
-敌方连续占墙位超过5回合时，`Settings.wall_detour_cells(turn,gap)`在内侧生成临时围挡（直边三块，正面角一块），`construction_walls()`将其与永久缺墙合并用于施工/筹石/预留。显式verified布局和strict模式不扩区。`site_blockade.py`选择携石负责人在临时围墙内侧可达邻格守候，白天原位空出时优先寻路补墙；观测确认后才拆本进程临时墙，临时墙不进入升级阶段。详细状态与日志见[占点防御](SITE_BLOCKADE.md)。
+发现敌角色占据未建规划墙位时，`gap_defense.py`立即记录缺口，`construction_walls()`仅包含原合法缺墙；没有内绕/外绕授权、临墙材料、封口或拆除状态。工人白天先完成其它墙位，黄昏回缺口内侧，晚上位置实际空出后站在缺口；imp在邻格待命，实际看到原工人死亡/消失才接替。第二天让出施工格，持石工人补原墙。仅为对应工人/imp在夜间解除所守墙位的寻路预留，其他角色保留原规划；真实占用/本轮预约仍不能进入。
 
 如果提供`verified:true`且有source的自定义布局，它优先于默认布局。若要恢复仅允许确认区域的模式，显式设置`allow_base_surroundings:false`。已有模板中verified:false的空布局会使用默认区域，不再阻止开局建炮。
 
@@ -169,7 +170,7 @@ flowchart LR
 
 | 事件 | 含义 | 检查位置 |
 |---|---|---|
-| `construction_mode=base_surroundings` | 已启用基地周围默认布局 | allow_base_surroundings / 用户指定的本地假设 |
+| `construction_mode=base_surroundings` | 启用圈层内的三炮/U形布局 | 用户澄清的建造圈层与团队阵型 |
 | `D01` | 显式关闭默认布局且没有确认坐标 | config |
 | `decision` | 回合、阵营、动作数、耗时、反馈失败数、错误码、opening阶段、shared_control | 策略与原始观测；shared_control只代表规划具备共同邻格 |
 | `[TASK-DEBUG R...]` | 题目、LLM回复、沙盒结果、本轮prompt和executeCmd | task_logging按用户片段生成，详见[任务日志](TASK_LOGGING.md) |

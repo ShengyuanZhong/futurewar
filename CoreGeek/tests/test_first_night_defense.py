@@ -49,19 +49,14 @@ class FirstNightDefenseTests(unittest.TestCase):
         self.assertTrue(defense.enabled)
         self.assertEqual(defense.worker_id,501)
 
-    def test_home_identity_prefers_blockade_then_scout_home_then_existing(self):
-        for memory,expected in ((GameMemory(blockade_worker_id=504,raid_scouts={'home_worker_id':501}),504),
-                                (GameMemory(raid_scouts={'home_worker_id':504}),504),
+    def test_home_identity_prefers_gap_then_scout_home_then_existing(self):
+        for memory,expected in ((GameMemory(raid_scouts={'home_worker_id':504}),504),
                                 (GameMemory(first_night_defense={'worker_id':504}),504)):
-            with self.subTest(expected=expected):
-                preferred_blockade = memory.blockade_worker_id
-                s,_,defense = setup(memory=memory)
-                if preferred_blockade is not None:
-                    # Strategy correctly clears an incident without a gap. Set
-                    # the live assignment at this module's constructor boundary.
-                    s.memory.blockade_worker_id = preferred_blockade
-                    defense = FirstNightDefense(s)
-                self.assertEqual(defense.worker_id,expected)
+            _,_,defense = setup(memory=memory)
+            self.assertEqual(defense.worker_id,expected)
+        raw,memory = self.occupied_gap()
+        s,_,defense = setup(raw,memory)
+        self.assertEqual(defense.worker_id,s.gap_guard.worker_id)
 
     def test_only_living_worker_is_kept_home(self):
         raw = fortified(30)
@@ -100,17 +95,13 @@ class FirstNightDefenseTests(unittest.TestCase):
         self.assertTrue(plan.add(501,{'action':'build','name':'wall','targetPos':[Pos(9,7).dump()]}))
         self.assertFalse(defense.closed())
 
-    def test_occupied_gap_needs_nonempty_fully_observed_detour(self):
-        raw,memory = self.sealed_gap()
+    def test_occupied_gap_is_not_a_physical_closed_wall(self):
+        raw,memory = self.occupied_gap()
         s,_,defense = setup(raw,memory)
-        self.assertTrue(defense.closed())
-        gap = Pos(9,7)
-        s.site_guard.detours[gap] = set()
-        s.site_guard.required = set()
         self.assertFalse(defense.closed())
-        raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles'] if u['id'] != 901]
-        _,_,defense = setup(raw,memory)
-        self.assertFalse(defense.closed())
+        self.assertTrue(defense.construction_ready())
+        self.assertTrue(defense.prepared())
+        self.assertEqual(set(s.construction_walls()),{Pos(9,7)})
 
     def test_reserve_uses_observed_prices_and_does_not_buy_a_team_held_coupon_twice(self):
         raw = fortified(30)
@@ -215,19 +206,15 @@ class FirstNightDefenseTests(unittest.TestCase):
         self.assertNotIn('501',plan.commands)
         self.assertIn(501,plan.used)
 
-    def test_sealed_gap_returns_to_temporary_wall_neighbour_not_blocked_default_post(self):
-        raw,memory = self.sealed_gap(number=71)
+    def test_occupied_gap_guard_returns_to_a_legal_inner_waiting_post(self):
+        raw,memory = self.occupied_gap(number=70)
         actor(raw)['pos'] = Pos(6,5).dump()
         s,plan,defense = setup(raw,memory)
-        self.assertEqual(defense.worker_id,501)
-        self.assertIn(s.guard.home(s.turn.workers()[0]),{w.pos for w in s.turn.walls()})
-        self.assertTrue(defense.worker(s.turn.workers()[0]))
-        command = plan.commands['501']
-        self.assertEqual(command['action'],'move')
-        destination = Pos.load(command['targetPos'][0])
-        self.assertIn(destination,s.site_guard.posts(Pos(9,7)))
-        self.assertTrue(any(max(abs(destination.x-w.pos.x),abs(destination.y-w.pos.y))==1
-                            for w in s.turn.walls() if w.pos in s.site_guard.detours[Pos(9,7)]))
+        self.assertTrue(defense.return_home(s.turn.workers()[0]))
+        self.assertEqual(plan.commands['501']['action'],'move')
+        goal = memory.wall_gap_defense['posts'][501]
+        self.assertIn(goal,s.gap_guard.posts())
+        self.assertNotIn(goal,{w.pos for w in s.turn.walls()})
 
     def test_disabled_next_day_and_missing_workers_do_not_reserve_or_take_actions(self):
         for variant in ('disabled','day_two','no_workers'):
@@ -242,17 +229,16 @@ class FirstNightDefenseTests(unittest.TestCase):
             self.assertEqual(defense.reserve_gold(),0)
             self.assertFalse(defense.prepared())
 
-    def test_diagnostic_has_actual_base_wall_hp_and_observed_temporary_failures(self):
-        raw,memory = self.sealed_gap()
-        memory.wall_blockades[Pos(9,7)]['failed_sites'] = {Pos(8,8):{'count':1,'round':29,'actor_id':'501'}}
+    def test_diagnostic_has_actual_hp_and_occupied_gaps_without_temp_walls(self):
+        raw,memory = self.occupied_gap()
         s,_,defense = setup(raw,memory)
         report = defense.diagnostic()
         self.assertEqual(report['station']['hp'],1500)
         self.assertTrue(all({'id','pos','hp','level'} <= set(w) for w in report['walls']))
         self.assertEqual(report['permanent_missing'],[Pos(9,7).dump()])
-        self.assertTrue(report['temporary_observed'])
-        self.assertEqual(report['temporary_needed'],[])
-        self.assertEqual(report['temporary_failures'][0]['sites'][0]['count'],1)
+        self.assertEqual(report['occupied_gaps'],[Pos(9,7).dump()])
+        self.assertFalse(report['closed'])
+        self.assertNotIn('temporary_observed',report)
 
     def test_diagnostic_records_a_destroyed_base_instead_of_omitting_it(self):
         raw = ready(fortified(71))
@@ -300,9 +286,9 @@ class FirstNightDefenseTests(unittest.TestCase):
         self.assertEqual(s.memory.raid_scouts.get('worker_id'),504)
         self.assertEqual(s.memory.raid_scouts.get('home_worker_id'),501)
 
-    def test_strategy_boss_budget_reserves_defense_before_single_or_dual_purchase(self):
+    def test_strategy_boss_purchase_has_priority_over_defense_stock(self):
         tasks = {(1,3,9),(1,4,9)}
-        for prepared,gold,expected_reserve,quantity in ((False,295,175,1),(True,240,0,2)):
+        for prepared,gold,expected_reserve,quantity in ((False,120,175,1),(False,240,175,2),(True,240,0,2)):
             with self.subTest(prepared=prepared):
                 raw = fortified(30)
                 actor(raw)['pos'] = Pos(8,7).dump()
@@ -319,21 +305,16 @@ class FirstNightDefenseTests(unittest.TestCase):
                 pioneer = next(u for u in s.turn.controllable() if u.kind=='pioneer')
                 self.assertTrue(s.boss_raid.pioneer(pioneer))
                 self.assertEqual(plan.commands['502'],{'action':'buy','name':'BossRobotSummonOrder','num':quantity})
-                self.assertGreaterEqual(plan.gold,defense.reserve_gold())
+                self.assertEqual(plan.gold,gold-120*quantity)
 
     @staticmethod
-    def sealed_gap(number=30):
+    def occupied_gap(number=30):
         raw = ready(fortified(number))
         gap = Pos(9,7)
         raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles'] if u['pos'] != gap.dump()]
         raw['teamEnemy']['roles'] = [unit(995,'worker',gap.x,gap.y,health=500)]
         actor(raw)['backpack'].append('stone')
-        memory = GameMemory(opening_complete=True,blockade_worker_id=501,
-                            first_night_defense={'worker_id':501},wall_blockades={gap:{'confirmed_round':20,'enemy_id':995}})
-        settings = Settings(enable_first_night_defense=True)
-        detours = settings.wall_detour_cells(Turn.load(raw),gap)
-        for uid,p in enumerate(sorted(detours),901):
-            raw['teamOur']['roles'].append(unit(uid,'wall',p.x,p.y,health=1000,level=1))
+        memory = GameMemory(opening_complete=True,first_night_defense={'worker_id':501})
         return raw,memory
 
 

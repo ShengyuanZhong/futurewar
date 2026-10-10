@@ -1,14 +1,14 @@
 # CoreGeek 参赛 Agent
 
-当前程序版本为 v1.2.5：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后两翼六墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回墙内，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
+当前程序版本为 v1.2.6：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后两翼六墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回墙内，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
 
 此目录可作为参赛程序目录提交。沿用示例的 `main3.py`、`src/agent/protocol.py`、`grid.py`、`brain.py`；HTTP 处理与跨回合协作放在 `app`。新增代码无第三方运行依赖。
 
-v1.2.5根据boss_log3/boss_log4修复[BOSS失败恢复与首日防守](docs/BOSS_LOG3_4_FIX.md)：记忆真实观察到的敌方建筑，避免隐藏炮台穿行；静态非法射击不再4轮循环重试，连续失败靠近换位、成功射击保持站位。恶意占点改为内绕临时墙，协作采石施工并检查实际封口。首日先留一名工人准备至少一台2级火箭与5个维修包，预留防守金币后再买BOSS券，防守实际就绪后另一工人才可出发观察；首夜守家维修。捣乱鬼观察任务增加邻格避捕。完整参数和开发接口见修复文档。
+v1.2.6按用户澄清移除所有临时绕墙及其拆除策略，建造严格限定为2×2基地外第一圈武器、第二圈城墙。被占墙位由工人入夜后占缺口，捣乱鬼邻格待命并在工人实际死亡后接替；白天仍先完成其它合法墙位。BOSS购买/使用不再依赖墙完全封好，也不先扣火箭与修包预算；保留三炮建设资金后优先购买召唤券，补给只能使用剩余金币。新模块、流程、参数与根因见[缺口接力与BOSS采购](docs/GAP_DEFENSE.md)。v1.2.5的建筑记忆、射击失败恢复与避捕改进继续保留，原绕墙方案已撤销。
 
 v1.2.4加入[有限追击与双BOSS](docs/BOSS_EFFICIENCY.md)：近处直射炮手优先，默认4步/回合预算，短破墙可替代绕路，无路或超预算时攻基地并选择外露占格。任务双提交有奖励确认或财力足够时首日批购两券，分两个白天回合使用不同位置，首夜各BOSS独立行动；不足时单券降级，观察者和留守工人职责保留。
 
-v1.2.3增加[首夜视野协作](docs/RAID_SCOUTS.md)：第一天imp提前侦察敌基地后侧；一名工人仅在三炮、永久墙和所需临时围挡全部观测建齐且入夜前可到达时加入。另一名工人保留占点防御和经济工作，固定身份；首夜到位待命、维持共享视野，第二天恢复原策略。BOSS不提供视野，也不会凭模板伪造隐藏目标。
+沿用[首夜视野协作](docs/RAID_SCOUTS.md)：正常情形imp侦察敌后，工人须待实际防守准备完成；发生被占缺口时imp留家后备，另一工人可在其它合法墙完成后承担敌后视野。BOSS仍不提供视野，不伪造目标。
 
 v1.2.2新增[机器人诊断日志](docs/ROBOT_DIAGNOSTICS.md)，策略保持v1.2.1。默认输出robot_observation与robot_diagnostic两类INFO JSON，包括实际位置/位移、HP、敌炮/角色可见集合、距离/墙/失败缓存、射击位置和最终原因；enable_robot_diagnostics=false可关闭。
 
@@ -18,7 +18,7 @@ v1.2.0接入[第一天BOSS袭击](docs/BOSS_RAID.md)：两任务结束后赴店�
 
 v1.1.2将所有等级火箭的己区、敌区选点统一为：中心有活机器人，九宫格内Σ(击杀分/当前剩余HP)最大，用精确分数求和。三级沿用两发己区、一发敌区；敌区为空则全部防守，详见[火箭半区策略](docs/ROCKET_SECTORS.md)。
 
-v1.1.3增加[恶意占点防御](docs/SITE_BLOCKADE.md)：连续超过5回合占据未建造设施位，白天为墙缺口向外绕建临时墙，一名携石工人内侧待命；下一次白天观测原位空出时优先补原墙，确认建成后拆临时墙。保留夜间禁建和原升级目标，另一工人沿用原策略。
+旧v1.1.3–v1.2.5临时绕墙策略已删除，不再执行连续5回合判定、额外建墙或拆临墙；当前处理见[缺口接力](docs/GAP_DEFENSE.md)。
 
 v1.1.0接入捣乱鬼：昼夜持续破坏对方半区矿石、保持四轮引导，死亡复活后立即重新出发；不使用工人危险权重。详见[捣乱鬼开发说明](docs/IMP_STRATEGY.md)。
 
@@ -70,7 +70,7 @@ python main3.py 8080 --config config.local.json
 
 也可设置 `FUTUREWAR_CONFIG`。相对路径以启动命令的当前目录解析；生产环境建议使用绝对路径。程序启动时读取一次配置，修改后需重启。
 
-默认无需配置文件即可开局建造。`allow_base_surroundings=true`按用户“基地周围可建造”的假设，按用户设计图建立12格U形墙、后排竖排三炮及固定P站位，内侧保留一格维修通路，右侧基地水平镜像；这是本地布局假设，不向官方请求增加字段。
+默认无需配置文件即可开局建造。`allow_base_surroundings=true`在2×2基地外第一圈武器、第二圈墙的合法范围内生成12格U墙、后排三炮和P位，保留维修通道，右侧镜像；显式配置也不能越圈建造。
 
 需要自定义时，可在layouts中填写各阵营相对基地左上角的`{x,y}`偏移、source及verified:true，优先覆盖默认布局。旧模板的未核验空坐标不会阻止默认建造。`loadout`为`["rocket","rocket","rocket"]`；默认先造三炮，再采石建墙。详见[开发文档](docs/DEVELOPMENT.md)。
 
@@ -85,7 +85,7 @@ python main3.py 8080 --config config.local.json
 - 防御优先于活跃任务与宝藏；保留射程、目标数量、伤害估值和角色互斥检查。
 - 开拓者接任务，官方 LLM / 沙盒探索，提交答案，按类型保存成功/失败经验并复用SOP/Skill。
 - 跨日新闻积累、停矿信息推理、宝藏购买与定时献祭、失败方案去重。
-- 原十二种动作与destroy提供统一校验，原生机器人move/attack有独立权限；remove用于原墙确认补齐后的临时墙清理，drop仍仅供扩展。新增第一天BOSS券购买，其它召唤令、炸弹与眩晕法宝不自动采购。
+- 原十二种动作与destroy统一校验；原生机器人move/attack独立权限。remove保留协议支持，当前策略不自动拆墙。BOSS优先采购，其它召唤令、炸弹与眩晕法宝不自动采购。
 
 这是一版可运行的策略基线，不保证任务解题正确率或比赛胜率；判题器负责真实结算、伤害、复活、计分与胜负。
 
@@ -174,11 +174,11 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | 同上 | `segment_entry(start, end, cell)` | 线段与方格相交估值 |
 | 同上 | `damage_for(turn, tower, target, health)` | 计算单发预计伤害字典 |
 | 同上 | `choose_targets(turn, tower, expected_health, deadline=inf)` | 火箭按占用中心Σ(分/当前HP)最大选点、三级2+1；符合数量/范围后更新预测HP |
-| [src/agent/site_blockade.py](src/agent/site_blockade.py) | `SiteBlockade(strategy).watch(role)` / `cleanup(role)` | 连续占点、携石待命和白天抢补；观测确认后拆临时墙 |
+| [src/agent/gap_defense.py](src/agent/gap_defense.py) | `WallGapDefense(strategy).worker/imp/other_walls_ready` | 合法墙施工、工人守缺口、捣乱鬼待命和真实死亡后的接替 |
 | [src/agent/boss_raid.py](src/agent/boss_raid.py) | `BossRaid(strategy).pioneer(role)` | 两任务结束后买一张BOSS券、远程召唤、回到原操炮位 |
 | [src/agent/robot_raider.py](src/agent/robot_raider.py) | `RobotRaider(strategy).decide(robot)` | 第一夜BOSS独立追击、搜索、绕墙/破墙与攻基地 |
 | [src/agent/raid_diagnostics.py](src/agent/raid_diagnostics.py) | `RaidDiagnostics(strategy).set/event/finish` | 复用观测和路径检查，记录目标、移动/攻击反馈与最终指令；字段/参数见[诊断说明](docs/ROBOT_DIAGNOSTICS.md) |
-| [src/agent/first_night_defense.py](src/agent/first_night_defense.py) | `FirstNightDefense(strategy).closed/prepared/reserve_gold/worker` | 首日守家身份、实测封口、至少一台L2和修包预算/供应/夜修，见[接口说明](docs/BOSS_LOG3_4_FIX.md) |
+| [src/agent/first_night_defense.py](src/agent/first_night_defense.py) | `FirstNightDefense(strategy).closed/construction_ready/prepared/worker` | 区分实际墙完整和其它墙完成；先保留BOSS费用，再首日补给/回防，见[当前接口](docs/GAP_DEFENSE.md) |
 | [src/agent/raid_scouts.py](src/agent/raid_scouts.py) | `RaidScouts(strategy).imp/worker/post` | 首夜两观察者的固定分工、墙ready门槛与敌后站位；参数见[视野协作](docs/RAID_SCOUTS.md) |
 | [src/agent/summoning.py](src/agent/summoning.py) | `rear_spawn_position(turn, settings, pending=(), failed=())` | 实际敌基地优先，选择非建造区的后方出生点 |
 | [src/agent/server.py](src/agent/server.py) | `Handler/serve` | 转发新网络层，兼容demo旧导入 |
