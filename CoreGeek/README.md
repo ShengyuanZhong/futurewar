@@ -1,12 +1,12 @@
 # CoreGeek 参赛 Agent
 
-当前程序版本为 v1.2.11：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后其余11块侧后墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回墙内，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
+当前程序版本为 v1.2.12：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后其余11块侧后墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回墙内，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
 
 此目录可作为参赛程序目录提交。沿用示例的 `main3.py`、`src/agent/protocol.py`、`grid.py`、`brain.py`；HTTP 处理与跨回合协作放在 `app`。新增代码无第三方运行依赖。
 
 历史v1.2.8通过569项回归、320份合成压力及四种布局520次跨帧HTTP检查；证据见[验证报告](../reports/VALIDATION-v1.2.8.md)，未运行新官方对局。历史v1.2.7的529项回归、80份合成压力及跨帧HTTP证据保留在[历史报告](../reports/VALIDATION-v1.2.7.md)。
 
-v1.2.11更新[首日任务与车辆侦查](docs/TASK2_VEHICLE_V1211.md)：固定任务二→任务一→任务二，取消任务的完整耗时、购物和回防预算门；三次尚未结束时，即使入夜仍优先继续合法尝试，结束后恢复操炮。完成任务二实际刷出己方小车后，侦查工人可顺路取车，确认isDriving后每轮发送两个连续相邻坐标；两格均避障和预约，夜间恢复步行。工人仍等建墙完成后离家，安全捣乱鬼实时视野准入、三炮/17墙、维修升级与BOSS清炮手策略保持。验证仅覆盖第一天。
+v1.2.12将[首日BOSS购用移交采购工人](docs/WORKER_BOSS_V1212.md)：两工人完成可建墙体后，一人继续侦查和车辆加速，另一人提前走向实际商店等待；开拓者三次尝试2→1→2结束后立即回防，采购工按真实成功数批购0～3张并逐张使用自己的券。任务、金币余额及反馈账本分离，购手不与侦察工人交换身份；门石保留，出门互挡先让行，首夜采购主工尚未返到恶意缺口时由捣乱鬼暂时补位。商店读当局坐标，不按基地镜像估算。验证仍只覆盖第一天。
 
 历史v1.2.8增加[真实布局侦察与阵型召唤](docs/LAYOUT_SCOUTING.md)：非留守工人在三炮及可建原墙实际完成后立即探路，不再等L2火箭和修包。敌基地/墙全局可见，炮台及普通角色受视野限制，BOSS没有视野。布局通过真实三炮或12格武器圈累计扫描确认；实际用券还需活侦察工人就近、当前普通共享视野覆盖共同操炮位及可见炮手。按实测炮阵选择合法出生点，利用45度缺口、直射或一堵墙突破，并维持第一夜视野。购券仍在两任务结束后按成功数冻结0/1/2张，只有use等待侦察；火箭升级采购等购券尝试之后。缺口留守、任务prompt、普通升级及经济路线保持。首日完整时序见[FIRST_DAY_PLAN](docs/FIRST_DAY_PLAN.md)。
 
@@ -180,11 +180,12 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | 同上 | `damage_for(turn, tower, target, health)` | 计算单发预计伤害字典 |
 | 同上 | `choose_targets(turn, tower, expected_health, deadline=inf)` | 火箭按占用中心Σ(分/当前HP)最大选点、三级2+1；符合数量/范围后更新预测HP |
 | [src/agent/gap_defense.py](src/agent/gap_defense.py) | `WallGapDefense(strategy).worker/imp/other_walls_ready` | 合法墙施工、工人守缺口、捣乱鬼待命和真实死亡后的接替 |
-| [src/agent/boss_raid.py](src/agent/boss_raid.py) | `BossRaid(strategy).pioneer(role)` | Task2→Task1→Task2三次结束后按真实成功数买0～3张；真实侦察门通过后按炮阵逐张用券、回防 |
+| [src/agent/boss_raid.py](src/agent/boss_raid.py) | `BossRaid(strategy).worker(role)` | 工人完墙后提前等店，Task2→Task1→Task2三次结束按真实成功数购0～3张；绑定工人袋/反馈逐张召唤，先锋直接回防 |
 | [src/agent/robot_raider.py](src/agent/robot_raider.py) | `RobotRaider(strategy).decide(robot)` | 第一夜BOSS清炮手、单墙突破、基地首挡路炮清障与原位基地旁角色判断 |
 | [src/agent/raid_diagnostics.py](src/agent/raid_diagnostics.py) | `RaidDiagnostics(strategy).set/event/finish` | 复用观测和路径检查，记录目标、移动/攻击反馈与最终指令；字段/参数见[诊断说明](docs/ROBOT_DIAGNOSTICS.md) |
 | [src/agent/first_night_defense.py](src/agent/first_night_defense.py) | `FirstNightDefense(strategy).closed/construction_ready/prepared/worker` | 区分实际墙完整和其它墙完成；先保留BOSS费用，再首日补给/回防，见[当前接口](docs/GAP_DEFENSE.md) |
 | [src/agent/raid_scouts.py](src/agent/raid_scouts.py) | `RaidScouts(strategy).imp/worker/post` | 墙完派非留守工人、12格扫描/实际三炮、持续操炮区视野；参数见[布局侦察](docs/LAYOUT_SCOUTING.md) |
+| [src/agent/boss_raid.py](src/agent/boss_raid.py) | `buyer_role/dispatch_ready/worker_mission_active` | 稳定采购工、实际施工出发条件、首日购物职责优先 |
 | [src/agent/day_gate.py](src/agent/day_gate.py) | `DayGate.worker(role)/day_ready()` | 17墙的白天临时通路、封口石、门券、双工回防与夜前封口 |
 | [src/agent/first_day_tasks.py](src/agent/first_day_tasks.py) | `record_attempt/finish_attempt/finished_count/success_count` | 用领取回合区分重复Task1，幂等计3次结束和0～3次成功 |
 | [src/agent/summoning.py](src/agent/summoning.py) | `scouted_spawn_position(turn, settings, remembered=(), pending=(), failed=(), surveyed=())` | 真实炮阵/墙/操炮位选择合法出生点；旧rear仅买前可行性 |
@@ -232,4 +233,4 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 
 0.4.2接入用户提供的`print_log.py`格式：每个新回合记录`[TASK-DEBUG]`，完整打印phaseTask、llmResp、lastCmdResult、本轮prompt和executeCmd。stderr为默认输出，具体映射见[任务日志](docs/TASK_LOGGING.md)。
 
-当前验证仅覆盖第一天，见[首日验证报告](../reports/VALIDATION-v1.2.11.md)。v1.2.9的全量回归为历史证据；本轮未运行新官方对局。
+当前验证仅覆盖第一天，见[首日验证报告](../reports/VALIDATION-v1.2.12.md)。v1.2.9的全量回归为历史证据；本轮未运行新官方对局。

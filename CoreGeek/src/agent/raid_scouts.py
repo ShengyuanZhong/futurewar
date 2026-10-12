@@ -54,9 +54,10 @@ class RaidScouts:
         # Real wall completion is enough: L2/repair procurement cannot delay sight.
         # Never take the home/gap worker, or replace a dead scout with the sole guard.
         if (self.state.get('worker_id') is None and len(workers) >= 2
-                and self.state['walls_ready'] and self.turn.is_day):
+                and self.dispatch_granted() and self.turn.is_day):
             candidates = [w for w in workers if w.unit_id not in
                           (self.s.gap_guard.worker_id,self.s.first_defense.worker_id,
+                           self.memory.boss_raid.get('buyer_id'),
                            self.s.day_gate.worker_id if self.s.day_gate.enabled else None)]
             choices = []
             for worker in candidates:
@@ -85,7 +86,7 @@ class RaidScouts:
     def walls_ready(self):
         gate = getattr(self.s, 'day_gate', None)
         if gate is not None and gate.enabled and self.turn.is_day:
-            return gate.day_ready(self.s.gap_guard.gaps)
+            return gate.dispatch_ready(self.s.gap_guard.gaps)
         if self.s.gap_guard.gaps:
             return self.s.gap_guard.other_walls_ready()
         if self.s.first_defense.enabled:
@@ -96,8 +97,17 @@ class RaidScouts:
     def is_worker(self, role):
         return (self.active and role.unit_id == self.state.get('worker_id')
                 and len(self.turn.workers()) >= 2 and role.unit_id != self.s.gap_guard.worker_id
+                and role.unit_id != self.memory.boss_raid.get('buyer_id')
                 and not (self.s.day_gate.enabled and role.unit_id==self.s.day_gate.worker_id)
-                and (not self.turn.is_day or self.state['walls_ready']))
+                and (not self.turn.is_day or self.dispatch_granted()))
+
+    def dispatch_granted(self):
+        # Construction is verified before the buyer departs. A camper leaving
+        # its unfinished site afterwards must not make both outgoing workers
+        # abandon shopping/sight and restart unrelated economic trips.
+        raid = self.memory.boss_raid
+        return bool(self.active and (self.state.get('walls_ready') or
+                    (raid.get('mission_started') and raid.get('buyer_departed'))))
 
     def known_weapons(self):
         return enemy_layout_weapons(self.turn,self.memory.enemy_structures.values())
@@ -136,6 +146,7 @@ class RaidScouts:
         worker_near = bool(worker and any(distance(worker.pos,p) <= SIGHT for p in enemy_weapon_cells(self.turn)))
         worker_available = bool(worker and len(self.turn.workers()) >= 2
             and worker.unit_id != self.s.gap_guard.worker_id
+            and worker.unit_id != self.memory.boss_raid.get('buyer_id')
             and not (self.s.day_gate.enabled and worker.unit_id==self.s.day_gate.worker_id))
         catchers = [u for u in self.turn.enemies if u.health>0 and u.kind in CONTROLLABLE_TYPES]
         imps = [u for u in self.turn.imps()
@@ -149,7 +160,7 @@ class RaidScouts:
         uncovered = {p for p in cells if not self.seen(p)}
         base_visible = any(u.kind=='station' and u.health>0 for u in self.turn.enemies)
         reason = ('enemy_base_unconfirmed' if not base_visible else
-                  'waiting_for_walls' if not self.state['walls_ready'] else
+                  'waiting_for_walls' if not self.dispatch_granted() else
                   'no_live_scout' if not worker_available and not imps else
                   'scout_travelling' if not observer_ready else
                   'layout_incomplete' if not self.state['layout_ready'] else
@@ -355,8 +366,9 @@ class RaidScouts:
         if not self.active or role.unit_id != self.state.get('worker_id'):
             return False
         if (len(self.turn.workers())<2 or role.unit_id==self.s.gap_guard.worker_id
+                or role.unit_id==self.memory.boss_raid.get('buyer_id')
                 or (self.s.day_gate.enabled and role.unit_id==self.s.day_gate.worker_id)
-                or (self.turn.is_day and not self.state['walls_ready'])):
+                or (self.turn.is_day and not self.dispatch_granted())):
             self.state.get('posts',{}).pop(role.unit_id,None)
             self.state['worker_status'] = 'home_defense' if len(self.turn.workers())<2 else 'paused_for_walls_or_gap'
             return False

@@ -32,9 +32,11 @@ ORDER = 'BossRobotSummonOrder'
 
 def setup(name, number=1, car=None):
     raw, _ = scene(round_no=number, car=car)
+    raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles']
+                              if not (u['roleType']=='wall' and u['pos']==Pos(5,9).dump())]
     raw['teamOur'].update(teamId='vehicle-flow-' + name, goldNum=1000, totalScore=0)
     actor(raw, 502).update(pos=Pos(13, 10).dump(), health=500)
-    actor(raw, HOME_ID).update(pos=Pos(3, 7).dump(), backpack=['stone'] + ['WallFixer'] * 5)
+    actor(raw, HOME_ID).update(pos=Pos(6,8).dump(), backpack=['stone'] + ['WallFixer'] * 5)
     raw['teamOur']['playerTasks'] = copy.deepcopy(request()['teamOur']['playerTasks'])
     for index, pos in enumerate((Pos(14, 9), Pos(14, 11))):
         raw['teamOur']['playerTasks'][index].update(taskPosition=pos.dump(), timeoutRounds=12,
@@ -199,6 +201,13 @@ def main():
                     cars_before = [copy.deepcopy(z) for z in raw['mapInfo']['zones'] if z['neutralType'].endswith('Vehicle')]
                     status, response = post(port, raw)
                     commands = response['roleCommandMap']
+                    assert not any(c.get('name')==ORDER for uid,c in commands.items() if uid!=str(HOME_ID)),commands
+                    if first==1:
+                        assert ORDER not in actor(raw,502)['backpack']
+                        if number<37:
+                            assert not any(c.get('name')==ORDER for c in commands.values()),commands
+                        if number==37:
+                            assert commands[str(HOME_ID)]=={'action':'buy','name':ORDER,'num':3},commands
                     events = settle(raw, commands, spawns)
                     for event in events:
                         event.update(round=number)
@@ -235,12 +244,13 @@ def main():
         failure = AssertionError('HTTP process logged action_rejected')
     report = dict(scope='First-day synthetic sequential observations over real HTTP; not an official match',
         requests=len(rows), cases=cases, results=rows, failure=repr(failure) if failure else None,
+        boss_buyer_id=HOME_ID,scout_id=WORKER_ID,task_sequence=[2,1,2],accepted_rounds=[1,4,34],
         rounds='R1..R71 and a separate R59..R71 scenario, all day 1',
         assumptions=['Synthetic Task2 success supplies a car beside its point as an observed neutral element at R4; other case starts with an observed parked car.',
                      'Task verdicts at neighbouring points are prescribed fixture feedback; ambiguous point selection is not an official-judge validation.',
                      'Successful neighbour moves determine the next synthetic isDriving observation; no collision outcome is assumed.',
                      'Two-step driving transports the car; one-step movement leaves it parked; all cars disappear at R71.',
-                     'Home fortifications begin completed; first-night procurement is disabled to isolate scouting transport.',
+                     'The other 16 home walls begin observed completed; the temporary gate is open and its worker starts inside with sealing stone. First-night procurement is disabled to isolate scouting transport.',
                      'The late observer scenario has no pioneer and starts with an observed parked car; one owned BOSS is supplied at R71 to keep the view mission active.',
                      'Enemy buildings/heroes are stationary fixture truth filtered by ordinary range-four friendly sight.',
                      'Combat damage and official sandbox execution are not simulated.'],

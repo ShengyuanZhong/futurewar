@@ -2,11 +2,11 @@
 
 以初赛基线为基础，按 `32_docs/` v2.0 文档逐项扩展的参赛 HTTP Agent；规则来源见 `DEVELOPMENT_RULES.md`。保留 CoreGeek 的 `main3.py → src/agent` 基础结构，新增 `CoreGeek/app` 应用层。运行仅依赖 Python 标准库，Python 3.10 及以上。
 
-当前程序版本为 `v1.2.11`，基于用户确认的v0.4基准，版本声明见 [CoreGeek/pyproject.toml](CoreGeek/pyproject.toml)。开局仍为三火箭→采石→17墙蓝图（白天临时单墙通行、夜前封口），随后集中升满一台火箭；第二天起依次强化正中两墙3级、第二台火箭2级、正面其余四墙2→3级、所有火箭3级，最后把其余11块侧后墙升2级；不升级基地。全部目标达成后，两名工人白天继续采矿售矿、批量购包，黄昏回防，夜间双人维修。阈值仍为严格低于30%。详细坐标、镜像、购买规则和关键函数见[建筑维护](CoreGeek/docs/MAINTENANCE.md)。沿用工人独立任务、让行、城墙掩护与动态备货，见[工人协作](CoreGeek/docs/WORKER_COORDINATION.md)。沿用昼夜统一工人经济流程，夜间可继续采购与配送升级券，维修工可在内侧兼顾升级，详见[昼夜统一调度](CoreGeek/docs/WORKER_SCHEDULE.md)。根据bug_log1/bug_log2进一步拆分通行与施工预约，修复虚拟墙环封路并避免预建位驱离引起的折返；历史问题见[日志定位与修复](CoreGeek/docs/WORKER_PATH_FIX.md)，当前实现见[首日修复](CoreGeek/docs/OPENING_BUG_V1210.md)。v0.4基准已[归档](reports/BASELINE-v0.4.md)。0.4.1根据teamA(2)失败记录修正任务经验：过滤退出码0的业务/脚本失败、保留真实JSON层级及字段、补充解析/引号诊断并压缩短任务步骤；详见[失败任务修正](CoreGeek/docs/TASK_FAILURE_LEARNING.md)。战斗和工人策略沿用基准。0.4.2接入用户提供的任务交互日志格式，见[日志开发文档](CoreGeek/docs/TASK_LOGGING.md)。0.4.3整合新版任务控制器与提示词，包含分类经验、临期预算、占位答案拦截和按奖励增量判定成功；双任务点调度沿用上一版，详见[任务模块接入](CoreGeek/docs/TASK_INTEGRATION.md)。
+当前程序版本为 `v1.2.12`，基于用户确认的v0.4基准，版本声明见 [CoreGeek/pyproject.toml](CoreGeek/pyproject.toml)。开局仍为三火箭→采石→17墙蓝图（白天临时单墙通行、夜前封口），随后集中升满一台火箭；第二天起依次强化正中两墙3级、第二台火箭2级、正面其余四墙2→3级、所有火箭3级，最后把其余11块侧后墙升2级；不升级基地。全部目标达成后，两名工人白天继续采矿售矿、批量购包，黄昏回防，夜间双人维修。阈值仍为严格低于30%。详细坐标、镜像、购买规则和关键函数见[建筑维护](CoreGeek/docs/MAINTENANCE.md)。沿用工人独立任务、让行、城墙掩护与动态备货，见[工人协作](CoreGeek/docs/WORKER_COORDINATION.md)。沿用昼夜统一工人经济流程，夜间可继续采购与配送升级券，维修工可在内侧兼顾升级，详见[昼夜统一调度](CoreGeek/docs/WORKER_SCHEDULE.md)。根据bug_log1/bug_log2进一步拆分通行与施工预约，修复虚拟墙环封路并避免预建位驱离引起的折返；历史问题见[日志定位与修复](CoreGeek/docs/WORKER_PATH_FIX.md)，当前实现见[首日修复](CoreGeek/docs/OPENING_BUG_V1210.md)。v0.4基准已[归档](reports/BASELINE-v0.4.md)。0.4.1根据teamA(2)失败记录修正任务经验：过滤退出码0的业务/脚本失败、保留真实JSON层级及字段、补充解析/引号诊断并压缩短任务步骤；详见[失败任务修正](CoreGeek/docs/TASK_FAILURE_LEARNING.md)。战斗和工人策略沿用基准。0.4.2接入用户提供的任务交互日志格式，见[日志开发文档](CoreGeek/docs/TASK_LOGGING.md)。0.4.3整合新版任务控制器与提示词，包含分类经验、临期预算、占位答案拦截和按奖励增量判定成功；双任务点调度沿用上一版，详见[任务模块接入](CoreGeek/docs/TASK_INTEGRATION.md)。
 
 已进入32强。用户提供的 [32进16需求变更](32_docs/2026云核心网第十届编程大赛-32进16-需求变更.md)、[v2.0任务书](32_docs/任务书.md)、[v2.0接口文档](32_docs/接口文档.md)及[新版报文样例](32_docs/request.txt)是**后续复赛开发**的参照，优先于根目录初赛 v1.0 文档中的冲突条款。v1.0 是变更前封版；当前已接入捣乱鬼move/destroy、召唤坐标和本方机器人move/attack，新增第一夜BOSS策略。小车及其它复赛改动仍待逐项开发，范围见[复赛规则接入索引](CoreGeek/docs/ROUND_OF_32_RULES.md)，封版证据见[v1.0基准记录](reports/BASELINE-v1.0.md)。
 
-v1.2.11更新[首日任务与车辆侦查](CoreGeek/docs/TASK2_VEHICLE_V1211.md)：固定任务二→任务一→任务二，取消任务的完整耗时、购物和回防预算门；三次尚未结束时，即使入夜仍优先继续合法尝试，结束后恢复操炮。完成任务二实际刷出己方小车后，侦查工人可顺路取车，确认isDriving后每轮发送两个连续相邻坐标；两格均避障和预约，夜间恢复步行。工人仍等建墙完成后离家，安全捣乱鬼实时视野准入、三炮/17墙、维修升级与BOSS清炮手策略保持。验证仅覆盖第一天。
+v1.2.12将[首日BOSS购用移交采购工人](CoreGeek/docs/WORKER_BOSS_V1212.md)：两工人完成可建墙体后，一人继续侦查和车辆加速，另一人提前走向实际商店等待；开拓者三次尝试2→1→2结束后立即回防，采购工按真实成功数批购0～3张并逐张使用自己的券。任务、金币余额及反馈账本分离，购手不与侦察工人交换身份；门石保留，出门互挡先让行，首夜采购主工尚未返到恶意缺口时由捣乱鬼暂时补位。商店读当局坐标，不按基地镜像估算。验证仍只覆盖第一天。
 
 历史v1.2.8增加[真实布局侦察与阵型召唤](CoreGeek/docs/LAYOUT_SCOUTING.md)：非留守工人在三炮及可建原墙实际完成后立即探路，不再等L2火箭和修包。敌基地/墙全局可见，炮台及普通角色受视野限制，BOSS没有视野。布局通过真实三炮或12格武器圈累计扫描确认；实际用券还需活侦察工人就近、当前普通共享视野覆盖共同操炮位及可见炮手。按实测炮阵选择合法出生点，利用45度缺口、直射或一堵墙突破，并维持第一夜视野。购券仍在两任务结束后按成功数冻结0/1/2张，只有use等待侦察；火箭升级采购等购券尝试之后。缺口留守、任务prompt、普通升级及经济路线保持。首日完整时序见[FIRST_DAY_PLAN](CoreGeek/docs/FIRST_DAY_PLAN.md)。
 
@@ -91,6 +91,7 @@ bash run.sh 8080
 | [首夜视野协作](CoreGeek/docs/RAID_SCOUTS.md) | 当前规则入口及v1.2.3–v1.2.7历史观察策略 |
 | [有限追击与双BOSS](CoreGeek/docs/BOSS_EFFICIENCY.md) | 绕路/无效追位预算、基地回退、双券交易反馈与部署账本 |
 | [v1.2.4验证报告](reports/VALIDATION-v1.2.4.md) | 独立效率审计、双购买/部署、共享视野与完整回归检查 |
+| [v1.2.12采购工人](CoreGeek/docs/WORKER_BOSS_V1212.md) / [验证](reports/VALIDATION-v1.2.12.md) | 真实商店、固定双工分工、工人背包反馈、先锋三次后回防 |
 | [v1.2.11首日与车辆](CoreGeek/docs/TASK2_VEHICLE_V1211.md) / [验证](reports/VALIDATION-v1.2.11.md) | 2→1→2、三任务优先、驾驶两步及侦查取车 |
 | [v1.2.10首日修复](CoreGeek/docs/OPENING_BUG_V1210.md) / [验证](reports/VALIDATION-v1.2.10.md) | bug_log1/2根因、施工预约、任务行程关闭、IMP侦查及关键字段 |
 | [v1.2.9验证报告](reports/VALIDATION-v1.2.9.md) | 历史三次任务、三券、17墙入口、武器清障与HTTP/回归 |
@@ -793,7 +794,7 @@ Strategy.run() -> None
 | `night_worker(role)` | 工人 | 返回None；兼容入口，仅调用run_worker，不再提供独立夜间采矿流程 |
 | `clear_build_cell(role)` | 当前角色 | `bool`；角色占用规划建筑格，或工人占用操控格时，尝试移开一格 |
 | `control_position(role)` | 开拓者 | 返回可达且覆盖最多现有炮的Pos，优先既有共同站位；无可达站位为None |
-| `pioneer_should_defend(role)` | 开拓者 | 首日三次任务未结束/仍活跃时False，不设回防截止；结束后恢复夜间控炮，其它天沿用原预算 |
+| `pioneer_should_defend(role)` | 开拓者 | 首日三次任务未结束/仍活跃时False；三次结束直接回防，由另工采购；其它天沿用原预算 |
 | `move_to_control(role)` | 开拓者 | `bool`；朝选定操控格移动一步，已就位或不可达时False |
 | `operate_weapons(role)` | 开拓者 | `bool`；夜间从相邻、冷却0、有目标的炮中选一座发射；否则移动或等待 |
 | `consume(role, allow_travel=True, allowed=None)` | 角色、是否允许为使用建筑物品而行走、可选巡护范围 | 依次考虑药剂、夜间法宝/炸弹、召唤令，再按统一阶段用券；按中央/外围/两翼阶段，组内前列与残血优先，升级优先于已有修复包 |
@@ -820,7 +821,7 @@ Strategy.run() -> None
 - 回防条件只用于开拓者：有炮且夜晚，或`daylight_left <= 到操控站位的实际路径成本 + return_margin`。普通采矿工不黄昏回防；第三天起维修工另按到墙内通路的成本提前返岗。
 - 首日三任务优先：任务timeout只控制解题超时，不因剩余日照、购物或回防预算拒绝领取；入夜尚未三次时继续任务。其它天仍沿用路径、完整时限和回防准入预算。
 - 每轮只由开拓者操控一座炮；直接读取`cooldown==0`。按发射后3轮空窗，理想共同站位下为A→B→C→空→A；无目标或移动会额外消耗轮次。
-- Medicine在角色血量不超过初始上限一半时优先考虑。`consume`支持Bomb/DizzyWeapon，工人夜间同样进入consume分支；开拓者第一日三次任务结束后恢复夜间控炮。第一天按Task2→Task1→Task2三次真实结束后的成功次数购买0～3张BOSS券，逐张用券仍等真实侦察与当前视野；其它召唤令、炸弹和眩晕法宝不自动采购。
+- Medicine在角色血量不超过初始上限一半时优先考虑。`consume`支持Bomb/DizzyWeapon，工人夜间同样进入consume分支；开拓者第一日三次任务结束后恢复夜间控炮。第一天由采购工人按Task2→Task1→Task2三次真实结束后的成功次数购买0～3张BOSS券，先锋直接回防，逐张用券仍等真实侦察与当前视野；其它召唤令、炸弹和眩晕法宝不自动采购。
 
 旧`agent.brain.decide(payload) -> dict`仅返回动作map，每次使用新默认配置和新记忆，没有完整LLM协作。它保留兼容，不应替代比赛主入口中的`TurnService.decide`。
 
@@ -1063,7 +1064,8 @@ python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v1.2.4.
 | `[TASK-DEBUG R...]` | 本轮任务输入、LLM/沙盒反馈与实际返回的prompt/executeCmd |
 | `robot_observation` | 本方机器人归属列表、召唤状态及移出记录，JSON单行 |
 | `robot_diagnostic` | 单机器人实际位移/HP、候选与遮挡、前轮反馈及最终指令原因，详见[字段说明](CoreGeek/docs/ROBOT_DIAGNOSTICS.md) |
-| `raid_scout` | 固定观察者/留守者、扫描/待命模式、站位/剩余步数/入夜预算与本轮指令 |
+| `raid_scout` | 固定观察者/采购者，已获外派许可后保持侦察；站位/驾驶/真实当前视野 |
+| `first_day_policy.buyer / last_buyer_decision` | 采购工人ID、位置、HP、持券和指令，真实金币/价格/等待原因；旧last_pioneer_decision为解析兼容别名 |
 | `raid_survey` | 实际武器圈已扫进度、真炮阵、操炮位覆盖、召唤就绪及拒绝原因；详见[布局侦察](CoreGeek/docs/LAYOUT_SCOUTING.md) |
 | `action_rejected` | 本地候选动作没有通过统一校验 |
 | `protocol_error` | 请求结构、数据或回合序列错误 |
@@ -1088,4 +1090,4 @@ python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v1.2.4.
 
 后续开发按`DEVELOPMENT_RULES.md`标注变更类别与R编号，保留官方原文；规则修复先保留独立失败案例。每次新增状态或策略能力时同步更新本文的目录、函数表和参数说明。
 
-v1.2.11按用户要求只验证第一天；范围、结果和源码哈希见[首日验证报告](reports/VALIDATION-v1.2.11.md)。v1.2.9的625项回归、320份合成压力与1105次HTTP为[历史证据](reports/VALIDATION-v1.2.9.md)，不作为当前官方对局结果。
+v1.2.12按用户要求只验证第一天；范围、结果和源码哈希见[首日验证报告](reports/VALIDATION-v1.2.12.md)。v1.2.9的625项回归、320份合成压力与1105次HTTP为[历史证据](reports/VALIDATION-v1.2.9.md)，不作为当前官方对局结果。

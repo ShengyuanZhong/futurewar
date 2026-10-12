@@ -67,7 +67,7 @@ class ThreeTaskTests(unittest.TestCase):
         memory.task_active_attempt = (1,4,1,7)
         s,plan = strategy(raw,memory,Settings(enable_news=False))
         self.assertFalse(s.boss_raid.tasks_finished())
-        self.assertFalse(s.boss_raid.pioneer(next(u for u in s.turn.controllable() if u.kind=='pioneer')))
+        s.boss_raid.worker(next(w for w in s.turn.workers() if w.unit_id==501))
         self.assertFalse(any(c.get('name')==ORDER for c in plan.commands.values()))
         self.assertEqual(s.boss_raid.budget_reserve(),360)
         self.assertFalse(s.boss_raid.weapon_upgrades_ready())
@@ -78,8 +78,8 @@ class ThreeTaskTests(unittest.TestCase):
                 raw,_ = three_task_request(38)
                 memory = completed_memory(tuple(i<count for i in range(3)))
                 s,plan = strategy(raw,memory,Settings(enable_news=False))
-                s.boss_raid.pioneer(next(u for u in s.turn.controllable() if u.kind=='pioneer'))
-                command = plan.commands.get('502',{})
+                s.boss_raid.worker(next(w for w in s.turn.workers() if w.unit_id==501))
+                command = plan.commands.get('501',{})
                 if count:
                     self.assertEqual(command,dict(action='buy',name=ORDER,num=count))
                 else:
@@ -91,9 +91,9 @@ class ThreeTaskTests(unittest.TestCase):
         raw['teamOur']['goldNum'] = 240
         memory = completed_memory()
         s,plan = strategy(raw,memory,Settings(enable_news=False))
-        s.boss_raid.pioneer(next(u for u in s.turn.controllable() if u.kind=='pioneer'))
+        s.boss_raid.worker(next(w for w in s.turn.workers() if w.unit_id==501))
         self.assertEqual(memory.boss_raid['target_count'],3)
-        self.assertNotEqual(plan.commands.get('502',{}).get('action'),'buy')
+        self.assertNotEqual(plan.commands.get('501',{}).get('action'),'buy')
 
     def test_third_task_two_waits_at_point_for_official_cooldown(self):
         raw,_ = three_task_request(20)
@@ -205,22 +205,22 @@ class ThreeTaskTests(unittest.TestCase):
     def test_three_confirmed_coupons_use_different_positions_without_rebuy(self):
         raw,truth = three_task_request(38,near=True)
         raw['teamOur']['goldNum'] = 0
-        actor(raw,502)['backpack'] = [ORDER]*3
+        actor(raw,501)['backpack'] += [ORDER]*3
         memory = completed_memory()
         service = TurnService(Settings(enable_news=False))
         key = (raw['teamOur']['teamId'],raw['teamOur']['type'])
         service.sessions[key] = Session(memory=memory)
         spawns = []
         for number,held in ((38,3),(39,2),(40,1)):
-            raw.update(roundNo=number,lastRoundRoleActionResults={'502':True} if number>38 else {})
-            actor(raw,502)['backpack'] = [ORDER]*held
+            raw.update(roundNo=number,lastRoundRoleActionResults={'501':True} if number>38 else {})
+            actor(raw,501)['backpack'] = ['stone']+['WallFixer']*5+[ORDER]*held
             reveal(raw,truth)
             response = service.decide(copy.deepcopy(raw))
-            command = response['roleCommandMap']['502']
+            command = response['roleCommandMap']['501']
             self.assertEqual(command['action'],'use')
             spawns.append(Pos.load(command['targetPos'][0]))
-        raw.update(roundNo=41,lastRoundRoleActionResults={'502':True})
-        actor(raw,502)['backpack'] = []
+        raw.update(roundNo=41,lastRoundRoleActionResults={'501':True})
+        actor(raw,501)['backpack'] = ['stone']+['WallFixer']*5
         service.decide(copy.deepcopy(raw))
         state = service.sessions[key].memory.boss_raid
         self.assertEqual(state['deployed_count'],3)
@@ -282,7 +282,8 @@ class ThreeTaskTests(unittest.TestCase):
         active = service.sessions[key].memory
         self.assertEqual(success_count(active),3)
         self.assertEqual(finished_count(active),3)
-        self.assertEqual(reply['roleCommandMap']['502'],dict(action='buy',name=ORDER,num=3))
+        self.assertEqual(reply['roleCommandMap']['501'],dict(action='buy',name=ORDER,num=3))
+        self.assertNotEqual(reply['roleCommandMap'].get('502',{}).get('name'),ORDER)
 
 
 if __name__=='__main__':

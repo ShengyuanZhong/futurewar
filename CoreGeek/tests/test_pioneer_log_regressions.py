@@ -22,13 +22,13 @@ class PioneerLogRegressionTests(unittest.TestCase):
                 with self.subTest(round=number,forecast_first=forecast_first):
                     raw,_ = three_task_request(number)
                     s,_ = strategy(raw,completed_memory(),Settings(enable_news=False))
-                    pioneer = next(u for u in s.turn.controllable() if u.kind=='pioneer')
+                    buyer = next(w for w in s.turn.workers() if w.unit_id==501)
                     if forecast_first:
-                        forecast = s.boss_raid.shop_trip(pioneer,3,start=pioneer.pos)
-                        actual = s.boss_raid.shop_trip(pioneer,3)
+                        forecast = s.boss_raid.shop_trip(buyer,3,start=buyer.pos)
+                        actual = s.boss_raid.shop_trip(buyer,3)
                     else:
-                        actual = s.boss_raid.shop_trip(pioneer,3)
-                        forecast = s.boss_raid.shop_trip(pioneer,3,start=pioneer.pos)
+                        actual = s.boss_raid.shop_trip(buyer,3)
+                        forecast = s.boss_raid.shop_trip(buyer,3,start=buyer.pos)
                     self.assertIsNotNone(forecast)
                     self.assertEqual(forecast[0],4)  # buy once, then use three; no return trip.
                     if fits:

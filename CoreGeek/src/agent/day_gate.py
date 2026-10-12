@@ -1,6 +1,6 @@
 """One temporary daytime entrance in the otherwise sealed 17-wall drawing."""
 from .grid import Routes, adjacent_cells
-from .protocol import Pos, build_command, distance
+from .protocol import CONTROLLABLE_TYPES, Pos, build_command, distance
 from .upgrade_policy import wall_target_level
 
 
@@ -93,6 +93,22 @@ class DayGate:
         route = self.access_route(role)
         post = route.nearest(self.inner_posts())
         return post is not None and route.cost[post] + 1 <= self.turn.daylight_left
+
+    def dispatch_ready(self, ignore=()):
+        """Construction permits dispatch without reserving a buyer's return trip.
+
+        The daytime entrance stays open while the two workers are away. All
+        other legal sites must really exist, apart from observed occupied gaps,
+        and the entrance owner keeps the stone needed to seal after returning.
+        """
+        occupied = {u.pos for u in self.turn.enemies if u.health>0 and u.kind in CONTROLLABLE_TYPES}
+        ignore = set(ignore) & occupied
+        if not self.enabled or not self.turn.is_day or not self.other_ready(ignore):
+            return False
+        if self.wall() is not None:
+            return True
+        role = self.role()
+        return bool(role and 'stone' in role.backpack)
 
     def reserve_stone(self, role):
         return int(self.enabled and role.unit_id == self.worker_id and self.turn.is_day)
@@ -228,6 +244,7 @@ class DayGate:
         return dict(self.state, closing=self.closing(), wall_present=self.wall() is not None,
                     controlled_open=self.wall() is None and self.day_ready(self.s.gap_guard.gaps),
                     construction_ready=self.day_ready(self.s.gap_guard.gaps),
+                    dispatch_ready=self.dispatch_ready(self.s.gap_guard.gaps),
                     all_planned_walls_present=bool(sites and sites <= {w.pos for w in self.turn.walls()}),
                     non_gate_upgrades_done=self.non_gate_upgrades_complete(),
                     stone_held=role.backpack.count('stone') if role else 0,

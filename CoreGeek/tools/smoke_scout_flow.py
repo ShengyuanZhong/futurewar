@@ -30,9 +30,11 @@ ORDER = 'BossRobotSummonOrder'
 
 def fixture(name, pattern, mirror_x, mirror_y):
     raw, _ = survey_request(1)
+    raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles']
+                              if not (u['roleType']=='wall' and u['pos']==Pos(5,9).dump())]
     raw['teamOur'].update(teamId='scout-flow-' + name, goldNum=400, totalScore=0)
     actor(raw, PIONEER)['pos'] = Pos(2, 6).dump()
-    actor(raw, HOME)['backpack'] = ['stone']+['WallFixer']*5
+    actor(raw, HOME).update(pos=Pos(6,8).dump(),backpack=['stone']+['WallFixer']*5)
     actor(raw, SCOUT)['pos'] = Pos(3,6).dump()
     raw['teamOur']['playerTasks'] = copy.deepcopy(request()['teamOur']['playerTasks'])
     for index, pos in enumerate((Pos(1, 7), Pos(1, 6))):
@@ -184,6 +186,7 @@ def main():
             raw, truth = fixture(name, pattern, mx, my)
             spawns, first_use, buy_round, crew_attacks = [], None, None, []
             waited_for_scout = False
+            buyer_walked = False
             for number in range(1, 131):
                 task_frame(raw,number,(True,True,True))
                 if number == 71:
@@ -208,6 +211,10 @@ def main():
                     assert set(result) == {'roleCommandMap', 'prompt', 'executeCmd'}
                     assert not result['executeCmd']
                     commands = result['roleCommandMap']
+                    if number<37 and commands.get(str(HOME),{}).get('action')=='move':
+                        buyer_walked = True
+                    assert not any(c.get('name')==ORDER for uid,c in commands.items() if uid!=str(HOME)),commands
+                    assert ORDER not in actor(raw,PIONEER)['backpack']
                     if number < 37:
                         assert not any(c.get('name') == ORDER for c in commands.values())
                         assert not any(c['action']=='buy' and c.get('name','').startswith('WeaponUpgradeVoucher')
@@ -217,7 +224,7 @@ def main():
                     if number in (3,6,36):
                         assert commands[str(PIONEER)]['action']=='submitAnswer',commands
                     if number == 37:
-                        assert commands[str(PIONEER)] == {'action': 'buy', 'name': ORDER, 'num': 3}, commands
+                        assert commands[str(HOME)] == {'action': 'buy', 'name': ORDER, 'num': 3}, commands
                         buy_round = number
                     uses = [c for c in commands.values() if c.get('name') == ORDER and c['action'] == 'use']
                     if uses:
@@ -227,7 +234,7 @@ def main():
                         assert actor(raw, SCOUT)['health'] > 0
                         operator = next(u for u in truth if u['id'] == 994)
                         assert distance(Pos.load(actor(raw, SCOUT)['pos']), Pos.load(operator['pos'])) <= 4
-                    elif number > 37 and len(spawns) < 3 and actor(raw, PIONEER)['backpack'].count(ORDER):
+                    elif number > 37 and len(spawns) < 3 and actor(raw, HOME)['backpack'].count(ORDER):
                         waited_for_scout = True
                     for uid, command in commands.items():
                         if uid in ('30005', '30006', '30007') and command['action'] == 'attack':
@@ -237,6 +244,8 @@ def main():
                     rows.append(dict(case=name, round=number, status=response.status,
                         elapsed_ms=round(elapsed, 3), gold=raw['teamOur']['goldNum'],
                         scout={'pos': copy.deepcopy(actor(raw, SCOUT)['pos']), 'hp': actor(raw, SCOUT)['health']},
+                        boss_buyer={'id':HOME,'kind':'worker','pos':copy.deepcopy(actor(raw,HOME)['pos']),
+                                    'held_orders':actor(raw,HOME)['backpack'].count(ORDER)},
                         ordinary_sight_origins=[p.dump() for p in sorted(ordinary_sight(raw))],
                         visible_enemy_roles=visible, commands=commands, prompt_chars=len(result['prompt'])))
                     apply(raw, truth, commands, spawns)
@@ -246,6 +255,7 @@ def main():
             assert len(spawns) == 3 and len({(p['x'],p['y']) for p in spawns})==3
             assert crew_attacks, (name, 'no visible crew attacks')
             assert actor(raw, HOME)['health'] > 0
+            assert buyer_walked,(name,'buyer did not walk from home to the shop')
             cases.append(dict(case=name, pattern=pattern, mirror_x=mx, mirror_y=my, buy_round=buy_round,
                 first_use_round=first_use, waited_for_scout=waited_for_scout, spawns=spawns,
                 crew_attacks=crew_attacks, home_worker_id=HOME))
@@ -257,7 +267,7 @@ def main():
     if failure is None and 'action_rejected' in logs:
         failure = AssertionError('HTTP process logged action_rejected')
     report = dict(scope='Synthetic map, task answers, verdicts and damage over real HTTP; not an official match',
-        task_sequence=[2,1,2],accepted_rounds=[1,4,34],
+        task_sequence=[2,1,2],accepted_rounds=[1,4,34],boss_buyer_id=HOME,scout_id=SCOUT,
         visibility='Only living ordinary friendly units supply range-four sight; enemy base/wall global; BOSS no sight',
         requests=len(rows), cases=cases, results=rows, diagnostics=diagnostics(logs),
         bind_verified=f'0.0.0.0:{port}' in logs, execute_cmd_executed=False,

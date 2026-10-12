@@ -385,7 +385,8 @@ class GapDefenseTests(unittest.TestCase):
 class BossPurchaseRegressionTests(unittest.TestCase):
     def setup_raid(self,gold=120,number=30):
         raw = occupied(number)
-        role(raw,502)['pos'] = Pos(3,7).dump()
+        role(raw,501)['pos'] = Pos(3,7).dump()
+        role(raw,502)['pos'] = Pos(4,7).dump()
         raw['teamOur']['goldNum'] = gold
         raw['weaponShopList'].append({'name':ORDER,'price':120})
         raw['teamEnemy']['roles'].append(unit(990,'station',33,25))
@@ -397,14 +398,14 @@ class BossPurchaseRegressionTests(unittest.TestCase):
         s,plan = strategy(raw,memory,settings);s.run()
         self.assertFalse(s.first_defense.closed())
         self.assertGreater(s.first_defense.reserve_gold(),120)
-        self.assertEqual(plan.commands['502'],{'action':'buy','name':ORDER,'num':1})
+        self.assertEqual(plan.commands['501'],{'action':'buy','name':ORDER,'num':1})
         self.assertEqual(plan.gold,0)
 
     def test_two_orders_remain_affordable_before_guard_stock(self):
         raw,memory,settings = self.setup_raid(240)
         memory = finished_tasks(2)
         s,plan = strategy(raw,memory,settings);s.run()
-        self.assertEqual(plan.commands['502'],{'action':'buy','name':ORDER,'num':2})
+        self.assertEqual(plan.commands['501'],{'action':'buy','name':ORDER,'num':2})
         self.assertEqual(plan.gold,0)
 
     def test_single_affordability_with_known_history_still_waits_for_three_task_attempts(self):
@@ -413,26 +414,26 @@ class BossPurchaseRegressionTests(unittest.TestCase):
         s,plan = strategy(raw,memory,settings);s.run()
         self.assertFalse(any(c.get('name')==ORDER for c in plan.commands.values()))
 
-    def test_worker_supply_cannot_spend_reserved_order_while_pioneer_walks(self):
+    def test_worker_supply_cannot_spend_reserved_order_while_buyer_walks(self):
         raw,memory,settings = self.setup_raid()
         role(raw,502)['pos'] = Pos(4,7).dump()
-        role(raw,501)['pos'] = Pos(3,7).dump()
+        role(raw,501)['pos'] = Pos(4,8).dump()
         s,plan = strategy(raw,memory,settings);s.run()
-        self.assertEqual(plan.commands['502']['action'],'move')
+        self.assertEqual(plan.commands['501']['action'],'move')
         self.assertFalse(any(c['action']=='buy' for c in plan.commands.values()))
         self.assertEqual(s.boss_raid.budget_reserve(),120)
 
     def test_carried_order_is_used_when_wall_gap_is_still_open(self):
         raw,memory,settings = self.setup_raid(0)
         provide_scout(raw,memory)
-        role(raw,502)['backpack'] = [ORDER]
+        role(raw,501)['backpack'] += [ORDER]
         s,plan = strategy(raw,memory,settings);s.run()
-        self.assertEqual(plan.commands['502']['action'],'use')
-        self.assertEqual(plan.commands['502']['name'],ORDER)
+        self.assertEqual(plan.commands['501']['action'],'use')
+        self.assertEqual(plan.commands['501']['name'],ORDER)
         self.assertFalse(s.first_defense.closed())
 
     def test_not_enough_gold_or_return_time_does_not_force_illegal_purchase(self):
-        for gold,number in ((119,30),(120,69)):
+        for gold,number in ((119,30),(120,70)):
             raw,memory,settings = self.setup_raid(gold,number)
             s,plan = strategy(raw,memory,settings);s.run()
             self.assertFalse(any(c['action']=='buy' and c.get('name')==ORDER for c in plan.commands.values()))
@@ -442,8 +443,9 @@ class BossPurchaseRegressionTests(unittest.TestCase):
         raw,memory,settings = self.setup_raid(240)
         raw['phaseTask'] = 'active synthetic task'
         s,plan = strategy(raw,memory,settings)
-        self.assertFalse(s.boss_raid.pioneer(next(u for u in s.turn.controllable() if u.kind=='pioneer')))
-        self.assertEqual(memory.boss_raid['decision']['reason'],'active_task')
+        s.boss_raid.worker(next(w for w in s.turn.workers() if w.unit_id==501))
+        self.assertEqual(memory.boss_raid['decision']['reason'],'waiting_for_three_tasks_at_shop')
+        self.assertFalse(any(c.get('name')==ORDER for c in plan.commands.values()))
 
     def test_guard_does_not_spend_boss_budget_during_an_active_task(self):
         raw,memory,settings = self.setup_raid(120)
@@ -470,14 +472,14 @@ class BossPurchaseRegressionTests(unittest.TestCase):
         key = (raw['teamOur']['teamId'],raw['teamOur']['type'])
         service.sessions[key] = Session(memory=memory)
         response = service.decide(copy.deepcopy(raw))
-        self.assertEqual(response['roleCommandMap']['502'],{'action':'buy','name':ORDER,'num':1})
-        raw.update(roundNo=31,lastRoundRoleActionResults={'502':True})
+        self.assertEqual(response['roleCommandMap']['501'],{'action':'buy','name':ORDER,'num':1})
+        raw.update(roundNo=31,lastRoundRoleActionResults={'501':True})
         raw['teamOur']['goldNum'] = 0
-        role(raw,502)['backpack'] = [ORDER]
+        role(raw,501)['backpack'] += [ORDER]
         response = service.decide(copy.deepcopy(raw))
-        self.assertEqual(response['roleCommandMap']['502']['action'],'use')
-        raw.update(roundNo=32,lastRoundRoleActionResults={'502':True})
-        role(raw,502)['backpack'] = []
+        self.assertEqual(response['roleCommandMap']['501']['action'],'use')
+        raw.update(roundNo=32,lastRoundRoleActionResults={'501':True})
+        role(raw,501)['backpack'] = ['stone']
         service.decide(copy.deepcopy(raw))
         self.assertEqual(service.sessions[key].memory.boss_raid['deployed_count'],1)
         self.assertEqual(service.sessions[key].memory.summon_attempts,1)

@@ -29,9 +29,11 @@ from tools.validate import independent_planning_clear
 
 def fixture(case):
     raw = fortified(1)
+    raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles']
+                              if not (u['roleType']=='wall' and u['pos']==Pos(5,9).dump())]
     raw['teamOur'].update(teamId='first-day-flow-'+case,goldNum=1000,totalScore=0)
     role(raw,502).update(pos=Pos(2,6).dump(),health=500)
-    role(raw,501).update(pos=Pos(3,7).dump(),health=500,backpack=['stone']+['WallFixer']*5)
+    role(raw,501).update(pos=Pos(6,8).dump(),health=500,backpack=['stone']+['WallFixer']*5)
     role(raw,504)['pos'] = Pos(3,6).dump()
     raw['teamOur']['playerTasks'] = copy.deepcopy(request()['teamOur']['playerTasks'])
     for index,pos in enumerate((Pos(1,7),Pos(1,6))):
@@ -160,6 +162,7 @@ def main():
             wanted = sum(outcomes)
             spawns = []
             upgrade_seen = False
+            buyer_walked = False
             for number in range(1,72):
                 task_frame(raw,number,outcomes)
                 reveal(raw,truth)
@@ -181,6 +184,8 @@ def main():
                     assert set(result)=={'roleCommandMap','prompt','executeCmd'}
                     assert not result['executeCmd']
                     commands = result['roleCommandMap']
+                    if number<37 and commands.get('501',{}).get('action')=='move':
+                        buyer_walked = True
                     if number in (1,4,34):
                         assert commands['502']['action']=='acceptTask',(case,number,commands)
                     if number in (3,6,36):
@@ -189,19 +194,24 @@ def main():
                         assert not any(c.get('name')=='BossRobotSummonOrder' for c in commands.values())
                         assert not any(c.get('action')=='buy' and c.get('name','').startswith('WeaponUpgradeVoucher')
                                        for c in commands.values())
+                    assert not any(c.get('name')=='BossRobotSummonOrder'
+                                   for uid,c in commands.items() if uid!='501'),commands
+                    assert 'BossRobotSummonOrder' not in role(raw,502)['backpack']
                     if number==37:
                         if wanted:
-                            assert commands['502']=={'action':'buy','name':'BossRobotSummonOrder','num':wanted},commands
+                            assert commands['501']=={'action':'buy','name':'BossRobotSummonOrder','num':wanted},commands
                         else:
                             assert not any(c.get('name')=='BossRobotSummonOrder' for c in commands.values())
                     if number>=37 and any(c.get('action')=='buy' and c.get('name','').startswith('WeaponUpgradeVoucher')
                                          for c in commands.values()):
                         upgrade_seen = True
                     if number in range(38,38+wanted):
-                        assert commands['502']['action']=='use' and commands['502']['name']=='BossRobotSummonOrder'
+                        assert commands['501']['action']=='use' and commands['501']['name']=='BossRobotSummonOrder'
                     rows.append(dict(case=case,outcomes=outcomes,round=number,status=response.status,
                         elapsed_ms=round(elapsed,3),commands=commands,prompt_chars=len(result['prompt']),
                         wall_count=sum(u['roleType']=='wall' and u['health']>0 for u in raw['teamOur']['roles']),
+                        boss_buyer={'id':501,'kind':'worker','pos':copy.deepcopy(role(raw,501)['pos']),
+                                    'held_orders':role(raw,501)['backpack'].count('BossRobotSummonOrder')},
                         accepted_task_number={1:2,4:1,34:2}.get(number),
                         task1_cooldown=raw['teamOur']['playerTasks'][0]['coldDownRounds'],
                         task2_cooldown=raw['teamOur']['playerTasks'][1]['coldDownRounds']))
@@ -210,13 +220,14 @@ def main():
                     conn.close()
             assert len(spawns)==wanted and len({(p['x'],p['y']) for p in spawns})==wanted
             assert upgrade_seen,(case,'weapon purchases stayed locked after the order step')
+            assert buyer_walked,(case,'buyer must actually walk from home to the shop')
             assert len([u for u in raw['teamOur']['roles'] if u['roleType']=='wall' and u['health']>0])==17
     finally:
         process.terminate();process.wait(timeout=3)
         capture.seek(0);logs = capture.read().decode('utf-8',errors='replace');capture.close()
     assert 'action_rejected' not in logs
     report = dict(scope='Synthetic verdicts and LLM answers over a real HTTP process; no sandbox or official match',
-        task_sequence=[2,1,2],accepted_rounds=[1,4,34],
+        task_sequence=[2,1,2],accepted_rounds=[1,4,34],boss_buyer_id=501,scout_id=504,
         repeated_task_cooldown={'task':2,'finished_round':4,'next_accept_round':34,'rounds':30},
         requests=len(rows),results=rows,bind_verified=f'0.0.0.0:{port}' in logs,bash_executed=False)
     args.output.parent.mkdir(parents=True,exist_ok=True)

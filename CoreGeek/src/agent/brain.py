@@ -66,7 +66,8 @@ class Strategy:
         guard = getattr(self,'gap_guard',None)
         if role is not None and guard and guard.gap is not None:
             if guard.enter_gap(role):
-                reserved.discard(guard.gap)
+                if guard.gap not in self.plan.reserved:
+                    reserved.discard(guard.gap)
             elif guard.active_role(role):
                 # The standby IMP must not use the body worker's breach as a
                 # shortcut before the actual takeover condition is observed.
@@ -138,7 +139,11 @@ class Strategy:
                 self.plan.add(role.unit_id, {"action": "use", "name": "Medicine"})
                 continue
             if role.kind == PIONEER:
-                if self.boss_raid.pioneer(role):
+                if (self.turn.day==1 and not self.turn.phase_task
+                        and (finished_count(self.memory)>=len(TASK_SEQUENCE) or not self.settings.enable_tasks)):
+                    # The shopping worker handles the raid; the pioneer returns
+                    # immediately after the three actual attempts settle.
+                    self.operate_weapons(role) if not self.turn.is_day else self.move_to_control(role)
                     continue
                 if self.pioneer_should_defend(role):
                     self.operate_weapons(role)
@@ -150,8 +155,7 @@ class Strategy:
                     # Attempt Task2 -> Task1 -> Task2 before shopping. Day-one
                     # task admission never reserves a shopping/return budget.
                     if not self.task(role):
-                        if not self.boss_raid.pioneer(role):
-                            self.move_to_control(role)
+                        self.move_to_control(role)
                     continue
                 # Preserve the opening budget; tasks can earn money without spending it.
                 if self.opening_stage() in ("complete", "unconfigured"):
@@ -180,6 +184,8 @@ class Strategy:
 
     def run_worker(self, role: Unit) -> None:
         """One economic schedule; night adds safety and assigned guard duty."""
+        if self.boss_raid.worker(role):
+            return
         if self.day_gate.worker(role):
             return
         if self.gap_guard.worker(role):

@@ -80,7 +80,7 @@ class WallGapDefense:
 
     def route(self, role):
         reserved = self.s.movement_reserved(role)
-        if self.enter_gap(role):
+        if self.enter_gap(role) and self.gap not in self.plan.reserved:
             reserved.discard(self.gap)
         return Routes(self.turn,role,reserved)
 
@@ -88,7 +88,18 @@ class WallGapDefense:
         if not self.active_role(role) or self.turn.is_day:
             return False
         return (role.unit_id==self.worker_id or (role.unit_id==self.imp_id
-                and not any(w.unit_id==self.worker_id for w in self.turn.workers())))
+                and self.backup_needed()))
+
+    def backup_needed(self):
+        """Cover a dead guard or the dispatched buyer until it really returns."""
+        if self.turn.is_day or not self.gaps:
+            return False
+        primary = next((w for w in self.turn.workers() if w.unit_id==self.worker_id),None)
+        if primary is None:
+            return True
+        raid = self.memory.boss_raid
+        return bool(self.turn.day==1 and raid.get('buyer_id')==self.worker_id and raid.get('buyer_departed')
+                    and distance(primary.pos,self.gap)>1)
 
     def post_cost(self, role):
         route = self.route(role)
@@ -115,7 +126,15 @@ class WallGapDefense:
         old = self.state.setdefault('posts',{}).get(role.unit_id)
         choices = [p for p in goals if p in route.cost and p not in self.plan.reserved]
         if role.kind==IMP:
-            choices = [p for p in choices if p not in self.s.coordinator.claimed_goals(role)]
+            claimed = self.s.coordinator.claimed_goals(role)
+            if kind=='gap_backup' and self.backup_needed():
+                # A far returning buyer's future destination is not a current
+                # movement reservation. Keep every other worker's claim and
+                # all actual destinations already reserved in ActionPlan.
+                claimed = {job.get('goal') for uid,job in self.memory.worker_tasks.items()
+                           if uid!=role.unit_id and job.get('round',0)>=self.turn.round_no-1
+                           and not (uid==self.worker_id and job.get('goal')==self.gap)}
+            choices = [p for p in choices if p not in claimed]
         goal = min(choices,key=lambda p:(p!=old,route.cost[p],p)) if choices else None
         if goal is not None and goal != role.pos:
             step = route.step({goal})
@@ -194,7 +213,7 @@ class WallGapDefense:
         self.memory.imp_tasks.pop(role.unit_id,None)
         primary = next((w for w in self.turn.workers() if w.unit_id==self.worker_id),None)
         # Inspect current alive units each frame; do not predict death from attacks.
-        takeover = not self.turn.is_day and primary is None
+        takeover = self.backup_needed()
         if takeover and (role.pos==self.gap or self.gap not in self.turn.occupied_cells()):
             self.state['imp_status'] = 'holding_gap'
             if role.pos==self.gap and 'Medicine' in role.backpack and role.health<=250:
@@ -243,5 +262,6 @@ class WallGapDefense:
 
     def diagnostic(self):
         return dict(self.state,other_walls_ready=self.other_walls_ready(),
+                    backup_needed=self.backup_needed(),
                     worker_alive=any(w.unit_id==self.worker_id for w in self.turn.workers()),
                     imp_alive=any(u.unit_id==self.imp_id for u in self.turn.imps()))

@@ -20,6 +20,9 @@ ORDER = 'BossRobotSummonOrder'
 def raid_request(number=30, boss=False):
     raw = fortified(number)
     raw['teamOur']['roles'][1]['pos'] = {'x': 3, 'y': 7}
+    raw['teamOur']['roles'][2].update(pos={'x':3,'y':7},backpack=['stone']+['WallFixer']*5)
+    # Separate the returned gun operator from the worker already at the shop.
+    raw['teamOur']['roles'][1]['pos'] = {'x':4,'y':7}
     raw['teamEnemy']['roles'] = [unit(990, 'station', 33, 25),
         unit(991, 'rocket', 35, 25), unit(992, 'pioneer', 36, 25, health=500)]
     raw['teamOur']['summonRobotList'] = []
@@ -192,48 +195,48 @@ class SummonControlTests(unittest.TestCase):
         raw = raid_request()
         memory = finished_tasks()
         s, plan = strategy(raw, memory); s.run()
-        self.assertEqual(plan.commands['502'], {'action': 'buy', 'name': ORDER, 'num': 1})
+        self.assertEqual(plan.commands['501'], {'action': 'buy', 'name': ORDER, 'num': 1})
         raw['phaseTask'] = 'active task'; s, plan = strategy(raw, memory); s.run()
-        self.assertNotEqual(plan.commands.get('502', {}).get('action'), 'buy')
+        self.assertNotEqual(plan.commands.get('501', {}).get('action'), 'buy')
         raw['phaseTask'] = ''; memory = finished_tasks(attempts=2)
-        # The remaining task must actually be available and fit the day.
-        # Exhausted points now close the itinerary and release the earned raid.
-        raw['teamOur']['playerTasks'] = [dict(taskType='自进化类1',
-            taskPosition=Pos(3,9).dump(),isValid=True,coldDownRounds=0,
+        # The repeated Task2 must really be available; no early worker purchase.
+        raw['teamOur']['playerTasks'] = [dict(taskType='自进化类2',
+            taskPosition=Pos(4,9).dump(),isValid=True,coldDownRounds=0,
             timeoutRounds=12,goldReward=120,scoreReward=10)]
-        raw['mapInfo']['zones'].append(dict(neutralType='challengerTaskPoint1',pos=Pos(3,9).dump()))
+        raw['mapInfo']['zones'].append(dict(neutralType='challengerTaskPoint2',pos=Pos(4,9).dump()))
         s, plan = strategy(raw, memory); s.run()
-        self.assertNotEqual(plan.commands.get('502', {}).get('action'), 'buy')
+        self.assertNotEqual(plan.commands.get('501', {}).get('action'), 'buy')
 
     def test_carried_order_summons_in_the_enemy_rear_then_returns(self):
-        raw = raid_request(); raw['teamOur']['roles'][1]['backpack'] = [ORDER]
+        raw = raid_request(); raw['teamOur']['roles'][2]['backpack'] += [ORDER]
         raw['teamOur']['goldNum'] = 0
         memory = finished_tasks(); provide_scout(raw,memory)
         s, plan = strategy(raw, memory); s.run()
-        command = plan.commands['502']
+        command = plan.commands['501']
         self.assertEqual(command['action'], 'use')
         self.assertEqual(command['name'], ORDER)
         pos = Pos.load(command['targetPos'][0]); self.assertGreater(pos.x, 34)
         self.assertEqual(pos,Pos(37,25))
         self.assertEqual(min(distance(pos,p) for p in s.turn.footprint(s.turn.enemies[0])),3)
         memory.record(s.turn, plan)
-        raw['roundNo'] = 31; raw['teamOur']['roles'][1]['backpack'] = []
-        raw['lastRoundRoleActionResults'] = {'502': True}
+        raw['roundNo'] = 31; raw['teamOur']['roles'][2]['backpack'] = ['stone']+['WallFixer']*5
+        raw['lastRoundRoleActionResults'] = {'501': True}
         memory.observe(Turn.load(raw))
         s, plan = strategy(raw, memory); s.run()
-        self.assertEqual(plan.commands['502']['action'], 'move')
-        self.assertEqual(plan.commands['502']['targetPos'], [{'x': 4, 'y': 7}])
+        self.assertFalse(any(c.get('name')==ORDER for c in plan.commands.values()))
+        self.assertEqual(memory.boss_raid['deployed_count'],1)
+        self.assertNotEqual(plan.commands.get('502',{}).get('name'),ORDER)
 
     def test_insufficient_money_stays_at_shop_and_late_day_does_not_buy(self):
         raw = raid_request(); raw['teamOur']['goldNum'] = 119
         s, plan = strategy(raw, finished_tasks()); s.run()
-        self.assertNotIn('502', plan.commands)
+        self.assertNotIn('501', plan.commands)
         raw['roundNo'] = 70; raw['teamOur']['goldNum'] = 120
         s, plan = strategy(raw, finished_tasks()); s.run()
-        self.assertNotEqual(plan.commands.get('502', {}).get('action'), 'buy')
+        self.assertNotEqual(plan.commands.get('501', {}).get('name'), ORDER)
         raw['roundNo'] = 160
         s, plan = strategy(raw, finished_tasks()); s.run()
-        self.assertNotEqual(plan.commands.get('502', {}).get('name'), ORDER)
+        self.assertNotEqual(plan.commands.get('501', {}).get('name'), ORDER)
 
     def test_first_night_boss_attacks_controller_independently_of_our_pioneer(self):
         raw = raid_request(71, boss=True)

@@ -23,18 +23,19 @@ class BossRaidTests(unittest.TestCase):
             raw = raid_request()
             raw['teamOur']['roles'][0].update(pos={'x': own_x, 'y': own_y})
             raw['teamOur']['roles'][1]['pos'] = {'x': own_x + (3 if own_x > 20 else -2), 'y': own_y}
-            raw['teamOur']['roles'][1]['backpack'] = [ORDER]
+            raw['teamOur']['roles'][2].update(pos={'x':own_x+(4 if own_x>20 else -3),'y':own_y},
+                backpack=['stone']+['WallFixer']*5+[ORDER])
             raw['teamOur']['goldNum'] = 0  # Isolate a carried single order from affordable top-up.
             raw['teamEnemy']['roles'] = [unit(990, 'station', enemy_x, enemy_y)]
             raw['teamOur']['roles'] = raw['teamOur']['roles'][:4]
-            # Add guns beside the current controller to make its return budget real.
+            # Supply the actual completed defense, independently of raid orders.
             for i in range(3):
                 raw['teamOur']['roles'].append(unit(600+i, 'rocket', own_x+(2 if own_x > 20 else -1), own_y+i-1))
             for uid,pos in enumerate(Settings().build_cells(Turn.load(raw),'wall'),1701):
                 raw['teamOur']['roles'].append(unit(uid,'wall',pos.x,pos.y,health=1000))
             memory = finished_tasks(); provide_scout(raw,memory)
             s, plan = strategy(raw, memory); s.run()
-            command = plan.commands['502']; self.assertEqual(command['name'], ORDER)
+            command = plan.commands['501']; self.assertEqual(command['name'], ORDER)
             spawn = Pos.load(command['targetPos'][0])
             self.assertEqual(min(distance(spawn,p) for p in station_footprint(Pos(enemy_x,enemy_y))),3)
             self.assertEqual(spawn,Pos(enemy_x+(4 if enemy_x>20 else -3),enemy_y))
@@ -43,11 +44,11 @@ class BossRaidTests(unittest.TestCase):
 
     def test_missing_enemy_base_keeps_mirror_geometry_but_waits_for_scout(self):
         raw = raid_request(); raw['teamEnemy']['roles'] = []
-        raw['teamOur']['roles'][1]['backpack'] = [ORDER]
+        raw['teamOur']['roles'][2]['backpack'] += [ORDER]
         raw['teamOur']['goldNum'] = 0
         s, plan = strategy(raw, finished_tasks()); s.run()
         self.assertEqual(rear_spawn_position(s.turn,s.settings),Pos(37,25))
-        self.assertNotEqual(plan.commands.get('502',{}).get('action'),'use')
+        self.assertNotEqual(plan.commands.get('501',{}).get('action'),'use')
         self.assertFalse(s.raid_scouts.summon_ready())
 
     def test_buy_uses_observed_price_capacity_and_actual_gold(self):
@@ -55,18 +56,18 @@ class BossRaidTests(unittest.TestCase):
                                        (120, 120, True, False)):
             raw = raid_request(); raw['teamOur']['goldNum'] = gold
             raw['weaponShopList'][-1]['price'] = price
-            if full: raw['teamOur']['roles'][1]['backpack'] = ['iron']*40
+            if full: raw['teamOur']['roles'][2]['backpack'] = ['stone']+['iron']*99
             s, plan = strategy(raw, finished_tasks()); s.run()
-            self.assertEqual(plan.commands.get('502', {}).get('name') == ORDER, buys)
+            self.assertEqual(plan.commands.get('501', {}).get('name') == ORDER, buys)
         raw = raid_request(); raw['weaponShopList'] = []
         s, plan = strategy(raw, finished_tasks()); s.run()
-        self.assertNotEqual(plan.commands.get('502', {}).get('name'), ORDER)
+        self.assertNotEqual(plan.commands.get('501', {}).get('name'), ORDER)
 
-    def test_purchase_budget_is_reserved_while_pioneer_walks_to_the_shop(self):
+    def test_purchase_budget_is_reserved_while_worker_walks_to_the_shop(self):
         raw = raid_request(); raw['teamOur']['roles'][1]['pos'] = {'x': 4, 'y': 7}
-        raw['teamOur']['roles'][2]['pos'] = {'x': 3, 'y': 7}
+        raw['teamOur']['roles'][2]['pos'] = {'x': 4, 'y': 8}
         s, plan = strategy(raw, finished_tasks()); s.run()
-        self.assertEqual(plan.commands['502']['action'], 'move')
+        self.assertEqual(plan.commands['501']['action'], 'move')
         self.assertFalse(any(c['action'] == 'buy' for c in plan.commands.values()))
         self.assertEqual(plan.gold, 120)
 
@@ -74,32 +75,32 @@ class BossRaidTests(unittest.TestCase):
         raw = raid_request(); memory = finished_tasks()
         provide_scout(raw,memory)
         s, plan = strategy(raw, memory); s.run(); memory.record(s.turn, plan)
-        raw['roundNo'] += 1; raw['lastRoundRoleActionResults'] = {'502': False}
+        raw['roundNo'] += 1; raw['lastRoundRoleActionResults'] = {'501': False}
         memory.observe(Turn.load(raw)); s, plan = strategy(raw, memory); s.run()
-        self.assertEqual(plan.commands['502']['action'], 'buy')
+        self.assertEqual(plan.commands['501']['action'], 'buy')
         memory.record(s.turn, plan)
-        raw['roundNo'] += 1; raw['lastRoundRoleActionResults'] = {'502': True}
-        raw['teamOur']['roles'][1]['backpack'] = [ORDER]
+        raw['roundNo'] += 1; raw['lastRoundRoleActionResults'] = {'501': True}
+        raw['teamOur']['roles'][2]['backpack'] += [ORDER]
         raw['teamOur']['goldNum'] = 0  # The successful purchase consumed the 120-gold balance.
         memory.observe(Turn.load(raw)); s, plan = strategy(raw, memory); s.run()
-        self.assertEqual(plan.commands['502']['action'], 'use')
+        self.assertEqual(plan.commands['501']['action'], 'use')
         self.assertFalse(any(c.get('name') == ORDER and c['action'] == 'buy' for c in plan.commands.values()))
 
     def test_failed_summon_keeps_order_and_tries_a_different_rear_position(self):
-        raw = raid_request(); raw['teamOur']['roles'][1]['backpack'] = [ORDER]
+        raw = raid_request(); raw['teamOur']['roles'][2]['backpack'] += [ORDER]
         raw['teamOur']['goldNum'] = 0
         memory = finished_tasks(); provide_scout(raw,memory)
         s, plan = strategy(raw, memory); s.run()
-        first = plan.commands['502']['targetPos'][0]; memory.record(s.turn, plan)
-        raw['roundNo'] += 1; raw['lastRoundRoleActionResults'] = {'502': False}
+        first = plan.commands['501']['targetPos'][0]; memory.record(s.turn, plan)
+        raw['roundNo'] += 1; raw['lastRoundRoleActionResults'] = {'501': False}
         memory.observe(Turn.load(raw)); s, plan = strategy(raw, memory); s.run()
-        self.assertEqual(plan.commands['502']['action'], 'use')
-        self.assertNotEqual(plan.commands['502']['targetPos'][0], first)
+        self.assertEqual(plan.commands['501']['action'], 'use')
+        self.assertNotEqual(plan.commands['501']['targetPos'][0], first)
         self.assertNotEqual(memory.boss_raid['status'], 'deployed')
 
     def test_disabled_strategy_preserves_daytime_pioneer_and_stops_robot_ai(self):
         raw = raid_request(); s, plan = strategy(raw, finished_tasks(), Settings(enable_boss_raid=False)); s.run()
-        self.assertNotEqual(plan.commands.get('502', {}).get('name'), ORDER)
+        self.assertNotEqual(plan.commands.get('501', {}).get('name'), ORDER)
         raw = raid_request(71, boss=True)
         s, plan = strategy(raw, finished_tasks(), Settings(enable_boss_raid=False)); s.run()
         self.assertNotIn('30005', plan.commands)
@@ -108,7 +109,7 @@ class BossRaidTests(unittest.TestCase):
         raw = raid_request(); raw['teamEnemy']['roles'][0]['pos'] = {'x': 38, 'y': 25}
         s, plan = strategy(raw, finished_tasks()); s.run()
         self.assertIsNone(rear_spawn_position(s.turn,s.settings))
-        self.assertEqual(plan.commands['502'],{'action':'buy','name':ORDER,'num':1})
+        self.assertEqual(plan.commands['501'],{'action':'buy','name':ORDER,'num':1})
 
     def test_no_legal_spawn_anywhere_skips_buy_and_budget_reservation(self):
         raw = raid_request()
@@ -121,28 +122,28 @@ class BossRaidTests(unittest.TestCase):
         s,plan = strategy(raw,finished_tasks());s.run()
         self.assertFalse(any(summon_cell_legal(s.turn,settings,Pos(x,y))
                              for x in range(turn.width) for y in range(turn.height)))
-        self.assertNotEqual(plan.commands.get('502', {}).get('name'), ORDER)
+        self.assertNotEqual(plan.commands.get('501', {}).get('name'), ORDER)
         self.assertEqual(s.boss_raid.budget_reserve(), 0)
 
     def test_missing_already_acquired_order_never_triggers_a_second_purchase(self):
-        raw = raid_request(); raw['teamOur']['roles'][1]['backpack'] = [ORDER]
+        raw = raid_request(); raw['teamOur']['roles'][2]['backpack'] += [ORDER]
         memory = finished_tasks(); provide_scout(raw,memory)
         s, plan = strategy(raw, memory); s.run(); memory.record(s.turn, plan)
-        raw['roundNo'] += 1; raw['teamOur']['roles'][1]['backpack'] = []
-        raw['lastRoundRoleActionResults'] = {'502': False}
+        raw['roundNo'] += 1; raw['teamOur']['roles'][2]['backpack'] = ['stone']+['WallFixer']*5
+        raw['lastRoundRoleActionResults'] = {'501': False}
         memory.observe(Turn.load(raw)); s, plan = strategy(raw, memory); s.run()
-        self.assertNotEqual(plan.commands.get('502', {}).get('name'), ORDER)
+        self.assertNotEqual(plan.commands.get('501', {}).get('name'), ORDER)
         self.assertEqual(memory.boss_raid['status'], 'order_missing')
 
     def test_failed_summon_releases_its_daily_attempt_and_pending_position(self):
-        raw = raid_request(); raw['teamOur']['roles'][1]['backpack'] = [ORDER]
+        raw = raid_request(); raw['teamOur']['roles'][2]['backpack'] += [ORDER]
         raw['teamOur']['goldNum'] = 0
         memory = finished_tasks(); provide_scout(raw,memory)
         s, plan = strategy(raw, memory); s.run(); memory.record(s.turn, plan)
         self.assertEqual(memory.summon_attempts, 1)
-        spawn = Pos.load(plan.commands['502']['targetPos'][0])
+        spawn = Pos.load(plan.commands['501']['targetPos'][0])
         self.assertIn(spawn, memory.pending_summon_positions)
-        raw['roundNo'] += 1; raw['lastRoundRoleActionResults'] = {'502': False}
+        raw['roundNo'] += 1; raw['lastRoundRoleActionResults'] = {'501': False}
         memory.observe(Turn.load(raw))
         self.assertEqual(memory.summon_attempts, 0)
         self.assertNotIn(spawn, memory.pending_summon_positions)

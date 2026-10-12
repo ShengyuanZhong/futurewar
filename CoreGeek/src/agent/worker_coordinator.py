@@ -2,6 +2,7 @@
 from .grid import Routes
 from .protocol import Pos, distance, move_command
 from .vehicle import move_targets
+from .summoning import enemy_weapon_cells
 
 
 class WorkerCoordinator:
@@ -135,7 +136,8 @@ class WorkerCoordinator:
         if blocker.unit_id in self.plan.used:
             return False
         scouts = getattr(self.s, 'raid_scouts', None)
-        if scouts is not None and scouts.is_worker(blocker):
+        if (scouts is not None and scouts.is_worker(blocker)
+                and any(distance(blocker.pos,p)<=4 for p in enemy_weapon_cells(self.turn))):
             return False
         if self.s.gap_guard.is_waiting(blocker):
             return False

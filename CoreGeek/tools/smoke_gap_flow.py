@@ -40,9 +40,9 @@ def observations():
              34:'accept_third',35:'prompt_third',36:'submit_third',37:'buy',38:'use'}
     # This short evidence path skips uneventful waiting/walking observations.
     # Task2 at R34 is genuinely 30 rounds after its first R4 outcome.
-    for number in list(range(1,8))+list(range(34,39)):
+    for number in range(1,39):
         task_frame(first,number,(True,False,False))
-        yield names[number],first
+        yield names.get(number,'waiting_tasks'),first
     task_frame(first,68,(True,False,False))
     role(first,502).update(pos=Pos(4,7).dump(),backpack=[])
     role(first,501).update(pos=Pos(6,8).dump(),backpack=['stone']+['WallFixer']*5)
@@ -106,15 +106,17 @@ def main():
                 assert response.status==200
                 assert set(payload)=={'roleCommandMap','prompt','executeCmd'}
                 commands = payload['roleCommandMap']
+                assert not any(c.get('name')=='BossRobotSummonOrder' for uid,c in commands.items() if uid!='501'),commands
+                assert 'BossRobotSummonOrder' not in role(raw,502)['backpack']
                 if stage in ('accept_first','accept_second','accept_third'):
                     assert commands['502']['action']=='acceptTask',commands
-                if stage.startswith(('accept_','prompt_','submit_','settle_')):
+                if raw['roundNo']<37:
                     assert not any(c.get('name')=='BossRobotSummonOrder' for c in commands.values())
                     assert not any(c.get('action')=='buy' and c.get('name','').startswith('WeaponUpgradeVoucher') for c in commands.values())
                 if stage=='buy':
-                    assert commands['502']=={'action':'buy','name':'BossRobotSummonOrder','num':1},commands
+                    assert commands['501']=={'action':'buy','name':'BossRobotSummonOrder','num':1},commands
                 elif stage=='use':
-                    assert commands['502']['action']=='use' and commands['502']['name']=='BossRobotSummonOrder'
+                    assert commands['501']['action']=='use' and commands['501']['name']=='BossRobotSummonOrder'
                 elif stage=='worker':
                     assert len([u for u in raw['teamOur']['roles'] if u['roleType']=='wall'])==16
                     assert commands['501']=={'action':'move','targetPos':[GAP.dump()]},commands
@@ -143,7 +145,7 @@ def main():
     assert 'action_rejected' not in logs
     assert any(r['log_type']=='gap_defense' and r['data'].get('imp_status')=='holding_gap' for r in diagnostics)
     report = dict(scope='Synthetic HTTP observations, not an official match simulation',
-                  task_sequence=[2,1,2],accepted_rounds=[1,4,34],results=results,
+                  task_sequence=[2,1,2],accepted_rounds=[1,4,34],boss_buyer_id=501,scout_id=504,results=results,
                   diagnostics=diagnostics,bind_verified=f'0.0.0.0:{port}' in logs,bash_executed=False)
     args.output.parent.mkdir(parents=True,exist_ok=True)
     args.output.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')

@@ -31,11 +31,11 @@ def day_strategy(successes=1,attempts=3,gold=1000,number=30):
 
 
 class FirstDayOrderTests(unittest.TestCase):
-    def test_rich_pioneer_cannot_buy_before_three_attempts(self):
+    def test_rich_buyer_cannot_buy_before_three_attempts(self):
         for attempts in (0,1,2):
             raw,memory,s,plan = day_strategy(successes=attempts,attempts=attempts)
-            pioneer = next(u for u in s.turn.controllable() if u.kind=='pioneer')
-            self.assertFalse(s.boss_raid.pioneer(pioneer))
+            buyer = next(w for w in s.turn.workers() if w.unit_id==501)
+            s.boss_raid.worker(buyer)
             self.assertIsNone(s.boss_raid.target_orders())
             self.assertNotIn('order_decision_round',memory.boss_raid)
             self.assertFalse(any(c.get('name')==ORDER for c in plan.commands.values()))
@@ -44,8 +44,7 @@ class FirstDayOrderTests(unittest.TestCase):
         raw,memory,_,_ = day_strategy()
         raw['phaseTask'] = 'unfinished third task'
         s,plan = strategy(raw,memory,Settings(enable_news=False))
-        pioneer = next(u for u in s.turn.controllable() if u.kind=='pioneer')
-        self.assertFalse(s.boss_raid.pioneer(pioneer))
+        s.boss_raid.worker(next(w for w in s.turn.workers() if w.unit_id==501))
         self.assertIsNone(s.boss_raid.target_orders())
         self.assertFalse(s.boss_raid.weapon_upgrades_ready())
 
@@ -53,7 +52,7 @@ class FirstDayOrderTests(unittest.TestCase):
         raw,memory,_,_ = day_strategy(1,attempts=2)
         record_attempt(memory,1,34,(4,9),'自进化类2',origin='isolated_fixture')
         s,plan = strategy(raw,memory,Settings(enable_news=False))
-        self.assertFalse(s.boss_raid.pioneer(next(u for u in s.turn.controllable() if u.kind=='pioneer')))
+        s.boss_raid.worker(next(w for w in s.turn.workers() if w.unit_id==501))
         self.assertIsNone(s.boss_raid.target_orders())
         self.assertFalse(s.boss_raid.weapon_upgrades_ready())
         self.assertNotIn('order_decision_round',memory.boss_raid)
@@ -62,24 +61,24 @@ class FirstDayOrderTests(unittest.TestCase):
         for successes in (0,1,2,3):
             with self.subTest(successes=successes):
                 raw,memory,s,plan = day_strategy(successes)
-                pioneer = next(u for u in s.turn.controllable() if u.kind=='pioneer')
-                s.boss_raid.pioneer(pioneer)
+                buyer = next(w for w in s.turn.workers() if w.unit_id==501)
+                s.boss_raid.worker(buyer)
                 self.assertEqual(memory.boss_raid['target_count'],successes)
                 if successes:
-                    self.assertEqual(plan.commands['502'],{'action':'buy','name':ORDER,'num':successes})
+                    self.assertEqual(plan.commands['501'],{'action':'buy','name':ORDER,'num':successes})
                 else:
-                    self.assertNotIn('502',plan.commands)
+                    self.assertNotEqual(plan.commands.get('501',{}).get('name'),ORDER)
                     self.assertTrue(s.boss_raid.weapon_upgrades_ready())
 
     def test_one_success_never_becomes_two_due_to_wealth(self):
         raw,memory,s,plan = day_strategy(1,gold=10000)
-        s.boss_raid.pioneer(next(u for u in s.turn.controllable() if u.kind=='pioneer'))
-        self.assertEqual(plan.commands['502']['num'],1)
+        s.boss_raid.worker(next(w for w in s.turn.workers() if w.unit_id==501))
+        self.assertEqual(plan.commands['501']['num'],1)
         self.assertEqual(memory.boss_raid['target_count'],1)
 
     def test_failure_record_does_not_count_as_success(self):
         _,_,s,plan = day_strategy(0)
-        s.boss_raid.pioneer(next(u for u in s.turn.controllable() if u.kind=='pioneer'))
+        s.boss_raid.worker(next(w for w in s.turn.workers() if w.unit_id==501))
         self.assertFalse(any(c.get('name')==ORDER for c in plan.commands.values()))
         self.assertEqual(s.boss_raid.budget_reserve(),0)
 
@@ -89,8 +88,8 @@ class FirstDayOrderTests(unittest.TestCase):
             key = record_attempt(memory,day,(day-1)*130+3,(3,9),'自进化类1')
             finish_attempt(memory,key,(day-1)*130+6,succeeded=True)
         s,plan = strategy(raw,memory,Settings(enable_news=False))
-        s.boss_raid.pioneer(next(u for u in s.turn.controllable() if u.kind=='pioneer'))
-        self.assertEqual(plan.commands['502']['num'],1)
+        s.boss_raid.worker(next(w for w in s.turn.workers() if w.unit_id==501))
+        self.assertEqual(plan.commands['501']['num'],1)
 
     def test_first_day_starts_with_accepting_a_task_despite_shop_budget(self):
         raw = request(1)
@@ -123,24 +122,27 @@ class FirstDayOrderTests(unittest.TestCase):
         self.assertFalse(s.first_defense.supply(worker))
         self.assertNotIn('501',plan.commands)
 
-    def test_worker_does_not_shop_for_weapon_while_pioneer_travels_to_shop(self):
+    def test_buyer_does_not_shop_for_weapon_while_walking_to_boss_shop(self):
         raw,memory,_,_ = day_strategy(1)
         role(raw,502)['pos'] = Pos(4,7).dump()
+        role(raw,501)['pos'] = Pos(4,8).dump()
         s,plan = strategy(raw,memory,Settings(enable_news=False));s.run()
-        self.assertEqual(plan.commands['502']['action'],'move')
+        self.assertEqual(plan.commands['501']['action'],'move')
         self.assertFalse(s.boss_raid.weapon_upgrades_ready())
         self.assertFalse(any(c.get('name','').startswith('WeaponUpgradeVoucher') for c in plan.commands.values()))
 
-    def test_buy_attempt_unlocks_weapon_purchase_in_same_round_after_pioneer(self):
+    def test_buyer_buy_attempt_unlocks_weapon_stage_but_uses_its_single_action(self):
         raw,memory,s,plan = day_strategy(1)
         s.run()
-        self.assertEqual(plan.commands['502'],{'action':'buy','name':ORDER,'num':1})
+        self.assertEqual(plan.commands['501'],{'action':'buy','name':ORDER,'num':1})
         self.assertEqual(memory.boss_raid['purchase_attempt_round'],raw['roundNo'])
-        self.assertEqual(plan.commands['501']['name'],'WeaponUpgradeVoucher1')
+        self.assertEqual(memory.boss_raid['buyer_id'],501)
+        self.assertTrue(s.boss_raid.weapon_upgrades_ready())
+        self.assertNotEqual(plan.commands.get('502',{}).get('name'),ORDER)
 
     def test_two_successes_with_one_order_budget_wait_for_two_instead_of_downgrading(self):
         _,memory,s,plan = day_strategy(2,gold=120)
-        s.boss_raid.pioneer(next(u for u in s.turn.controllable() if u.kind=='pioneer'))
+        s.boss_raid.worker(next(w for w in s.turn.workers() if w.unit_id==501))
         self.assertEqual(memory.boss_raid['target_count'],2)
         self.assertFalse(any(c.get('action')=='buy' and c.get('name')==ORDER for c in plan.commands.values()))
         self.assertEqual(s.boss_raid.budget_reserve(),240)
@@ -156,7 +158,7 @@ class FirstDayOrderTests(unittest.TestCase):
         raw,memory,_,_ = day_strategy(1,gold=0)
         role(raw,502)['pos'] = Pos(4,7).dump()
         s,_ = strategy(raw,memory,Settings(enable_news=False))
-        s.boss_raid.pioneer(next(u for u in s.turn.controllable() if u.kind=='pioneer'))
+        s.boss_raid.worker(next(w for w in s.turn.workers() if w.unit_id==501))
         for key in memory.task_attempts:
             finish_attempt(memory,key,31,succeeded=True)
         raw.update(roundNo=31)
@@ -178,7 +180,7 @@ class FirstDayOrderTests(unittest.TestCase):
 
     def test_first_night_does_not_relock_weapon_purchases_after_daytime_buy(self):
         raw,memory,s,_ = day_strategy(1)
-        s.boss_raid.pioneer(next(u for u in s.turn.controllable() if u.kind=='pioneer'))
+        s.boss_raid.worker(next(w for w in s.turn.workers() if w.unit_id==501))
         raw['roundNo'] = 71
         s,_ = strategy(raw,memory,Settings(enable_news=False))
         self.assertTrue(s.boss_raid.weapon_upgrades_ready())
@@ -200,20 +202,20 @@ class FirstDayOrderTests(unittest.TestCase):
         key = (raw['teamOur']['teamId'],raw['teamOur']['type'])
         service.sessions[key] = Session(memory=memory)
         response = service.decide(copy.deepcopy(raw))
-        self.assertEqual(response['roleCommandMap']['502'],{'action':'buy','name':ORDER,'num':2})
-        raw.update(roundNo=31,lastRoundRoleActionResults={'502':True})
+        self.assertEqual(response['roleCommandMap']['501'],{'action':'buy','name':ORDER,'num':2})
+        raw.update(roundNo=31,lastRoundRoleActionResults={'501':True})
         raw['teamOur']['goldNum'] = 0
-        role(raw,502)['backpack'] = [ORDER]*2
+        role(raw,501)['backpack'] += [ORDER]*2
         response = service.decide(copy.deepcopy(raw))
-        first = response['roleCommandMap']['502']['targetPos'][0]
-        self.assertEqual(response['roleCommandMap']['502']['action'],'use')
-        raw.update(roundNo=32,lastRoundRoleActionResults={'502':True})
-        role(raw,502)['backpack'] = [ORDER]
+        first = response['roleCommandMap']['501']['targetPos'][0]
+        self.assertEqual(response['roleCommandMap']['501']['action'],'use')
+        raw.update(roundNo=32,lastRoundRoleActionResults={'501':True})
+        role(raw,501)['backpack'] = ['stone']+['WallFixer']*5+[ORDER]
         response = service.decide(copy.deepcopy(raw))
-        second = response['roleCommandMap']['502']['targetPos'][0]
-        self.assertEqual(response['roleCommandMap']['502']['action'],'use')
+        second = response['roleCommandMap']['501']['targetPos'][0]
+        self.assertEqual(response['roleCommandMap']['501']['action'],'use')
         self.assertNotEqual(first,second)
-        raw.update(roundNo=33,lastRoundRoleActionResults={'502':True})
-        role(raw,502)['backpack'] = []
+        raw.update(roundNo=33,lastRoundRoleActionResults={'501':True})
+        role(raw,501)['backpack'] = ['stone']+['WallFixer']*5
         service.decide(copy.deepcopy(raw))
         self.assertEqual(service.sessions[key].memory.boss_raid['deployed_count'],2)

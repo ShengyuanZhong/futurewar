@@ -21,11 +21,16 @@ MODULES = (
     'tests.test_scout_survival',
     'tests.test_vehicle_protocol',
     'tests.test_scout_vehicle',
+    'tests.test_worker_boss_buyer',
+    'tests.test_buyer_coordination',
+    'tests.test_boss_raid',
 )
 EXCLUDED = {
     'tests.test_first_day_order.FirstDayOrderTests.test_second_day_and_disabled_boss_do_not_lock_weapon_upgrades',
     'tests.test_scout_survival.ScoutSurvivalTests.test_second_day_original_imp_destroy_policy_is_not_given_catch_avoidance',
-    'tests.test_opening_defense.OpeningDefenseTests.test_active_task_yields_to_night_defence',
+    'tests.test_opening_defense.OpeningDefenseTests.test_second_day_active_task_retains_previous_night_defence_priority',
+    'tests.test_boss_raid.BossRaidTests.test_stun_death_new_day_and_deadline_stop_robot_orders',
+    'tests.test_boss_raid.BossRaidTests.test_api_sequence_buys_once_summons_then_kills_controller_before_base',
 }
 EXTRA = (
     'tests.test_layout_survey.LayoutSurveyTests.test_last_wall_command_is_not_actual_construction_completion',

@@ -73,8 +73,8 @@ def survey_request(number=20, pattern='corner_gap', near=False):
     raw['weaponShopList'].append({'name': ORDER, 'price': 120})
     raw['teamOur']['goldNum'] = 240
     actor(raw, PIONEER)['pos'] = Pos(3, 6).dump()
-    actor(raw, HOME).update(pos=Pos(3, 7).dump(), backpack=['WallFixer'] * 5)
-    actor(raw, SCOUT)['pos'] = (Pos(21, 17) if near else Pos(4, 5)).dump()
+    actor(raw, HOME).update(pos=Pos(3, 7).dump(), backpack=['stone']+['WallFixer'] * 5)
+    actor(raw, SCOUT)['pos'] = (Pos(21, 17) if near else Pos(3, 6)).dump()
     truth = enemy_blueprint(pattern)
     reveal(raw, truth)
     return raw, truth
@@ -164,7 +164,7 @@ class LayoutSurveyTests(unittest.TestCase):
         s, _ = strategy(raw, memory, Settings(enable_news=False))
         self.assertTrue(s.raid_scouts.summon_ready())
         raw['roundNo'] += 1
-        actor(raw, SCOUT)['pos'] = Pos(4, 5).dump()
+        actor(raw, SCOUT)['pos'] = Pos(3, 6).dump()
         reveal(raw, truth)
         s, _ = strategy(raw, memory, Settings(enable_news=False))
         self.assertTrue(s.raid_scouts.state['layout_ready'])
@@ -173,7 +173,7 @@ class LayoutSurveyTests(unittest.TestCase):
 
     def test_dead_scout_preserves_held_orders_instead_of_blind_use(self):
         raw, truth = survey_request(near=True)
-        actor(raw, PIONEER)['backpack'] = [ORDER, ORDER]
+        actor(raw, HOME)['backpack'] += [ORDER, ORDER]
         memory = finished_tasks(2)
         strategy(raw, memory, Settings(enable_news=False))
         raw['roundNo'] += 1
@@ -192,10 +192,10 @@ class LayoutSurveyTests(unittest.TestCase):
         key = (raw['teamOur']['teamId'], raw['teamOur']['type'])
         service.sessions[key] = Session(memory=finished_tasks(2))
         response = service.decide(copy.deepcopy(raw))
-        self.assertEqual(response['roleCommandMap'][str(PIONEER)],
+        self.assertEqual(response['roleCommandMap'][str(HOME)],
                          {'action': 'buy', 'name': ORDER, 'num': 2})
-        raw.update(roundNo=21, lastRoundRoleActionResults={str(PIONEER): True})
-        actor(raw, PIONEER)['backpack'] = [ORDER, ORDER]
+        raw.update(roundNo=21, lastRoundRoleActionResults={str(HOME): True})
+        actor(raw, HOME)['backpack'] += [ORDER, ORDER]
         raw['teamOur']['goldNum'] = 100
         reveal(raw, truth)
         response = service.decide(copy.deepcopy(raw))
@@ -327,7 +327,7 @@ class LayoutSurveyTests(unittest.TestCase):
 
     def test_unscouted_coupons_expire_the_window_without_blind_use_or_new_buy(self):
         raw, _ = survey_request(69)
-        actor(raw,PIONEER)['backpack'] = [ORDER,ORDER]
+        actor(raw,HOME)['backpack'] += [ORDER,ORDER]
         memory = finished_tasks(2)
         s,plan = strategy(raw,memory,Settings(enable_news=False)); s.run()
         self.assertFalse(memory.boss_raid.get('summon_window_closed',False))
@@ -339,7 +339,7 @@ class LayoutSurveyTests(unittest.TestCase):
         s,plan = strategy(raw,memory,Settings(enable_news=False)); s.run()
         self.assertTrue(memory.boss_raid['summon_window_closed'])
         self.assertFalse(any(c.get('name')==ORDER for c in plan.commands.values()))
-        self.assertEqual(actor(raw,PIONEER)['backpack'],[ORDER,ORDER])
+        self.assertEqual(actor(raw,HOME)['backpack'].count(ORDER),2)
         raw['roundNo'] = 71
         s,plan = strategy(raw,memory,Settings(enable_news=False)); s.run()
         self.assertFalse(s.raid_scouts.active)
@@ -365,20 +365,20 @@ class LayoutSurveyTests(unittest.TestCase):
 
     def test_last_daytime_second_use_has_no_return_budget_and_keeps_scout_sight(self):
         raw,truth = survey_request(70,near=True)
-        actor(raw,PIONEER)['backpack'] = [ORDER]
+        actor(raw,HOME)['backpack'] += [ORDER]
         memory = finished_tasks(2)
         memory.boss_raid.update(status='deployed',deployed_count=1,acquired_count=2,
             deployment_ledger_confirmed=True,spawns=[Pos(21,15)],scouted_spawns=[Pos(21,15)])
         memory.raid_scouts.update(worker_id=SCOUT,home_worker_id=HOME)
         s,plan = strategy(raw,memory,Settings(enable_news=False)); s.run()
-        command = plan.commands[str(PIONEER)]
+        command = plan.commands[str(HOME)]
         self.assertEqual(command['action'],'use')
         self.assertEqual(command['name'],ORDER)
         self.assertFalse(memory.boss_raid.get('summon_window_closed',False))
         memory.record(s.turn,plan)
         raw['roundNo'] = 71
-        raw['lastRoundRoleActionResults'] = {str(PIONEER):True}
-        actor(raw,PIONEER)['backpack'] = []
+        raw['lastRoundRoleActionResults'] = {str(HOME):True}
+        actor(raw,HOME)['backpack'] = ['stone']+['WallFixer']*5
         boss = robot(30005,21,15,health=800,roleType='bossRobot')
         raw['teamOur']['summonRobotList'] = [boss]; raw['robot']['roles'] = [boss]
         reveal(raw,truth)
