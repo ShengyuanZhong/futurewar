@@ -19,25 +19,51 @@ sys.path[:0] = [str(ROOT),str(ROOT/'src')]
 from tests.fixtures import unit,robot
 from tests.test_gap_defense import occupied,role,GAP
 from agent.protocol import Pos
+from tools.smoke_first_day_flow import fixture
+
+
+def copy_frame(raw,number,phase=''):
+    copied = json.loads(json.dumps(raw))
+    copied.update(roundNo=number,phaseTask=phase,llmResp='',errors=[])
+    return copied
 
 
 def observations():
-    first = occupied(1)
-    first['teamOur']['roles'] = [u for u in first['teamOur']['roles'] if u['roleType'] not in ('wall','rocket')]
-    first['teamEnemy']['roles'] = [unit(990,'station',33,25)]
-    first['teamOur']['goldNum'] = 75
-    buy = occupied(30)
-    role(buy,502)['pos'] = Pos(3,7).dump()
-    buy['teamOur']['goldNum'] = 120
-    buy['weaponShopList'].append({'name':'BossRobotSummonOrder','price':120})
-    buy['teamEnemy']['roles'].append(unit(990,'station',33,25))
+    first = fixture('gap-relay')
+    first['teamOur']['goldNum'] = 20
+    records = [('accept_first',copy_frame(first,1))]
+    one = copy_frame(first,2,phase='Local first fixture task.')
+    one['lastRoundRoleActionResults'] = {'502':True}
+    records.append(('prompt_first',one))
+    answer = copy_frame(one,3,phase=one['phaseTask'])
+    answer['llmResp'] = json.dumps({'action':'final_answer','answer':'first-fixture-result'})
+    records.append(('submit_first',answer))
+    second = copy_frame(first,4)
+    second['lastRoundRoleActionResults'] = {'502':True}
+    second['teamOur']['goldNum'] = 120
+    second['teamOur']['totalScore'] = 51
+    second['teamOur']['playerTasks'][0].update(isValid=False,coldDownRounds=100)
+    records.append(('accept_second',second))
+    two = copy_frame(second,5,phase='Local second fixture task.')
+    two['lastRoundRoleActionResults'] = {'502':True}
+    records.append(('prompt_second',two))
+    answer = copy_frame(two,6,phase=two['phaseTask'])
+    answer['llmResp'] = json.dumps({'action':'final_answer','answer':'second-fixture-result'})
+    records.append(('submit_second',answer))
+    buy = copy_frame(second,7)
+    buy['teamOur']['playerTasks'][1].update(isValid=False,coldDownRounds=100)
+    buy['lastRoundRoleActionResults'] = {'502':True}
+    buy['errors'] = [{'errorCode':2}]
     use = json.loads(json.dumps(buy))
-    use.update(roundNo=31,lastRoundRoleActionResults={'502':True})
+    use.update(roundNo=8,lastRoundRoleActionResults={'502':True})
+    use['errors'] = []
     use['teamOur']['goldNum'] = 0
     role(use,502)['backpack'] = ['BossRobotSummonOrder']
     evening = json.loads(json.dumps(use))
     evening.update(roundNo=70,lastRoundRoleActionResults={})
     role(evening,502).update(pos=Pos(4,7).dump(),backpack=[])
+    role(evening,501).update(pos=Pos(8,7).dump(),backpack=['stone'])
+    role(evening,505)['pos'] = Pos(8,8).dump()
     role(evening,504)['pos'] = Pos(38,23).dump()
     night = json.loads(json.dumps(evening))
     night.update(roundNo=71,lastRoundRoleActionResults={})
@@ -49,7 +75,7 @@ def observations():
     fallen = json.loads(json.dumps(night))
     fallen.update(roundNo=72,lastRoundRoleActionResults={'501':True})
     role(fallen,501).update(pos=GAP.dump(),health=0)
-    return [('warmup',first),('buy',buy),('use',use),('evening',evening),('worker',night),('imp',fallen)]
+    return records+[('buy',buy),('use',use),('evening',evening),('worker',night),('imp',fallen)]
 
 
 def main():
@@ -91,6 +117,11 @@ def main():
                 assert response.status==200
                 assert set(payload)=={'roleCommandMap','prompt','executeCmd'}
                 commands = payload['roleCommandMap']
+                if stage in ('accept_first','accept_second'):
+                    assert commands['502']['action']=='acceptTask',commands
+                if stage.startswith(('accept_','prompt_','submit_')):
+                    assert not any(c.get('name')=='BossRobotSummonOrder' for c in commands.values())
+                    assert not any(c.get('action')=='buy' and c.get('name','').startswith('WeaponUpgradeVoucher') for c in commands.values())
                 if stage=='buy':
                     assert commands['502']=={'action':'buy','name':'BossRobotSummonOrder','num':1},commands
                 elif stage=='use':
@@ -114,7 +145,7 @@ def main():
         capture.close()
     diagnostics = []
     for line in logs.splitlines():
-        for marker in ('gap_defense','defense_diagnostic','robot_diagnostic'):
+        for marker in ('gap_defense','first_day_policy','defense_diagnostic','robot_diagnostic'):
             if marker+' {' in line:
                 diagnostics.append(dict(log_type=marker,data=json.loads(line.split(marker+' ',1)[1])))
     assert 'action_rejected' not in logs

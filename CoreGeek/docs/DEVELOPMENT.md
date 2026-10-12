@@ -1,5 +1,7 @@
 # 开发与维护文档
 
+v1.2.7，2026-10-12：[首日固定流程](FIRST_DAY_PLAN.md)区分接取/结束/成功，先两任务后冻结BOSS数量，再解锁火箭采购；45度机器人射线按对角线格判墙。`TaskService`仅新增结束记录，不改用户任务控制器与prompt。下面保留历史开发记录，当前首日时序以本补充为准。
+
 v1.2.6新增[合法建造、缺口接力与BOSS采购](GAP_DEFENSE.md)。`WallGapDefense`替代并删除`SiteBlockade`，只建合法原墙，工人夜间占缺口、imp接替。`FirstNightDefense`管理首日补给，但BOSS不再依赖物理封墙和补给完成；工人采购先保留BOSS预算。静态建筑记忆和攻击反馈恢复继续保留。
 
 更新日期：2026-10-10，程序版本v1.2.4。增加[有限追击与双BOSS](BOSS_EFFICIENCY.md)：操炮者射击位/连续追位默认预算4，无路或超预算改攻基地，短破墙保留；双任务有奖励确认或经济足够时首日最多两券，按实际库存和反馈分帧部署，保留三炮金币和返程时间。TaskService仅新增task_points_succeeded证据记录，不改任务prompt。GameMemory.boss_raid维护有限购买/使用账本，robot_raids记录每只BOSS的独立预算与4回合基地聚焦；[首夜视野协作](RAID_SCOUTS.md)及[诊断日志](ROBOT_DIAGNOSTICS.md)继续保留。其它策略仍见[缺口接力](GAP_DEFENSE.md)、[火箭比值与2+1](ROCKET_SECTORS.md)、[工人经济](COMPLETED_ECONOMY.md)和[复赛索引](ROUND_OF_32_RULES.md)。

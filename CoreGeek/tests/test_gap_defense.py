@@ -365,15 +365,16 @@ class BossPurchaseRegressionTests(unittest.TestCase):
 
     def test_two_orders_remain_affordable_before_guard_stock(self):
         raw,memory,settings = self.setup_raid(240)
+        memory.task_points_succeeded = {(1,3,9),(1,4,9)}
         s,plan = strategy(raw,memory,settings);s.run()
         self.assertEqual(plan.commands['502'],{'action':'buy','name':ORDER,'num':2})
         self.assertEqual(plan.gold,0)
 
-    def test_single_affordability_with_known_history_does_not_require_two_task_attempts(self):
+    def test_single_affordability_with_known_history_still_waits_for_two_task_attempts(self):
         raw,_,settings = self.setup_raid()
         memory = GameMemory(opening_complete=True,last_round=29,day=1)
         s,plan = strategy(raw,memory,settings);s.run()
-        self.assertEqual(plan.commands['502'],{'action':'buy','name':ORDER,'num':1})
+        self.assertFalse(any(c.get('name')==ORDER for c in plan.commands.values()))
 
     def test_worker_supply_cannot_spend_reserved_order_while_pioneer_walks(self):
         raw,memory,settings = self.setup_raid()
@@ -412,7 +413,7 @@ class BossPurchaseRegressionTests(unittest.TestCase):
         role(raw,502)['pos'] = Pos(4,7).dump()
         role(raw,501)['pos'] = Pos(3,7).dump()
         s,plan = strategy(raw,memory,settings)
-        self.assertEqual(s.boss_raid.budget_reserve(),120)
+        self.assertEqual(s.boss_raid.budget_reserve(),240)
         self.assertFalse(s.first_defense.supply(next(w for w in s.turn.workers() if w.unit_id==501)))
         self.assertFalse(any(c['action']=='buy' for c in plan.commands.values()))
 

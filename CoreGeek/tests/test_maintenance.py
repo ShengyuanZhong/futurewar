@@ -33,7 +33,7 @@ def fortified(round_no=131, mirrored=False, weapon_level=1, wall_level=1):
 
 def setup(raw):
     turn = Turn.load(raw)
-    plan = ActionPlan(turn, Settings())
+    plan = ActionPlan(turn, Settings(enable_boss_raid=False))
     return Strategy(turn, plan, GameMemory(opening_complete=True)), plan
 
 

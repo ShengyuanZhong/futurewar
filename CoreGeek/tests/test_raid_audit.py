@@ -79,10 +79,11 @@ class RaidIndependentAuditTests(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError,'building interiors'):
             independent_contract(raw,response('attack',(12,12)))
 
-    def test_building_corner_contact_remains_clear_but_wall_corner_blocks(self):
+    def test_45_degree_side_corners_are_clear_but_diagonal_wall_blocks(self):
         raw = observation([unit(991,'rocket',11,12),unit(992,'worker',12,12,health=40)],base=(8,9))
         self.assertTrue(independent_planning_clear(raw,Pos(10,10),Pos(12,12)))
-        self.assertTrue(independent_wall_blocks(Pos(10,10),Pos(12,12),Pos(11,12)))
+        self.assertFalse(independent_wall_blocks(Pos(10,10),Pos(12,12),Pos(11,12)))
+        self.assertTrue(independent_wall_blocks(Pos(10,10),Pos(12,12),Pos(11,11)))
         independent_contract(raw,response('attack',(12,12)))
 
     def test_other_station_footprint_cells_block_a_planned_line(self):

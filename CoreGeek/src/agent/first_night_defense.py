@@ -199,7 +199,9 @@ class FirstNightDefense:
         missing = max(0,self.stock_target(role)-self.planned_inventory(role)[FIXER])
         if missing:
             needed.append((FIXER,missing))
-        if not self.weapon_ready(planned=True) and inventory[VOUCHER] <= 0:
+        boss = getattr(self.s,'boss_raid',None)
+        if (not self.weapon_ready(planned=True) and inventory[VOUCHER] <= 0
+                and (boss is None or boss.weapon_upgrades_ready())):
             needed.append((VOUCHER,1))
         interactions = len(needed)+int(not self.weapon_ready(planned=True))
         trip = self.trip(role,posts,interactions=interactions)
@@ -207,7 +209,6 @@ class FirstNightDefense:
             return False
         free = max(0,role.capacity-len(role.backpack))
         construction = max(0,3-self.plan.tower_count)*25
-        boss = getattr(self.s,'boss_raid',None)
         construction += boss.budget_reserve() if boss else 0
         for name,count in needed:
             price = self.turn.shop_prices.get(name)

@@ -100,19 +100,23 @@ class RaidEfficiencyTests(unittest.TestCase):
 
     def test_two_step_wall_detour_keeps_operator_priority(self):
         raw = arena()
+        # Real ore cells exclude the new one-step diagonal firing posts.
+        raw['mapInfo']['zones'] = [{'neutralType':'stone','pos':Pos(11,y).dump()} for y in (9,11)]
         crew(raw, CREW, 12, 10)
         raw['teamEnemy']['roles'].append(unit(40000, 'wall', 11, 10, health=1000))
-        # (10,9)->(11,8) is two moves. One-move posts either cross the wall
-        # or the visible gun at (12,11), so this is a genuine short detour.
+        # (10,9)->(10,8) is two moves; its 45-degree ray goes through ore,
+        # while the side wall does not block that diagonal firing line.
         strategy, plan = decide(raw, budget=2)
         self.assertEqual(plan.commands[str(BOSS)],
             {'action': 'move', 'targetPos': [{'x': 10, 'y': 9}]})
         self.assertEqual(strategy.memory.robot_raids[BOSS]['controller_id'], CREW)
-        self.assertEqual(strategy.memory.robot_raids[BOSS]['goal'], Pos(11, 8))
+        self.assertEqual(strategy.memory.robot_raids[BOSS]['goal'], Pos(10,8))
         self.assertEqual(plan.rejections, [])
 
     def test_single_shot_wall_beats_two_step_detour_with_one_round_budget(self):
         raw = arena()
+        # Real ore cells exclude the new one-step diagonal firing posts.
+        raw['mapInfo']['zones'] = [{'neutralType':'stone','pos':Pos(11,y).dump()} for y in (9,11)]
         crew(raw, CREW, 12, 10)
         raw['teamEnemy']['roles'].append(unit(40000, 'wall', 11, 10, health=40))
         strategy, plan = decide(raw, budget=1)
@@ -251,6 +255,8 @@ class RaidEfficiencyTests(unittest.TestCase):
 
     def test_two_step_detour_is_rejected_when_only_one_step_budget_remains(self):
         raw = arena()
+        # Real ore cells exclude the new one-step diagonal firing posts.
+        raw['mapInfo']['zones'] = [{'neutralType':'stone','pos':Pos(11,y).dump()} for y in (9,11)]
         raw['roundNo'] = 72
         crew(raw, CREW, 12, 10)
         raw['teamEnemy']['roles'].append(unit(40000, 'wall', 11, 10, health=1000))

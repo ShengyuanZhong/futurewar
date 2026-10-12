@@ -81,6 +81,12 @@ class TaskService:
         reward_evidence = (baseline is not None and
             (turn.total_score > baseline[1] or (turn.gold > baseline[0] and not income_elsewhere)))
         successful_point = (state.accepted_task.get('task_position') if state.accepted_task else None)
+        started = state.self_evolve_started_round or memory.task_started or memory.task_accept_round or turn.round_no
+        attempt_day = (started-1)//130+1
+
+        def finish_attempt():
+            if successful_point is not None:
+                memory.task_points_finished.add((attempt_day,*successful_point))
         confirmed_submission = (consecutive and state.self_evolve_active and controller._was_submitting()
             and submitted.get('action') == 'submitAnswer'
             and state.last_round_action_results.get(role.id) is True
@@ -90,8 +96,10 @@ class TaskService:
             submitted_day = (memory.last_round - 1) // 130 + 1
             memory.task_points_succeeded.add((submitted_day, *successful_point))
         if finished:
+            finish_attempt()
             state.suspended = True
         if state.self_evolve_active and (new_task or not turn.phase_task):
+            finish_attempt()
             controller._archive_experience()
             controller._reset_agent()
         if new_task:
@@ -122,10 +130,13 @@ class TaskService:
             return '', ''
         if defense_due or pioneer is None:
             if state.self_evolve_active:
+                finish_attempt()
                 controller._archive_experience()
                 controller._reset_agent()
             state.suspended = True
         if state.suspended:
+            if turn.phase_task:
+                finish_attempt()
             commit()
             return '', ''
         if turn.errors and consecutive:
@@ -140,6 +151,7 @@ class TaskService:
             plan.used.add(pioneer.unit_id)
         else:
             # A failed/limited run must actually release the pioneer, not restart next turn.
+            finish_attempt()
             state.suspended = True
         prompt, execute = state.response_prompt or '', state.response_execute_cmd or ''
         if execute:

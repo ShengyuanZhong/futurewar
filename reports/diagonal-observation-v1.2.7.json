@@ -1,0 +1,264 @@
+{
+  "roundNo": 75,
+  "mapInfo": {
+    "width": 41,
+    "height": 32,
+    "zones": []
+  },
+  "teamOur": {
+    "type": "challenger",
+    "teamId": "6324",
+    "teamName": "Challenger",
+    "goldNum": 75,
+    "totalScore": 280,
+    "playerTasks": [],
+    "roles": [
+      {
+        "id": 503,
+        "roleType": "station",
+        "pos": {
+          "x": 30,
+          "y": 25
+        },
+        "health": 1500,
+        "level": 1,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 0,
+        "backpack": []
+      },
+      {
+        "id": 501,
+        "roleType": "worker",
+        "pos": {
+          "x": 12,
+          "y": 12
+        },
+        "health": 500,
+        "level": 0,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 100,
+        "backpack": []
+      }
+    ],
+    "summonRobotList": [
+      {
+        "id": 31035,
+        "roleType": "bossRobot",
+        "pos": {
+          "x": 11,
+          "y": 11
+        },
+        "health": 800,
+        "level": 1,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 0,
+        "backpack": [],
+        "targetTeam": "defender",
+        "abnormalState": ""
+      }
+    ]
+  },
+  "teamEnemy": {
+    "roles": [
+      {
+        "id": 900,
+        "roleType": "worker",
+        "pos": {
+          "x": 10,
+          "y": 10
+        },
+        "health": 500,
+        "level": 0,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 100,
+        "backpack": []
+      },
+      {
+        "id": 901,
+        "roleType": "wall",
+        "pos": {
+          "x": 10,
+          "y": 11
+        },
+        "health": 1000,
+        "level": 1,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 0,
+        "backpack": []
+      },
+      {
+        "id": 902,
+        "roleType": "wall",
+        "pos": {
+          "x": 11,
+          "y": 10
+        },
+        "health": 1000,
+        "level": 1,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 0,
+        "backpack": []
+      },
+      {
+        "id": 999,
+        "roleType": "rocket",
+        "pos": {
+          "x": 9,
+          "y": 10
+        },
+        "health": 1000,
+        "level": 1,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 0,
+        "backpack": []
+      },
+      {
+        "id": 1000,
+        "roleType": "station",
+        "pos": {
+          "x": 8,
+          "y": 9
+        },
+        "health": 1500,
+        "level": 1,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 0,
+        "backpack": []
+      }
+    ]
+  },
+  "robot": {
+    "roles": [
+      {
+        "id": 31035,
+        "roleType": "bossRobot",
+        "pos": {
+          "x": 11,
+          "y": 11
+        },
+        "health": 800,
+        "level": 1,
+        "cooldown": 0,
+        "attackRange": 0,
+        "backPackCapability": 0,
+        "backpack": [],
+        "targetTeam": "defender",
+        "abnormalState": ""
+      }
+    ]
+  },
+  "phaseTask": "",
+  "lastRoundRoleActionResults": {},
+  "lastSummonTreasureResult": 0,
+  "llmResp": "",
+  "worldNews": {
+    "officialNews": "",
+    "folkLegends": ""
+  },
+  "lastCmdResult": "",
+  "vendorShopList": [
+    {
+      "name": "stone",
+      "price": 1
+    },
+    {
+      "name": "iron",
+      "price": 3
+    },
+    {
+      "name": "copper",
+      "price": 5
+    }
+  ],
+  "weaponShopList": [
+    {
+      "name": "WeaponUpgradeVoucher1",
+      "price": 100
+    },
+    {
+      "name": "WeaponUpgradeVoucher2",
+      "price": 150
+    },
+    {
+      "name": "WallUpgradeVoucher1",
+      "price": 20
+    },
+    {
+      "name": "WallUpgradeVoucher2",
+      "price": 30
+    },
+    {
+      "name": "StationUpgradeVoucher1",
+      "price": 100
+    },
+    {
+      "name": "StationUpgradeVoucher2",
+      "price": 150
+    },
+    {
+      "name": "WallFixer",
+      "price": 10
+    },
+    {
+      "name": "Medicine",
+      "price": 10
+    },
+    {
+      "name": "DizzyWeapon",
+      "price": 100
+    },
+    {
+      "name": "Bomb",
+      "price": 100
+    },
+    {
+      "name": "SmallRobotSummonOrder",
+      "price": 20
+    },
+    {
+      "name": "MiddleRobotSummonOrder",
+      "price": 30
+    },
+    {
+      "name": "LargeRobotSummonOrder",
+      "price": 100
+    },
+    {
+      "name": "BossRobotSummonOrder",
+      "price": 200
+    },
+    {
+      "name": "AcientTablet",
+      "price": 15
+    },
+    {
+      "name": "StarSand",
+      "price": 15
+    },
+    {
+      "name": "FlameBreath",
+      "price": 15
+    },
+    {
+      "name": "FrostPotion",
+      "price": 15
+    },
+    {
+      "name": "ThornAmulet",
+      "price": 15
+    },
+    {
+      "name": "IronWhistle",
+      "price": 15
+    }
+  ],
+  "errors": []
+}

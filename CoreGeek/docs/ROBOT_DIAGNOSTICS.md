@@ -1,5 +1,7 @@
 # BOSS逐回合诊断日志
 
+v1.2.7更新：[首日固定流程](FIRST_DAY_PLAN.md)覆盖旧购券条件。必须结束两任务后按成功数定额，升级采购等购券尝试之后；45度机器人射线忽略旁墙擦角。捣乱鬼与缺口职责不变，本页历史时序仅作回溯。
+
 v1.2.6更新：旧临时绕墙、以完整封墙限制BOSS采购及优先扣首夜补给的策略已撤销。当前缺口接力与采购优先级见[GAP_DEFENSE.md](GAP_DEFENSE.md)；本页旧版本记录用于回溯。
 
 v1.2.5新增字段：`remembered_structures`为真实曾见静态建筑，`base_attack_failures`为基地明确非法攻击累计，`base_close_required`为近邻恢复策略状态，`verified_base_post/verified_base_target`为已收到合法反馈的站位/落点，`blocked_steps`记录短期禁止的失败移动格。合法反馈仍不等于命中或击杀。首日另有`defense_diagnostic`输出己方基地/墙实际HP及封口、库存、金币预留；排查步骤见[BOSS_LOG3_4_FIX.md](BOSS_LOG3_4_FIX.md)。

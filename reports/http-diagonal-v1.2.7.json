@@ -1,0 +1,25 @@
+{
+  "status": 200,
+  "elapsed_ms": 17.517,
+  "actions": 2,
+  "entry": "python CoreGeek/main3.py <port>",
+  "request": "diagonal-observation-v1.2.7.json",
+  "request_sha256": "abbc005ddcd4fc63de6d2fc4bbb1da0deac7d01dc506a8ab1aaaa507684619e4",
+  "bind_verified_from_startup_log": true,
+  "bash_executed": false,
+  "controlled_robot_command": {
+    "action": "attack",
+    "targetPos": [
+      {
+        "x": 10,
+        "y": 10
+      }
+    ]
+  },
+  "construction_warning": false,
+  "base_surroundings_enabled": true,
+  "raid_scout_logged": true,
+  "task_debug_logged": true,
+  "robot_diagnostic_count": 1,
+  "defense_diagnostic_count": 1
+}

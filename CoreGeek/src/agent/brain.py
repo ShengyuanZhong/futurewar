@@ -118,6 +118,13 @@ class Strategy:
                     continue
                 if self.clear_build_cell(role):
                     continue
+                if (self.turn.day==1 and self.turn.is_day and self.settings.enable_tasks
+                        and not self.boss_raid.tasks_finished()):
+                    # Complete both task attempts before shopping, treasure
+                    # trips or other optional pioneer work on the first day.
+                    if not self.task(role):
+                        self.move_to_control(role)
+                    continue
                 # Preserve the opening budget; tasks can earn money without spending it.
                 if self.opening_stage() in ("complete", "unconfigured"):
                     if self.consume(role, allow_travel=False) or self.treasure(role):
@@ -523,6 +530,8 @@ class Strategy:
         if not needed:
             return False
         name, demand = needed[0]
+        if name.startswith('WeaponUpgradeVoucher') and not self.boss_raid.weapon_upgrades_ready():
+            return False
         if name not in self.turn.shop_prices:
             return False
         price = self.turn.shop_prices[name]

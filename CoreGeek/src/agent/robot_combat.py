@@ -7,6 +7,11 @@ from .worker_safety import wall_shelters
 def blocking_wall(turn, start, end):
     walls = [u for u in turn.ours + turn.enemies if u.health > 0 and u.kind == 'wall'
              and u.pos not in (start, end)]
+    dx,dy = end.x-start.x,end.y-start.y
+    if dx and abs(dx)==abs(dy):
+        # At exactly 45 degrees only the diagonal cells block. Side cells
+        # touch a corner but are not part of the attack path (user clarification).
+        walls = [w for w in walls if (w.pos.x-start.x)*dy == (w.pos.y-start.y)*dx]
     hits = [(entry, w.unit_id, w) for w in walls
             if (entry := segment_entry(start, end, w.pos)) is not None]
     return min(hits, key=lambda hit: hit[:2])[2] if hits else None

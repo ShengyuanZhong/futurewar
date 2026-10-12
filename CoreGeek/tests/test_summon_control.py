@@ -29,8 +29,11 @@ def raid_request(number=30, boss=False):
     return raw
 
 
-def finished_tasks():
-    return GameMemory(opening_complete=True, task_points_attempted={(1, 3, 9), (1, 4, 9)})
+def finished_tasks(successes=1):
+    points = {(1,3,9),(1,4,9)}
+    return GameMemory(opening_complete=True,task_points_attempted=points,
+                      task_points_finished=points.copy(),
+                      task_points_succeeded=set(sorted(points)[:successes]))
 
 
 class SummonControlTests(unittest.TestCase):

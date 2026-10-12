@@ -21,8 +21,8 @@ def pioneer(raw):
     return next(u for u in raw['teamOur']['roles'] if u['roleType'] == 'pioneer')
 
 
-def memory_for(raw, attempted=True):
-    memory = finished_tasks() if attempted else GameMemory(opening_complete=True)
+def memory_for(raw, attempted=True, successes=2):
+    memory = finished_tasks(successes) if attempted else GameMemory(opening_complete=True)
     memory.last_round = raw['roundNo']-1
     memory.day = 1
     return memory
@@ -54,25 +54,22 @@ class DualBossTests(unittest.TestCase):
     def command(self, plan):
         return plan.commands.get(str(PIONEER_ID), {})
 
-    def test_wealth_buys_two_in_one_transaction_before_task_attempts(self):
-        raw = raid_request(); raw['teamOur']['goldNum'] = 240
-        memory = memory_for(raw, attempted=False)
-        s, plan = policy_step(raw, memory)
-        self.assertEqual(self.command(plan), {'action': 'buy', 'name': ORDER, 'num': 2})
-        self.assertEqual(plan.gold, 0)
-        self.assertEqual(memory.task_points_attempted, set())
-        self.assertEqual(memory.boss_raid['target_count'], 2)
-        self.assertEqual(memory.boss_raid['acquired_count'], 0)
+    def test_wealth_without_two_task_attempts_does_not_buy(self):
+        raw = raid_request(); raw['teamOur']['goldNum'] = 500
+        memory = memory_for(raw,attempted=False)
+        s,plan = policy_step(raw,memory)
+        self.assertEqual(self.command(plan),{})
+        self.assertNotIn('order_decision_round',memory.boss_raid)
 
     def test_actual_price_and_unbuilt_weapon_reserve_control_dual_threshold(self):
-        for gold, price, guns, expected in ((260, 130, 3, 2), (259, 130, 3, 1), (129,130,3,None),
-                                          (315, 120, 0, 2), (314, 120, 0, 1), (194,120,0,None)):
+        for gold, price, guns, expected in ((260,130,3,2),(259,130,3,None),(129,130,3,None),
+                                          (315,120,0,2),(314,120,0,None),(194,120,0,None)):
             with self.subTest(gold=gold, price=price, guns=guns):
                 raw = raid_request(); raw['teamOur']['goldNum'] = gold
                 raw['weaponShopList'][-1]['price'] = price
                 if guns == 0:
                     raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles'] if u['roleType'] != 'rocket']
-                s, plan = policy_step(raw, memory_for(raw, attempted=False))
+                s, plan = policy_step(raw, memory_for(raw))
                 self.assertEqual(self.command(plan).get('num'), expected)
                 if expected:
                     self.assertEqual(plan.gold, gold-expected*price)
@@ -85,19 +82,20 @@ class DualBossTests(unittest.TestCase):
         self.assertEqual(self.command(plan), {})
         self.assertEqual(s.boss_raid.budget_reserve(), 240)
 
-    def test_two_attempts_without_two_successes_keep_single_order_fallback(self):
-        raw = raid_request(); memory = memory_for(raw)
-        s, plan = policy_step(raw, memory)
-        self.assertEqual(self.command(plan), {'action':'buy', 'name':ORDER, 'num':1})
+    def test_two_attempts_with_one_success_buy_only_one(self):
+        raw = raid_request(); memory = memory_for(raw,successes=1)
+        s,plan = policy_step(raw,memory)
+        self.assertEqual(self.command(plan),{'action':'buy','name':ORDER,'num':1})
         self.assertFalse(s.boss_raid.tasks_succeeded())
-        raw = raid_request(); memory = memory_for(raw, attempted=False)
-        memory.task_points_attempted = {(1, 3, 9)}
-        s, plan = policy_step(raw, memory)
-        self.assertEqual(self.command(plan), {'action':'buy','name':ORDER,'num':1})
+        raw = raid_request(); memory = memory_for(raw,attempted=False)
+        memory.task_points_attempted = {(1,3,9)}
+        memory.task_points_succeeded = {(1,3,9)}
+        s,plan = policy_step(raw,memory)
+        self.assertEqual(self.command(plan),{})
 
     def test_confirmed_two_successes_enable_preparation_without_overbuying(self):
         raw = raid_request(); raw['teamOur']['goldNum'] = 50
-        memory = memory_for(raw, attempted=False)
+        memory = memory_for(raw)
         memory.task_points_succeeded = {(1, 3, 9), (1, 4, 9)}
         s, plan = policy_step(raw, memory)
         self.assertTrue(s.boss_raid.tasks_succeeded())
@@ -135,7 +133,7 @@ class DualBossTests(unittest.TestCase):
 
     def test_one_carried_order_can_be_topped_up_once_before_deployment(self):
         raw = raid_request(); pioneer(raw)['backpack'] = [ORDER]
-        memory = memory_for(raw, attempted=False)
+        memory = memory_for(raw)
         s, plan = policy_step(raw, memory)
         self.assertEqual(self.command(plan), {'action':'buy', 'name':ORDER, 'num':1})
         next_frame(raw, True, held=2, gold=0)
@@ -144,10 +142,10 @@ class DualBossTests(unittest.TestCase):
         self.assertEqual(memory.boss_raid['acquired_count'], 2)
         self.assertEqual(memory.boss_raid['bought_count'], 1)
 
-    def test_two_carried_orders_do_not_need_task_completion_or_another_purchase(self):
+    def test_two_carried_orders_after_task_completion_need_no_additional_purchase(self):
         raw = raid_request(); pioneer(raw)['backpack'] = [ORDER]*2
         raw['teamOur']['goldNum'] = 0
-        memory = memory_for(raw, attempted=False)
+        memory = memory_for(raw)
         s, plan = policy_step(raw, memory)
         self.assertEqual(self.command(plan)['action'], 'use')
         next_frame(raw, True, held=1)
@@ -155,9 +153,9 @@ class DualBossTests(unittest.TestCase):
         self.assertEqual(self.command(plan)['action'], 'use')
         self.assertEqual(memory.boss_raid['target_count'], 2)
 
-    def test_late_purchase_downgrades_to_one_and_never_returns_for_a_top_up(self):
+    def test_one_success_late_purchase_never_adds_an_order_after_income(self):
         raw = raid_request(64); raw['teamOur']['goldNum'] = 240
-        memory = memory_for(raw)
+        memory = memory_for(raw,successes=1)
         s, plan = policy_step(raw, memory)
         self.assertEqual(self.command(plan), {'action':'buy', 'name':ORDER, 'num':1})
         self.assertEqual(memory.boss_raid['target_count'], 1)
@@ -171,45 +169,24 @@ class DualBossTests(unittest.TestCase):
         self.assertEqual(memory.boss_raid['target_count'], 1)
 
     def test_return_budget_counts_both_uses_and_does_not_buy_too_late(self):
-        for number, quantity in ((63, 2), (64, 1), (65, None), (70, None)):
+        for number, quantity in ((63,2),(64,None),(65,None),(70,None)):
             with self.subTest(number=number):
                 raw = raid_request(number); raw['teamOur']['goldNum'] = 240
                 s, plan = policy_step(raw, memory_for(raw))
                 self.assertEqual(self.command(plan).get('num'), quantity)
 
-    def test_confirmed_single_deployment_can_make_one_affordable_later_top_up(self):
-        raw = raid_request(); memory = memory_for(raw)
-        s, plan = policy_step(raw, memory)
-        self.assertEqual(self.command(plan)['num'], 1)
-        next_frame(raw, True, held=1, gold=0)
-        s, plan = policy_step(raw, memory)
-        first = Pos.load(self.command(plan)['targetPos'][0])
-        next_frame(raw, True, held=0)
-        s, plan = policy_step(raw, memory)
-        pioneer(raw)['pos'] = self.command(plan)['targetPos'][0]
-        self.assertEqual(memory.boss_raid['deployed_count'], 1)
-        next_frame(raw, True, held=0, gold=120)
-        memory.task_points_succeeded = {(1, 3, 9), (1, 4, 9)}
-        s, plan = policy_step(raw, memory)
-        self.assertEqual(self.command(plan)['action'], 'move')
-        pioneer(raw)['pos'] = self.command(plan)['targetPos'][0]
-        next_frame(raw, True)
-        s, plan = policy_step(raw, memory)
-        self.assertEqual(self.command(plan), {'action':'buy', 'name':ORDER, 'num':1})
-        next_frame(raw, True, held=1, gold=0)
-        s, plan = policy_step(raw, memory)
-        self.assertEqual(self.command(plan)['action'], 'use')
-        second = Pos.load(self.command(plan)['targetPos'][0])
-        self.assertNotEqual(first, second)
-        next_frame(raw, True, held=0)
-        s, plan = policy_step(raw, memory)
-        self.assertEqual(memory.boss_raid['acquired_count'], 2)
-        self.assertEqual(memory.boss_raid['deployed_count'], 2)
-        self.assertEqual(memory.boss_raid['bought_count'], 2)
-        self.assertEqual(memory.boss_raid['spawns'], [first, second])
-        next_frame(raw, True, held=0, gold=500)
-        s, plan = policy_step(raw, memory)
-        self.assertNotIn(self.command(plan).get('action'), ('buy', 'use'))
+    def test_confirmed_single_deployment_never_tops_up_due_to_later_income(self):
+        raw = raid_request(); memory = memory_for(raw,successes=1)
+        s,plan = policy_step(raw,memory)
+        self.assertEqual(self.command(plan)['num'],1)
+        next_frame(raw,True,held=1,gold=0)
+        s,plan = policy_step(raw,memory)
+        self.assertEqual(self.command(plan)['action'],'use')
+        next_frame(raw,True,held=0,gold=500)
+        s,plan = policy_step(raw,memory)
+        self.assertEqual(memory.boss_raid['target_count'],1)
+        self.assertEqual(memory.boss_raid['deployed_count'],1)
+        self.assertNotIn(self.command(plan).get('action'),('buy','use'))
 
     def test_legacy_deployed_marker_does_not_authorize_unknown_extra_purchase(self):
         raw = raid_request(); raw['teamOur']['goldNum'] = 500
@@ -304,7 +281,7 @@ class DualBossTests(unittest.TestCase):
         self.assertFalse(memory.boss_raid.get('failed_positions'))
 
     def test_daily_limit_ten_caps_buy_and_use_before_deployment(self):
-        for used, quantity in ((8, 2), (9, 1), (10, None)):
+        for used, quantity in ((8,2),(9,None),(10,None)):
             with self.subTest(used=used):
                 raw = raid_request(); raw['teamOur']['goldNum'] = 240
                 memory = memory_for(raw); memory.summon_attempts = used
@@ -348,19 +325,18 @@ class DualBossTests(unittest.TestCase):
         s, plan = policy_step(raw, memory)
         self.assertNotIn(self.command(plan).get('action'), ('buy', 'use'))
 
-    def test_unknown_midday_restart_does_not_rebuy_but_carried_orders_can_deploy(self):
-        raw = raid_request(); raw['teamOur']['goldNum'] = 500
-        s, plan = policy_step(raw, GameMemory(opening_complete=True))
-        self.assertNotEqual(self.command(plan).get('action'), 'buy')
-        self.assertTrue(s.memory.boss_raid['purchase_closed'])
-        raw = raid_request(); pioneer(raw)['backpack'] = [ORDER]*2; raw['teamOur']['goldNum'] = 0
-        s, plan = policy_step(raw, GameMemory(opening_complete=True))
-        self.assertEqual(self.command(plan)['action'], 'use')
-        raw = raid_request(); pioneer(raw)['backpack'] = [ORDER]; raw['teamOur']['goldNum'] = 500
-        s, plan = policy_step(raw, GameMemory(opening_complete=True))
-        self.assertEqual(self.command(plan)['action'], 'use')
-        self.assertTrue(s.memory.boss_raid['purchase_closed'])
-        self.assertEqual(s.memory.boss_raid['target_count'], 1)
+    def test_unknown_history_cannot_buy_and_carried_orders_still_wait_for_two_tasks(self):
+        for held in (0,1,2):
+            raw = raid_request(); pioneer(raw)['backpack'] = [ORDER]*held
+            raw['teamOur']['goldNum'] = 500
+            s,plan = policy_step(raw,GameMemory(opening_complete=True))
+            self.assertNotIn(self.command(plan).get('action'),('buy','use'))
+            self.assertTrue(s.memory.boss_raid['purchase_closed'])
+        raw = raid_request(); pioneer(raw)['backpack'] = [ORDER]*2
+        memory = memory_for(raw)
+        memory.boss_raid.update(history_known=False,purchase_closed=True)
+        s,plan = policy_step(raw,memory)
+        self.assertEqual(self.command(plan)['action'],'use')
 
     def test_service_cache_does_not_count_pending_feedback_twice(self):
         raw = raid_request(); raw['teamOur']['goldNum'] = 240
@@ -384,6 +360,7 @@ class DualBossTests(unittest.TestCase):
             with self.subTest(mode=mode):
                 raw = raid_request(); raw['teamOur']['goldNum'] = 100; raw['teamOur']['totalScore'] = 10
                 memory = memory_for(raw)
+                memory.task_points_succeeded.clear()
                 agent = memory.task_agent
                 agent.self_evolve_active = True
                 agent.self_evolve_last_action = 'submitAnswer'
@@ -415,6 +392,7 @@ class DualBossTests(unittest.TestCase):
         raw = raid_request(); raw['teamOur']['goldNum'] = 100; raw['teamOur']['totalScore'] = 10
         memory = memory_for(raw, attempted=False)
         for point in ((3,9), (4,9)):
+            memory.task_points_attempted.add((1,*point))
             agent = memory.task_agent
             agent.self_evolve_active = True
             agent.self_evolve_last_action = 'submitAnswer'

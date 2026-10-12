@@ -299,7 +299,8 @@ class FirstNightDefenseTests(unittest.TestCase):
                 if prepared:
                     ready(raw)
                 memory = GameMemory(opening_complete=True,task_points_attempted=tasks,
-                                    task_points_succeeded=tasks,first_night_defense={'worker_id':501})
+                                    task_points_finished=tasks.copy(),
+                                    task_points_succeeded=(set(sorted(tasks)[:1]) if gold==120 else tasks),first_night_defense={'worker_id':501})
                 s,plan,defense = setup(raw,memory,boss=True)
                 self.assertEqual(defense.reserve_gold(),expected_reserve)
                 pioneer = next(u for u in s.turn.controllable() if u.kind=='pioneer')

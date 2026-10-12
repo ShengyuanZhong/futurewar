@@ -132,16 +132,59 @@ class BossRaid:
             self.plan.summon_used = max(0, self.plan.summon_used-1)
 
     def tasks_finished(self):
-        points = {(x, y) for day, x, y in self.memory.task_points_attempted if day == 1}
-        return (self.s.settings.enable_boss_raid and self.turn.day == 1 and self.turn.is_day
-                and len(points) >= 2 and not self.turn.phase_task)
+        points = {(x,y) for day,x,y in self.memory.task_points_finished | self.memory.task_points_succeeded if day==1}
+        return (self.turn.day==1 and self.turn.is_day and not self.turn.phase_task
+                and (len(points)>=2 or not self.s.settings.enable_tasks))
+
+    def successful_tasks(self):
+        return min(2,len({(x,y) for day,x,y in self.memory.task_points_succeeded if day==1}))
 
     def tasks_succeeded(self):
-        return len({(x, y) for day, x, y in self.memory.task_points_succeeded if day == 1}) >= 2
+        return self.successful_tasks()==2
+
+    def target_orders(self):
+        if not self.tasks_finished():
+            return None
+        return self.state.get('target_count',0) if 'order_decision_round' in self.state else self.successful_tasks()
+
+    def decide_orders(self):
+        if not self.tasks_finished():
+            return False
+        if 'order_decision_round' not in self.state:
+            self.state.update(order_decision_round=self.turn.round_no,
+                              target_count=self.successful_tasks())
+        if self.state['target_count']==0:
+            self.state.update(status='no_successful_tasks',purchase_stage_done=True)
+        return True
+
+    def weapon_upgrades_ready(self):
+        if not self.s.settings.enable_boss_raid or self.turn.day!=1 or not self.turn.is_day:
+            # The first-day purchase window has ended; retain the existing
+            # unified night economy rather than locking vouchers until dawn.
+            return True
+        if self.state.get('purchase_stage_done') or self.state.get('purchase_attempt_round'):
+            return True
+        if not self.tasks_finished():
+            return False
+        target = self.target_orders()
+        return (target==0 or self.state.get('purchase_stage_done',False)
+                or bool(self.state.get('purchase_attempt_round'))
+                or self.state.get('acquired_count',0)>=target)
 
     def day_available(self):
-        return (self.s.settings.enable_boss_raid and self.turn.day == 1
-                and self.turn.is_day and not self.turn.phase_task)
+        return self.s.settings.enable_boss_raid and self.tasks_finished()
+
+    def diagnostic(self):
+        return dict(round=self.turn.round_no,is_day=self.turn.is_day,
+            attempted_tasks=len({(x,y) for day,x,y in self.memory.task_points_attempted if day==1}),
+            finished_tasks=len({(x,y) for day,x,y in self.memory.task_points_finished | self.memory.task_points_succeeded if day==1}),
+            successful_tasks=self.successful_tasks(),active_task=bool(self.turn.phase_task),
+            target_orders=self.state.get('target_count') if 'order_decision_round' in self.state else None,
+            decision_round=self.state.get('order_decision_round'),
+            purchase_attempt_round=self.state.get('purchase_attempt_round'),
+            purchase_stage_done=self.state.get('purchase_stage_done',False),
+            weapon_upgrades_ready=self.weapon_upgrades_ready(),boss_budget=self.budget_reserve(),
+            last_pioneer_decision=self.state.get('decision'))
 
     def available_gold(self):
         return max(0, self.plan.gold - max(0, 3-self.plan.tower_count)*25)
@@ -172,15 +215,21 @@ class BossRaid:
         return self.trip[use_count]
 
     def budget_reserve(self):
-        role = next(iter(self.turn.alive((PIONEER,))), None)
+        role = next(iter(self.turn.alive((PIONEER,))),None)
+        price = self.turn.shop_prices.get(BOSS_ORDER)
         if (not role or not self.s.settings.enable_boss_raid or self.turn.day!=1 or not self.turn.is_day
-                or self.state.get('pending_buy') or self.state.get('pending_use')):
+                or self.state.get('purchase_closed') or price is None
+                or (self.state['deployed_count'] and not self.state['deployment_ledger_confirmed'])
+                or self.state.get('pending_buy')):
             return 0
-        proposal = self.proposal(role)
-        if proposal:
-            return proposal['buy_num'] * self.turn.shop_prices[BOSS_ORDER] if proposal['buy_num'] else 0
-        prepare = self.preparation(role)
-        return prepare['total'] * self.turn.shop_prices[BOSS_ORDER] if prepare else 0
+        # Before both tasks end this is a potential two-order reserve, not a
+        # purchase decision. After settlement it follows the frozen success quota.
+        target = self.target_orders()
+        if target is None:
+            target = 2
+        elif target==0 or self.preparation(role) is None:
+            return 0
+        return max(0,target-self.state['acquired_count'])*price
 
     def spawn_position(self):
         positions = self.spawn_positions(1)
@@ -201,65 +250,54 @@ class BossRaid:
         return self.spawn_cache[key]
 
     def proposal(self, role):
-        held = self.held_orders(role)
+        target = self.target_orders()
         deployed = self.state['deployed_count']
-        acquired = self.state['acquired_count']
-        price = self.turn.shop_prices.get(BOSS_ORDER)
-        needed_for_two = max(0, 2-acquired)
-        wealthy = (price is not None and self.available_gold() >= price*needed_for_two)
-        dual = (self.tasks_succeeded() or wealthy or acquired >= 2
-                or self.state.get('target_count') == 2)
-        affordable_single = price is not None and self.available_gold() >= price
-        permitted = self.tasks_finished() or dual or held > 0 or affordable_single
-        if not permitted:
+        if target is None or target<=deployed:
             return None
-        ceiling = 2 if dual else 1
-        top_up = (deployed == 1 and acquired == 1 and held == 0
-                  and self.state['history_known'] and self.state['deployment_ledger_confirmed']
-                  and not self.state.get('purchase_closed'))
-        if self.state.get('purchase_locked') and not top_up:
-            ceiling = min(2, self.state.get('target_count', max(1, acquired)))
-        for total in range(ceiling, deployed, -1):
-            uses = total-deployed
-            if uses > 10-self.plan.summon_used:
-                continue
-            buy_num = max(0, uses-held)
-            if buy_num:
-                if (self.state.get('purchase_closed') or (self.state.get('purchase_locked') and not top_up)
-                        or price is None or acquired+buy_num > 2
-                        or len(role.backpack)+buy_num > role.capacity
-                        or self.available_gold() < buy_num*price):
-                    continue
-                trip = self.shop_trip(role, uses)
-                if trip is None:
-                    continue
-            else:
-                trip = None
-                control = self.s.control_position(role)
-                if control is None:
-                    continue
-                cost = self.s.route(role).cost.get(control, 10_000)
-                if cost+uses+(self.s.settings.return_margin if cost else 0) > self.turn.daylight_left:
-                    continue
-            positions = self.spawn_positions(uses)
-            if len(positions) == uses:
-                return dict(total=total, uses=uses, buy_num=buy_num, trip=trip, positions=positions)
-        return None
+        uses = target-deployed
+        held = self.held_orders(role)
+        buy_num = max(0,uses-held)
+        # An anomalous partial inventory closes additional purchases, but the
+        # genuinely held orders can still be used without changing the quota.
+        if buy_num and self.state.get('purchase_closed') and held:
+            uses,buy_num = min(uses,held),0
+        if uses>10-self.plan.summon_used:
+            return None
+        if buy_num:
+            price = self.turn.shop_prices.get(BOSS_ORDER)
+            if (self.state.get('purchase_closed') or price is None
+                    or (deployed and not self.state['deployment_ledger_confirmed'])
+                    or self.state['acquired_count']+buy_num>target
+                    or len(role.backpack)+buy_num>role.capacity
+                    or self.available_gold()<buy_num*price):
+                return None
+            trip = self.shop_trip(role,uses)
+            if trip is None:
+                return None
+        else:
+            trip = None
+            control = self.s.control_position(role)
+            if control is None:
+                return None
+            cost = self.s.route(role).cost.get(control,10_000)
+            if cost+uses+(self.s.settings.return_margin if cost else 0)>self.turn.daylight_left:
+                return None
+        positions = self.spawn_positions(uses)
+        if len(positions)!=uses:
+            return None
+        return dict(total=target,uses=uses,buy_num=buy_num,trip=trip,positions=positions)
 
     def preparation(self, role):
-        """Keep the old affordable-time shop wait while miners earn the price."""
-        if (not (self.tasks_finished() or self.tasks_succeeded())
-                or self.state['acquired_count'] or self.state.get('purchase_closed')
-                or BOSS_ORDER not in self.turn.shop_prices):
+        target = self.target_orders()
+        if target is None or target<=self.state['acquired_count'] or self.state.get('purchase_closed'):
             return None
-        for total in range(2 if self.tasks_succeeded() else 1, 0, -1):
-            if (len(role.backpack)+total > role.capacity or total > 10-self.plan.summon_used
-                    or len(self.spawn_positions(total)) != total):
-                continue
-            trip = self.shop_trip(role, total)
-            if trip is not None:
-                return dict(total=total, trip=trip)
-        return None
+        uses = target-self.state['deployed_count']
+        buy_num = target-self.state['acquired_count']
+        if (BOSS_ORDER not in self.turn.shop_prices or len(role.backpack)+buy_num>role.capacity
+                or uses>10-self.plan.summon_used or len(self.spawn_positions(uses))!=uses):
+            return None
+        trip = self.shop_trip(role,uses)
+        return dict(total=target,trip=trip) if trip is not None else None
 
     def return_home(self, role):
         if self.state.get('returned'):
@@ -277,7 +315,11 @@ class BossRaid:
             missing_walls=len(self.s.missing_walls()),reason='evaluating')
         if not self.day_available():
             self.state['decision']['reason'] = ('disabled' if not self.s.settings.enable_boss_raid else
-                'after_day_one' if self.turn.day!=1 else 'night' if not self.turn.is_day else 'active_task')
+                'after_day_one' if self.turn.day!=1 else 'night' if not self.turn.is_day else 'active_task' if self.turn.phase_task else 'waiting_for_two_tasks')
+            return False
+        self.decide_orders()
+        if self.state['target_count']==0:
+            self.state['decision']['reason'] = 'no_successful_tasks'
             return False
         if self.state.get('pending_buy') or self.state.get('pending_use'):
             self.state['decision']['reason'] = 'awaiting_inventory_feedback'
@@ -287,23 +329,27 @@ class BossRaid:
             self.state['decision']['reason'] = ('purchase_history_unknown' if not self.state.get('history_known')
                 else 'purchase_closed' if self.state.get('purchase_closed') else 'no_feasible_purchase_or_use')
             if self.state.get('order_acquired') or self.state.get('deployed_count'):
+                if self.state['deployed_count'] and not self.state['deployment_ledger_confirmed']:
+                    self.state['purchase_stage_done'] = True
                 return self.return_home(role)
             prepare = self.preparation(role)
             if prepare:
                 self.state['decision']['reason'] = 'waiting_for_income_at_shop'
-                self.state.update(status='shopping', target_count=prepare['total'])
+                self.state.update(status='shopping')
                 post = prepare['trip'][2]
                 if role.pos != post:
                     step = self.s.route(role).step({post})
                     return step is not None and self.plan.add(role.unit_id, {'action':'move','targetPos':[step.dump()]})
                 self.plan.used.add(role.unit_id)
                 return True
+            self.state['purchase_stage_done'] = True
             return False
         self.state['target_count'] = proposal['total']
         self.state['decision'].update(reason='using_order' if not proposal['buy_num'] else 'purchasing_order',
                                       buy_num=proposal['buy_num'],target_count=proposal['total'])
         buy_num = proposal['buy_num']
         if not buy_num:
+            self.state['purchase_stage_done'] = True
             spawn = proposal['positions'][0]
             if self.plan.add(role.unit_id, {'action': 'use', 'name': BOSS_ORDER, 'targetPos': [spawn.dump()]}):
                 self.state.pop('returned', None)
@@ -320,6 +366,7 @@ class BossRaid:
             if step is not None:
                 return self.plan.add(role.unit_id, {'action': 'move', 'targetPos': [step.dump()]})
             return False
+        self.state['purchase_attempt_round'] = self.turn.round_no
         if self.plan.add(role.unit_id, {'action': 'buy', 'name': BOSS_ORDER, 'num': buy_num}):
             self.state.update(status='buy_pending', buy_round=self.turn.round_no,
                 pending_buy={'round':self.turn.round_no,'num':buy_num,

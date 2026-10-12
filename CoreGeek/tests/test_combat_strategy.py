@@ -113,7 +113,7 @@ class CombatStrategyTests(unittest.TestCase):
     def test_treasure_waits_then_sacrifices_exact_list(self):
         raw = request(5)
         raw["teamOur"]["roles"][2]["backpack"] = ["StarSand", "Medicine"]
-        memory = GameMemory(opening_complete=True, treasure={"targetPos": {"x": 15, "y": 13}, "items": ["StarSand"], "startRound": 6, "endRound": 9})
+        memory = GameMemory(opening_complete=True, task_points_attempted={(1,14,14),(1,17,17)}, task_points_finished={(1,14,14),(1,17,17)}, treasure={"targetPos": {"x": 15, "y": 13}, "items": ["StarSand"], "startRound": 6, "endRound": 9})
         self.assertNotIn("502", self.execute(raw, memory=memory).commands)
         raw["roundNo"] = 6
         cmd = self.execute(raw, memory=memory).commands["502"]
