@@ -26,7 +26,7 @@ def occupied(number=60,mirrored=False):
     raw['teamOur']['goldNum'] = 0
     raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles'] if u['pos'] != gap.dump()]
     role(raw,501).update(pos=point(8,7,mirrored).dump(),backpack=['stone'])
-    role(raw,504).update(pos=point(4,5,mirrored).dump(),backpack=['stone']*2)
+    role(raw,504).update(pos=point(3,5,mirrored).dump(),backpack=['stone']*2)
     p = point(8,8,mirrored)
     raw['teamOur']['roles'].append(unit(505,'imp',p.x,p.y,health=500))
     raw['teamEnemy']['roles'] = [unit(901,'worker',gap.x,gap.y,health=500)]
@@ -45,6 +45,26 @@ def apply_moves(test,raw,s,plan):
         test.assertNotIn(target,destinations)
         destinations.add(target)
         actor['pos'] = target.dump()
+    for uid,command in plan.commands.items():
+        if command['action'] == 'remove':
+            raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles']
+                if u['roleType'] != 'wall' or u['pos'] != command['targetPos'][0]]
+        elif command['action'] == 'build' and command['name'] == 'wall':
+            pos = Pos.load(command['targetPos'][0])
+            test.assertNotIn(pos, s.turn.occupied_cells())
+            role(raw,int(uid))['backpack'].remove('stone')
+            wall_id = 1+max(u['id'] for u in raw['teamOur']['roles']+raw['teamEnemy']['roles'])
+            raw['teamOur']['roles'].append(unit(wall_id,'wall',pos.x,pos.y,health=1000))
+    raw['lastRoundRoleActionResults'] = {uid: True for uid in plan.commands}
+
+
+def open_entrance(raw):
+    turn = Turn.load(raw)
+    base = turn.station()
+    offset = 2 if Settings().mirrored_layout(turn) else -1
+    gate = Pos(base.pos.x+offset,base.pos.y+2)
+    raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles'] if u['pos'] != gate.dump()]
+    return raw
 
 
 class GapDefenseTests(unittest.TestCase):
@@ -53,7 +73,7 @@ class GapDefenseTests(unittest.TestCase):
             turn = Turn.load(fortified(30,mirrored))
             base = station_footprint(turn.station().pos)
             settings = Settings()
-            for kind,ring,count in (('rocket',1,3),('wall',2,12)):
+            for kind,ring,count in (('rocket',1,3),('wall',2,17)):
                 cells = settings.build_cells(turn,kind)
                 self.assertEqual(len(cells),count)
                 self.assertTrue(all(min(distance(p,b) for b in base)==ring for p in cells))
@@ -93,9 +113,9 @@ class GapDefenseTests(unittest.TestCase):
             self.assertFalse(s.gap_guard.gaps)
 
     def test_unoccupied_other_walls_are_built_before_waiting(self):
-        raw = occupied(30)
+        raw = open_entrance(occupied(30))
         raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles'] if u['pos'] != Pos(9,6).dump()]
-        role(raw,501)['pos'] = Pos(8,6).dump()
+        role(raw,501).update(pos=Pos(8,6).dump(),backpack=['stone']*2)
         s,plan = strategy(raw,GameMemory())
         self.assertFalse(s.gap_guard.worker(s.turn.workers()[0]))
         s.run()
@@ -104,17 +124,28 @@ class GapDefenseTests(unittest.TestCase):
         self.assertTrue(all(Pos.load(c['targetPos'][0]) in s.settings.build_cells(s.turn,c['name']) for c in builds))
 
     def test_two_workers_continue_distinct_remaining_wall_jobs(self):
-        raw = occupied(25)
+        raw = open_entrance(occupied(25))
         for p in (Pos(9,8),Pos(9,6)):
             raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles'] if u['pos'] != p.dump()]
         role(raw,501).update(pos=Pos(8,6).dump(),backpack=['stone']*3)
-        role(raw,504).update(pos=Pos(8,5).dump(),backpack=['stone']*2)
+        role(raw,504).update(pos=Pos(10,5).dump(),backpack=['stone']*2)
         role(raw,505)['pos'] = Pos(6,8).dump()
-        s,plan = strategy(raw,GameMemory())
-        s.run()
-        self.assertTrue(all(uid in plan.commands for uid in ('501','504')))
-        self.assertNotEqual(plan.commands['501'].get('targetPos'),plan.commands['504'].get('targetPos'))
-        self.assertFalse(any(c['action']=='remove' for c in plan.commands.values()))
+        memory = GameMemory()
+        built = {}
+        for number in range(25,40):
+            raw['roundNo'] = number
+            s,plan = strategy(raw,memory);s.run()
+            self.assertFalse(any(c['action']=='remove' for c in plan.commands.values()))
+            for uid,command in plan.commands.items():
+                if command['action']=='build' and command['name']=='wall':
+                    target = Pos.load(command['targetPos'][0])
+                    self.assertIn(target,{Pos(9,6),Pos(9,8)})
+                    built[uid] = target
+            apply_moves(self,raw,s,plan);memory.record(s.turn,plan)
+            if len(built)==2:
+                break
+        self.assertEqual(set(built),{'501','504'})
+        self.assertEqual(set(built.values()),{Pos(9,6),Pos(9,8)})
 
     def test_dusk_waits_adjacent_and_never_builds_extra_walls(self):
         raw = occupied(70)
@@ -213,6 +244,7 @@ class GapDefenseTests(unittest.TestCase):
         raw['teamEnemy']['roles'] = []
         role(raw,501)['health'] = 0
         role(raw,505)['pos'] = GAP.dump()
+        role(raw,501)['backpack'] = ['stone']*2
         s,plan = strategy(raw,memory);s.run()
         self.assertIn(505,plan.used)
         self.assertNotIn('505',plan.commands)
@@ -222,6 +254,7 @@ class GapDefenseTests(unittest.TestCase):
         memory = GameMemory(opening_complete=True)
         strategy(raw,memory)
         raw['roundNo'] = 131
+        open_entrance(raw)
         raw['teamEnemy']['roles'] = []
         role(raw,505)['pos'] = GAP.dump()
         s,plan = strategy(raw,memory);s.run()
@@ -234,10 +267,11 @@ class GapDefenseTests(unittest.TestCase):
         self.assertEqual(plan.commands['501'],build_command(GAP,'wall'))
 
     def test_daytime_rebuild_from_far_away_precedes_supply(self):
-        raw = occupied(60)
+        raw = occupied(40)
         memory = GameMemory(opening_complete=True)
         strategy(raw,memory)
-        raw['roundNo'] = 61
+        raw['roundNo'] = 41
+        open_entrance(raw)
         raw['teamEnemy']['roles'] = []
         role(raw,501)['pos'] = Pos(6,5).dump()
         s,plan = strategy(raw,memory);s.run()
@@ -324,11 +358,14 @@ class GapDefenseTests(unittest.TestCase):
             strategy(raw,memory)
             raw['teamEnemy']['roles'] = []
             role(raw,505)['pos'] = corner.dump()
-            role(raw,501)['pos'] = point(6,5,mirrored).dump()
+            role(raw,501).update(pos=point(6,5,mirrored).dump(),backpack=['stone']*2)
             for number in range(131,145):
                 raw['roundNo'] = number
                 s,plan = strategy(raw,memory);s.run()
-                if plan.commands.get('501')==build_command(corner,'wall'):
+                builders = [uid for uid,command in plan.commands.items()
+                            if command==build_command(corner,'wall')]
+                if builders:
+                    self.assertTrue(all(uid in ('501','504') for uid in builders))
                     break
                 self.assertNotEqual(plan.commands.get('501',{}).get('action'),'collect')
                 apply_moves(self,raw,s,plan);memory.record(s.turn,plan)
@@ -365,12 +402,12 @@ class BossPurchaseRegressionTests(unittest.TestCase):
 
     def test_two_orders_remain_affordable_before_guard_stock(self):
         raw,memory,settings = self.setup_raid(240)
-        memory.task_points_succeeded = {(1,3,9),(1,4,9)}
+        memory = finished_tasks(2)
         s,plan = strategy(raw,memory,settings);s.run()
         self.assertEqual(plan.commands['502'],{'action':'buy','name':ORDER,'num':2})
         self.assertEqual(plan.gold,0)
 
-    def test_single_affordability_with_known_history_still_waits_for_two_task_attempts(self):
+    def test_single_affordability_with_known_history_still_waits_for_three_task_attempts(self):
         raw,_,settings = self.setup_raid()
         memory = GameMemory(opening_complete=True,last_round=29,day=1)
         s,plan = strategy(raw,memory,settings);s.run()
@@ -414,7 +451,7 @@ class BossPurchaseRegressionTests(unittest.TestCase):
         role(raw,502)['pos'] = Pos(4,7).dump()
         role(raw,501)['pos'] = Pos(3,7).dump()
         s,plan = strategy(raw,memory,settings)
-        self.assertEqual(s.boss_raid.budget_reserve(),240)
+        self.assertEqual(s.boss_raid.budget_reserve(),360)
         self.assertFalse(s.first_defense.supply(next(w for w in s.turn.workers() if w.unit_id==501)))
         self.assertFalse(any(c['action']=='buy' for c in plan.commands.values()))
 

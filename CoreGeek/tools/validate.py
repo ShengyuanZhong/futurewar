@@ -138,6 +138,45 @@ def independent_crew_opportunity(raw, boss, crews, budget=4, reserved=()):
             'efficient':bool(direct or cheap_walls or any(w is not None and w <= budget for w in walks.values()))}
 
 
+def independent_base_ray_guns(raw, origin):
+    """Visible first guns on stationary base rays, using raw square geometry.
+
+    This audit never calls the production raider or projectile planner. A clear
+    in-range base footprint cell rules out destroying any other ray's gun.
+    Walls use closed contact (and the special exact-45-degree cell rule), while
+    other observed buildings/roles block when the segment enters their interior.
+    """
+    enemy = raw['teamEnemy']['roles']
+    base_cells = [p for u in enemy if u['health'] > 0 and u['roleType']=='station'
+                  for p in independent_footprint(u) if 0 < distance(origin,p) <= 3]
+    gun_ids = {u['id'] for u in enemy if u['health'] > 0
+               and u['roleType'] in ('gatling','railgun','rocket')}
+    guns = set()
+    for target in base_cells:
+        hits = []
+        for u in raw['teamOur']['roles']+enemy:
+            if u['health'] <= 0:
+                continue
+            for cell in independent_footprint(u):
+                if cell in (origin,target):
+                    continue
+                if u['roleType']=='wall':
+                    interval = (independent_cell_interval(origin,target,cell)
+                                if independent_wall_blocks(origin,target,cell) else None)
+                elif u['roleType'] in ('station','gatling','railgun','rocket','worker','pioneer','imp'):
+                    interval = independent_cell_interval(origin,target,cell,interior=True)
+                else:
+                    continue
+                if interval is not None:
+                    hits.append((interval[0],u['id'],cell))
+        if not hits:
+            return set()
+        _, uid, cell = min(hits)
+        if uid in gun_ids:
+            guns.add(cell)
+    return guns
+
+
 def independent_contract(raw, response, controller_budget=4):
     """Audit fresh observations; the stress service has no failed-shot history."""
     assert set(response) == {"roleCommandMap", "prompt", "executeCmd"}
@@ -197,13 +236,19 @@ def independent_contract(raw, response, controller_budget=4):
                 assert len(command['targetPos']) == 1 and owned[key].get('abnormalState') != 'dizzy'
                 target = Pos.load(command['targetPos'][0]); origin = Pos.load(owned[key]['pos'])
                 assert 0 < distance(origin,target) <= 3
-                if owned[key]['roleType'] == 'bossRobot' and cannon_crews:
+                if owned[key]['roleType'] == 'bossRobot':
                     base_cells = {p for u in enemy_roles if u['health'] > 0 and u['roleType'] == 'station'
                                   for p in independent_footprint(u)}
-                    assert target in crew_cells | enemy_wall_cells | base_cells, 'BOSS target must be crew, breach wall or base'
-                    if target in base_cells:
+                    weapon_cells = {Pos.load(u['pos']) for u in enemy_weapons}
+                    if target in weapon_cells:
+                        assert target in independent_base_ray_guns(raw,origin), \
+                            'BOSS weapon target must be first obstacle on a stationary base ray with no clear base cell'
+                    if cannon_crews:
+                        assert target in crew_cells | enemy_wall_cells | base_cells | weapon_cells, \
+                            'BOSS target must be crew, breach wall, base or a base-ray weapon'
+                    if cannon_crews and target in base_cells | weapon_cells:
                         opportunity = independent_crew_opportunity(raw,owned[key],cannon_crews,controller_budget,destinations)
-                        assert not opportunity['efficient'], 'fresh BOSS may siege the base only when cannon crew access exceeds its budget'
+                        assert not opportunity['efficient'], 'fresh BOSS may siege the base or weapon only when cannon crew access exceeds its budget'
                 enemy_cells = set()
                 for enemy in raw['teamEnemy']['roles']:
                     if enemy['health'] > 0:
@@ -350,7 +395,7 @@ def main():
     round32 = {p.relative_to(ROOT.parent).as_posix():hashlib.sha256(p.read_bytes()).hexdigest()
                for p in sorted((ROOT.parent / '32_docs').glob('*')) if p.is_file()}
     report = {"created_utc": datetime.now(timezone.utc).isoformat(), "python": platform.python_version(),
-              "platform": platform.platform(), "rules_baseline": "legacy v1.0 plus v2.0 imp/destroy and owned robot move/attack/summon; user rocket ratio, legal wall rings, cannon-crew-first BOSS raid with bounded chase then base siege, and a frozen zero/one/two BOSS quota from task successes after both attempts end; weapon purchases follow the order attempt; use waits for actual worker survey and live normal-unit sight; inferred common cannon control cells guide placement, not attacks; scouted single-wall breach work is not chase walking; rear spawn pad 2; day-one hero sight mission and worker departure after observed defense completion; summoned robots supply no sight per user staff clarification; remembered static buildings and visible-hero interior LOS are conservative planning assumptions; persistent static-shot feedback and close base recovery; user-confirmed footprint distance-one weapons/distance-two walls, no detours; worker/imp gap relay, BOSS budget before first-night supplies, guard and scout catch avoidance; other v2 features pending",
+              "platform": platform.platform(), "rules_baseline": "legacy v1.0 plus v2.0 imp/destroy and owned robot move/attack/summon; user rocket ratio, legal wall rings, cannon-crew-first BOSS raid with bounded chase then base siege, and a frozen zero/one/two/three BOSS quota from independently recorded Task1/Task2/Task1 attempts after all three end; weapon purchases follow the order attempt; use waits for actual worker survey and live normal-unit sight; inferred common cannon control cells guide placement, not attacks; scouted single-wall breach work is not chase walking; rear spawn pad 2; day-one hero sight mission and worker departure after observed defense completion; summoned robots supply no sight per user staff clarification; remembered static buildings and visible-hero interior LOS are conservative planning assumptions; persistent static-shot feedback and close base recovery; user-confirmed footprint distance-one weapons/distance-two walls, no detours; 17-wall mirrored home layout with an actual daytime removed wall and interior dusk resealing, reserved stone and restored level two; visible weapon-on-base-ray clearance and stationary no-gun base-neighbour sweep; worker/imp gap relay, BOSS budget before first-night supplies, guard and scout catch avoidance; other v2 features pending",
               "round32_rule_hashes": round32,
               "tests": {"run": result.testsRun, "failures": len(result.failures), "errors": len(result.errors)},
               "synthetic_input_stress": {"seeds": seeds, "teams": ["challenger", "defender"], "cases": count,
@@ -361,7 +406,7 @@ def main():
                   "controlled_robot_priority_cases": controlled_priority_cases,
                   "median_ms": round(statistics.median(timings), 3), "max_ms": round(max(timings), 3)},
               "source_hashes": hashes, "baseline_hashes": baseline,
-              "construction_policy": "user-confirmed ring geometry: weapons at footprint Chebyshev distance one, walls distance two; configured layouts are filtered by these rings; U blueprint unchanged",
+              "construction_policy": "user-confirmed ring geometry: weapons at footprint Chebyshev distance one, walls distance two; configured layouts are filtered by these rings; 17-wall mirrored blueprint, one actual daytime entrance and night restoration; no door building or wall traversal introduced",
               "unverified": ["D01 complete official construction coordinates; rear spawn pad 2 is user-screenshot evidence, not official region data", "D07 non-45-degree trajectory boundaries and round conventions; exact-45 side-wall corners are excluded per user clarification",
                              "hidden heroes cannot be attacked or inferred dead; remembered static buildings support planning and visible-crew recognition, not attack target invention",
                              "scout observation neighbourhood and travel ETA are planning heuristics; actual official sight, collisions and raid damage require match validation",

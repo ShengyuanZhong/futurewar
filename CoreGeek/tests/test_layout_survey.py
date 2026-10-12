@@ -95,6 +95,8 @@ class LayoutSurveyTests(unittest.TestCase):
 
     def test_last_wall_command_is_not_actual_construction_completion(self):
         raw, _ = survey_request()
+        raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles'] if not (u['roleType']=='wall' and u['pos']==Pos(5,9).dump())]
+        actor(raw,HOME).update(pos=Pos(3,7).dump(),backpack=['stone']+['WallFixer']*5)
         missing = Pos(9, 6)
         raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles']
             if not (u['roleType'] == 'wall' and u['pos'] == missing.dump())]

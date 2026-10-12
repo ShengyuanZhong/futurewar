@@ -4,6 +4,7 @@ from dataclasses import fields
 from types import SimpleNamespace
 
 from agent.protocol import PIONEER, distance
+from agent.first_day_tasks import record_attempt, finish_attempt as finish_task_attempt
 from .llm_service import parse_object
 from .task_context import COMMAND_LIMIT, ANSWER_LIMIT, normalize_reply
 from .task_controller import SelfEvolveController, _parse_llm_response
@@ -37,13 +38,21 @@ class TaskService:
     def active(self, turn, memory, plan, llm, reply: str | dict,
                defense_due: bool = False) -> tuple[str, str]:
         agent = memory.task_agent
+        current = memory.task_attempts.get(memory.task_active_attempt)
+        fresh_accepted = bool(current and not current['finished'] and current['origin']=='accepted'
+                              and memory.task_active_attempt != agent.attempt_key)
+        if turn.phase_task and fresh_accepted:
+            # A confirmed accept can precede the question by more than one
+            # frame. Its identity/type survive even when both points are near.
+            memory.task_started = memory.task_active_attempt[1]
         pioneer = next(iter(turn.alive((PIONEER,))), None)
         old_pioneer = next((u for u in turn.ours if u.kind == PIONEER), None)
         role = SimpleNamespace(id=old_pioneer.unit_id if old_pioneer else -1,
                                desired_action='', task_answer='')
         consecutive = memory.last_round == turn.round_no - 1
         new_task = bool(turn.phase_task) and (turn.phase_task != agent.observed_description
-                    or memory.task_started != agent.self_evolve_started_round)
+                    or memory.task_started != agent.self_evolve_started_round
+                    or (memory.task_active_attempt is not None and memory.task_active_attempt != agent.attempt_key))
         same_run = not new_task and turn.phase_task == agent.observed_description
         tasks = {f'{t.pos.x},{t.pos.y}': SimpleNamespace(task_position=(t.pos.x, t.pos.y),
                  task_type=t.kind, timeout_rounds=t.timeout, is_valid=t.valid) for t in turn.tasks}
@@ -83,9 +92,17 @@ class TaskService:
         successful_point = (state.accepted_task.get('task_position') if state.accepted_task else None)
         started = state.self_evolve_started_round or memory.task_started or memory.task_accept_round or turn.round_no
         attempt_day = (started-1)//130+1
+        attempt_key = state.attempt_key
+        if attempt_key is None and state.self_evolve_active and successful_point is not None:
+            attempt_key = record_attempt(memory,attempt_day,started,successful_point,
+                (state.accepted_task or {}).get('task_type',''),origin='active_phase')
+            state.attempt_key = attempt_key
 
         def finish_attempt():
-            if successful_point is not None:
+            current_key = state.attempt_key or attempt_key
+            if current_key in memory.task_attempts:
+                finish_task_attempt(memory,current_key,turn.round_no,reason='task_ended')
+            elif successful_point is not None:
                 memory.task_points_finished.add((attempt_day,*successful_point))
         confirmed_submission = (consecutive and state.self_evolve_active and controller._was_submitting()
             and submitted.get('action') == 'submitAnswer'
@@ -95,6 +112,7 @@ class TaskService:
         if finished and confirmed_submission and successful_point is not None:
             submitted_day = (memory.last_round - 1) // 130 + 1
             memory.task_points_succeeded.add((submitted_day, *successful_point))
+            finish_task_attempt(memory,attempt_key,turn.round_no,succeeded=True,reason='rewarded_submission')
         if finished:
             finish_attempt()
             state.suspended = True
@@ -103,7 +121,7 @@ class TaskService:
             controller._archive_experience()
             controller._reset_agent()
         if new_task:
-            if memory.task_accept_round != turn.round_no - 1:
+            if memory.task_accept_round != turn.round_no - 1 and not fresh_accepted:
                 adjacent = [t for t in turn.tasks if pioneer and
                             any(distance(pioneer.pos, p) <= 1 for p in turn.task_cells(t))]
                 # A mid-game observation cannot identify an ambiguous point with certainty.
@@ -112,6 +130,14 @@ class TaskService:
                     inferred.accept(adjacent[0])
                 state.accepted_task = inferred.accepted_task
                 state.self_evolve_pending_pos = inferred.self_evolve_pending_pos
+            if memory.task_active_attempt is None or (
+                    memory.task_attempts[memory.task_active_attempt]['finished']):
+                if state.accepted_task:
+                    point = state.accepted_task['task_position']
+                    accepted_round = memory.task_accept_round if memory.task_accept_round==turn.round_no-1 else (memory.task_started or turn.round_no)
+                    record_attempt(memory,(accepted_round-1)//130+1,accepted_round,point,
+                                   state.accepted_task.get('task_type',''),origin='active_phase')
+            state.attempt_key = memory.task_active_attempt
             controller._reset_agent(cooldown=False)
             state.self_evolve_task_desc = turn.phase_task
             state.self_evolve_first_question = turn.phase_task

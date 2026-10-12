@@ -14,8 +14,10 @@ from .boss_raid import BOSS_ORDER, BossRaid
 from .robot_raider import RobotRaider
 from .raid_scouts import RaidScouts
 from .first_night_defense import FirstNightDefense
+from .day_gate import DayGate
 from .summoning import rear_spawn_position
 from . import upgrade_policy
+from .first_day_tasks import TASK_SEQUENCE, task_attempts, task_number, finished_count, finish_attempt
 from .protocol import (IMP, MINERALS, PIONEER, TOWER_TYPES, Pos, Turn, Unit,
                        attack_command, build_command, collect_command, distance, move_command)
 
@@ -38,6 +40,7 @@ class Strategy:
         self.gap_guard = WallGapDefense(self)
         self.gap_guard.choose_responders()
         self.first_defense = FirstNightDefense(self)
+        self.day_gate = DayGate(self)
         self.boss_raid = BossRaid(self)
         self.raider = RobotRaider(self)
         self.raid_scouts = RaidScouts(self)
@@ -158,6 +161,8 @@ class Strategy:
 
     def run_worker(self, role: Unit) -> None:
         """One economic schedule; night adds safety and assigned guard duty."""
+        if self.day_gate.worker(role):
+            return
         if self.gap_guard.worker(role):
             return
         if self.first_defense.worker(role):
@@ -235,26 +240,40 @@ class Strategy:
 
     def missing_walls(self) -> list[Pos]:
         standing = {w.pos for w in self.turn.walls()}
-        return [p for p in self.settings.build_cells(self.turn, "wall") if p not in standing]
+        gate = getattr(self, 'day_gate', None)
+        gate_pos = gate.pos if gate and gate.enabled else None
+        if gate is None and self.settings.default_operator_position(self.turn) is not None:
+            base = self.turn.station()
+            gate_pos = Pos(base.pos.x + (2 if self.settings.mirrored_layout(self.turn) else -1), base.pos.y + 2)
+        return [p for p in self.settings.build_cells(self.turn, "wall") if p not in standing
+                and not (self.turn.is_day and p == gate_pos)]
 
     def construction_walls(self) -> list[Pos]:
-        return self.missing_walls()
+        gate = getattr(self, 'day_gate', None)
+        pos = gate.pos if gate and gate.enabled else None
+        if gate is None and self.settings.default_operator_position(self.turn) is not None:
+            base = self.turn.station()
+            pos = Pos(base.pos.x + (2 if self.settings.mirrored_layout(self.turn) else -1), base.pos.y + 2)
+        return [p for p in self.missing_walls() if p != pos]
 
     def stone_targets(self) -> dict[int, int]:
         workers = self.turn.workers()
         remaining = len(self.construction_walls())
         targets = {}
         capacity = {}
+        reserve = {}
         for role in workers:
             held = role.backpack.count("stone")
-            targets[role.unit_id] = min(held, remaining)
-            remaining -= targets[role.unit_id]
+            reserve[role.unit_id] = self.day_gate.reserve_stone(role)
+            allocated = min(max(0,held-reserve[role.unit_id]),remaining)
+            targets[role.unit_id] = allocated + reserve[role.unit_id]
+            remaining -= allocated
             capacity[role.unit_id] = max(held, role.capacity - len(role.backpack) + held)
         while remaining:
             eligible = [uid for uid, quota in targets.items() if quota < capacity[uid]]
             if not eligible:
                 break
-            uid = min(eligible, key=lambda key: (targets[key], key))
+            uid = min(eligible, key=lambda key: (targets[key]-reserve[key], key))
             targets[uid] += 1
             remaining -= 1
         return targets
@@ -341,7 +360,7 @@ class Strategy:
         return True
 
     def build_wall(self, role: Unit) -> bool:
-        if not self.turn.is_day:
+        if not self.turn.is_day or role.backpack.count('stone') <= self.day_gate.reserve_stone(role):
             return False
         walls = [p for p in self.construction_walls() if p not in self.turn.blocked(role)
                  and p not in self.plan.reserved and p not in self.goals and p != role.pos
@@ -465,6 +484,8 @@ class Strategy:
         return upgrade_policy.upgrades_complete(self)
 
     def wall_keeps_exit(self, role: Unit, target: Pos) -> bool:
+        if self.day_gate.enabled and target == self.day_gate.pos:
+            return self.day_gate.can_seal(role)
         # Do not close a reachable route to a vendor/task point with this wall.
         if distance(role.pos, target) > 1:
             return True
@@ -504,6 +525,11 @@ class Strategy:
     def sell(self, role: Unit, keep_stone: bool = False) -> bool:
         minerals = Counter(i for i in role.backpack if i in MINERALS and i in self.turn.vendor_prices
                            and (i != "stone" or not keep_stone))
+        gate = getattr(self, 'day_gate', None)
+        if not keep_stone and gate is not None:
+            minerals['stone'] = max(0, minerals['stone'] - gate.reserve_stone(role))
+            if not minerals['stone']:
+                minerals.pop('stone', None)
         if not minerals:
             return False
         near = self.plan.near_zone(role, "vendor")
@@ -604,10 +630,32 @@ class Strategy:
         agent = self.memory.task_agent if self.memory else None
         cooling_point = (self.memory.last_task_point if agent and
                          self.turn.round_no < agent.self_evolve_abandon_tick else None)
-        attempted = self.memory.task_points_attempted if self.memory else set()
-        tasks = [t for t in self.turn.tasks if t.valid and t.cooldown == 0
-                 and (self.turn.day, t.pos.x, t.pos.y) not in attempted
-                 and (t.pos.x, t.pos.y) != cooling_point]
+        first_day = self.turn.day==1
+        if first_day:
+            attempts = task_attempts(self.memory)
+            pending = next(((key,job) for key,job in attempts if not job['finished']),None)
+            if pending:
+                key,job = pending
+                selected = next((t for t in self.turn.tasks if (t.pos.x,t.pos.y)==job['point']),None)
+                timeout = selected.timeout if selected and selected.timeout>0 else 15
+                if self.turn.round_no-key[1] > timeout:
+                    finish_attempt(self.memory,key,self.turn.round_no,reason='accepted_phase_timeout')
+                else:
+                    self.memory.task_schedule.update(status='awaiting_task_phase',attempt=key)
+                    self.plan.used.add(role.unit_id)
+                    return True
+            step = finished_count(self.memory)
+            if step>=len(TASK_SEQUENCE):
+                self.memory.task_schedule.update(status='three_attempts_finished',step=step)
+                return False
+            expected = TASK_SEQUENCE[step]
+            tasks = [t for t in self.turn.tasks if task_number(t.kind)==expected]
+            self.memory.task_schedule.update(round=self.turn.round_no,step=step+1,expected_point=expected,
+                                             status='selecting_task')
+        else:
+            tasks = [t for t in self.turn.tasks if t.valid and t.cooldown==0
+                     and (self.turn.day,t.pos.x,t.pos.y) not in self.memory.task_points_attempted
+                     and (t.pos.x,t.pos.y)!=cooling_point]
         tasks.sort(key=lambda t: (self.cost(role, self.turn.task_cells(t)), -t.gold - t.score, t.pos))
         for task in tasks:
             cells = self.turn.task_cells(task)
@@ -615,12 +663,26 @@ class Strategy:
             duration = task.timeout if task.timeout > 0 else 15
             control = self.control_position(role)
             return_trip = distance(task.pos, control) if control else 0
-            if travel + duration + return_trip + self.settings.return_margin > self.turn.daylight_left:
+            wait = max(0,task.cooldown)
+            if (task.pos.x,task.pos.y)==cooling_point:
+                wait = max(wait,agent.self_evolve_abandon_tick-self.turn.round_no)
+            if max(travel,wait) + duration + return_trip + self.settings.return_margin > self.turn.daylight_left:
+                if first_day:
+                    self.memory.task_schedule['status'] = 'insufficient_daylight'
                 continue
             if self.plan.near(role, cells):
+                if not task.valid or wait:
+                    if first_day:
+                        self.memory.task_schedule.update(status='waiting_cooldown' if wait else 'point_unavailable',
+                                                         cooldown=wait,point=task.pos)
+                        self.plan.used.add(role.unit_id)
+                        return True
+                    continue
                 accepted = self.plan.add(role.unit_id, {"action": "acceptTask"})
                 if accepted and agent:
                     agent.accept(task)
+                    if first_day:
+                        self.memory.task_schedule.update(status='accepting_task',point=task.pos)
                 return accepted
             if self.travel(role, cells):
                 return True

@@ -14,7 +14,7 @@ class WorkerEfficiencyTests(unittest.TestCase):
     def test_stocked_builder_works_while_other_worker_is_still_mining(self):
         for mirrored in (False, True):
             raw = drawing_request(mirrored, built=True, round_no=25)
-            raw['teamOur']['roles'][2].update(pos=point(8, 7, mirrored).dump(), backpack=['stone']*6)
+            raw['teamOur']['roles'][2].update(pos=point(8, 7, mirrored).dump(), backpack=['stone']*9)
             raw['teamOur']['roles'][3]['pos'] = point(2, 5, mirrored).dump()
             raw['mapInfo']['zones'] = [{'neutralType':'stone', 'pos':point(3, 5, mirrored).dump()}]
             s, plan = strategy(raw, GameMemory()); s.run()
@@ -25,7 +25,7 @@ class WorkerEfficiencyTests(unittest.TestCase):
     def test_worker_without_construction_material_keeps_economy_running(self):
         raw = drawing_request(built=True, round_no=25)
         raw['teamOur']['roles'][2]['pos'] = {'x':2, 'y':5}
-        raw['teamOur']['roles'][3].update(pos={'x':8, 'y':7}, backpack=['stone']*12)
+        raw['teamOur']['roles'][3].update(pos={'x':8, 'y':7}, backpack=['stone']*16)
         raw['mapInfo']['zones'] = [{'neutralType':'iron', 'pos':{'x':3, 'y':5}}]
         raw['vendorShopList'] = [{'name':'iron', 'price':3}]
         s, plan = strategy(raw, GameMemory()); s.run()
@@ -57,7 +57,7 @@ class WorkerEfficiencyTests(unittest.TestCase):
 
     def test_build_target_keeps_its_identity_during_the_trip(self):
         raw = drawing_request(built=True, round_no=25)
-        raw['teamOur']['roles'][2].update(pos={'x':1, 'y':12}, backpack=['stone']*12)
+        raw['teamOur']['roles'][2].update(pos={'x':1, 'y':12}, backpack=['stone']*17)
         raw['teamOur']['roles'][3]['health'] = 0
         memory = GameMemory()
         s, plan = strategy(raw, memory); s.run()
@@ -122,8 +122,8 @@ class WorkerEfficiencyTests(unittest.TestCase):
     def test_builders_keep_their_distinct_in_progress_wall_assignments(self):
         for mirrored in (False, True):
             raw = drawing_request(mirrored, built=True, round_no=25)
-            raw['teamOur']['roles'][2].update(pos=point(8,7,mirrored).dump(), backpack=['stone']*6)
-            raw['teamOur']['roles'][3].update(pos=point(8,10,mirrored).dump(), backpack=['stone']*6)
+            raw['teamOur']['roles'][2].update(pos=point(8,7,mirrored).dump(), backpack=['stone']*9)
+            raw['teamOur']['roles'][3].update(pos=point(8,10,mirrored).dump(), backpack=['stone']*9)
             lower, upper = point(9,4,mirrored), point(9,9,mirrored)
             memory = GameMemory(worker_tasks={
                 501:{'round':24,'kind':'build:wall','target':lower,'goal':point(8,5,mirrored)},

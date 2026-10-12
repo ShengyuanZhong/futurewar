@@ -1,9 +1,13 @@
-"""Observed-state upgrade stages for the user's U-shaped defense drawing."""
+"""Observed-state upgrade stages for the user's 17-wall defense drawing."""
 from .protocol import TOWER_TYPES
 
 
 def wall_group(strategy, wall) -> int:
-    """0=two centre front walls; 1=other front walls; 2=side/rear walls."""
+    """0=two centre front walls; 1=four front corners/edges; 2=all side/rear walls.
+
+    The revised drawing adds five side/rear walls. They keep the existing
+    level-2 target and never replace the central front pair in upgrade priority.
+    """
     base = strategy.turn.station()
     if not base:
         return 2

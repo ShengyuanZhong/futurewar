@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import Any
 from agent.construction import DefenseLayout
 from agent.protocol import Pos, Unit
+from agent.first_day_tasks import record_attempt
 from .task_context import DEFAULT_TIMEOUT, observe_task, task_timeout
 from .task_state import TaskAgentMemory
 
@@ -33,6 +34,9 @@ class GameMemory:
     task_points_attempted: set[tuple[int, int, int]] = field(default_factory=set)
     task_points_finished: set[tuple[int, int, int]] = field(default_factory=set)
     task_points_succeeded: set[tuple[int, int, int]] = field(default_factory=set)
+    task_attempts: dict[tuple[int, int, int, int], dict[str, Any]] = field(default_factory=dict)
+    task_active_attempt: tuple[int, int, int, int] | None = None
+    task_schedule: dict[str, Any] = field(default_factory=dict)
     task_context: list[str] = field(default_factory=list)
     task_execution: dict[str, Any] | None = None
     task_last_command: str = ""
@@ -55,6 +59,7 @@ class GameMemory:
     raid_scouts: dict[str, Any] = field(default_factory=dict)
     enemy_structures: dict[int, Unit] = field(default_factory=dict)
     first_night_defense: dict[str, Any] = field(default_factory=dict)
+    day_gate: dict[str, Any] = field(default_factory=dict)
     pending_summon_positions: set[Pos] = field(default_factory=set)
     imp_home_side: int = 0
     imp_tasks: dict[int, dict[str, Any]] = field(default_factory=dict)
@@ -63,12 +68,19 @@ class GameMemory:
 
     def observe(self, turn) -> None:
         if self.task_accept_round == turn.round_no - 1 and self.last_task_point:
-            accepted = bool(turn.phase_task) or any(
-                command.get("action") == "acceptTask" and turn.action_results.get(actor) is True
+            accepted = any(
+                command.get("action") == "acceptTask"
+                and (turn.action_results.get(actor) is True
+                     or (bool(turn.phase_task) and turn.action_results.get(actor) is not False))
                 for actor, command in self.last_commands.items())
             if accepted:
                 day = (self.task_accept_round - 1) // 130 + 1
-                self.task_points_attempted.add((day, *self.last_task_point))
+                kind = (self.task_agent.accepted_task or {}).get('task_type','')
+                record_attempt(self,day,self.task_accept_round,self.last_task_point,kind)
+                # A repeated Task1 may have the same text. Its accepted round
+                # is a new execution identity, even without an empty phase.
+                if turn.phase_task:
+                    self.task_started = self.task_accept_round
         if self.last_round == turn.round_no - 1:
             for actor, command in self.last_commands.items():
                 if (command.get('action') == 'use' and command.get('name', '').endswith('RobotSummonOrder')

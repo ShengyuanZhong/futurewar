@@ -8,8 +8,15 @@ class WallGapDefense:
         self.s = strategy
         self.turn, self.plan, self.memory = strategy.turn, strategy.plan, strategy.memory
         self.state = self.memory.wall_gap_defense
-        missing = set(strategy.missing_walls())
-        gaps = {p:record for p,record in self.state.get('gaps',{}).items() if p in missing}
+        missing = set(self.s.settings.build_cells(self.turn, 'wall')) - {w.pos for w in self.turn.walls()}
+        base = self.turn.station()
+        gate = (Pos(base.pos.x + (2 if self.s.settings.mirrored_layout(self.turn) else -1), base.pos.y+2)
+                if base and self.s.settings.default_operator_position(self.turn) is not None else None)
+        occupied_enemy = {u.pos for u in self.turn.enemies if u.health > 0 and u.kind in CONTROLLABLE_TYPES}
+        # An intentionally open daytime entrance is not a persistent hostile
+        # breach. Actual opponents there still use the existing body relay.
+        gaps = {p:record for p,record in self.state.get('gaps',{}).items() if p in missing
+                and not (self.turn.is_day and p == gate and p not in occupied_enemy)}
         for enemy in self.turn.enemies:
             if enemy.health>0 and enemy.kind in CONTROLLABLE_TYPES and enemy.pos in missing:
                 gaps.setdefault(enemy.pos,dict(first_seen=self.turn.round_no))
@@ -62,6 +69,13 @@ class WallGapDefense:
             return set()
         excluded = set(self.s.settings.build_cells(self.turn,'wall')) | set(self.s.layout.tower_sites)
         excluded.add(self.s.layout.operator_pos)
+        base = self.turn.station()
+        gate = (Pos(base.pos.x + (2 if self.s.settings.mirrored_layout(self.turn) else -1), base.pos.y+2)
+                if base and self.s.settings.default_operator_position(self.turn) is not None else None)
+        if gap == gate:
+            # A camper may seal the only entrance before the guard gets inside.
+            # Waiting on the outside remains legal and permits the night relay.
+            return {p for p in gap.neighbours() if self.turn.land(p) and p not in excluded}
         return {p for p in self.s.guard.inner_cells() if distance(p,gap)==1 and p not in excluded}
 
     def route(self, role):
@@ -81,6 +95,9 @@ class WallGapDefense:
         return min((route.cost[p] for p in self.posts() if p in route.cost),default=10_000)
 
     def other_walls_ready(self):
+        gate = getattr(self.s, 'day_gate', None)
+        if gate is not None and gate.enabled and self.turn.is_day:
+            return gate.day_ready(self.gaps)
         return bool(self.s.settings.build_cells(self.turn,'wall') and len(self.turn.weapons())>=3
                     and set(self.s.missing_walls()) <= set(self.gaps))
 
@@ -191,6 +208,31 @@ class WallGapDefense:
         # Wait one square farther inside until that square really becomes free.
         near = {p for p in self.s.guard.inner_cells() if distance(p,self.gap)<=2}
         if self.turn.is_day and primary is not None:
+            gate = getattr(self.s, 'day_gate', None)
+            if gate is not None and gate.enabled:
+                # These are branches off the single continuous repair lane.
+                # (0,1)/(1,1) and the front vertical pair are passage squares:
+                # a stationary reserve there traps workers behind the guns.
+                base = self.turn.station()
+                mirrored = self.s.settings.mirrored_layout(self.turn)
+                offsets = ((2,1),(2,-2),(-1,-2))
+                parking = {Pos(base.pos.x + (1-x if mirrored else x), base.pos.y+y)
+                           for x,y in offsets} & self.s.guard.inner_cells()
+                posts = self.posts()
+                if (self.turn.daylight_left <= self.s.settings.return_margin
+                        and primary.pos in posts and gate.wall() is not None
+                        and self.other_walls_ready()):
+                    # With the builder already on its actual body post and
+                    # the access wall closed, move the reserve within takeover
+                    # distance before dusk, keeping the gate's upper lane free.
+                    entry = gate.inner_posts() | {p for post in gate.inner_posts()
+                                                for p in self.s.guard.inner_cells() if distance(p,post)==1}
+                    waiting = near - posts - entry
+                    if waiting:
+                        return self.move_or_hold(role, waiting, 'gap_standby')
+                if len(posts) == 1:
+                    parking -= posts  # Never occupy a corner's sole builder post.
+                return self.move_or_hold(role, parking, 'gap_standby')
             # Leave the builder's adjacent square and the narrow front repair
             # lane available while the reserve waits for daytime construction.
             base = self.turn.station()

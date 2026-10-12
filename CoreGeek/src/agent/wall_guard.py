@@ -58,7 +58,7 @@ class WallGuard:
         base = self.turn.station()
         if not base:
             return set()
-        offsets = [Pos(x, y) for y in (1, -2) for x in range(3)] + [Pos(2, 0), Pos(2, -1)]
+        offsets = [Pos(x, y) for y in (1, -2) for x in range(3)] + [Pos(2, 0), Pos(2, -1), Pos(-1, -2)]
         mirrored = self.settings.mirrored_layout(self.turn)
         cells = {Pos(base.pos.x + (1 - p.x if mirrored else p.x), base.pos.y + p.y) for p in offsets}
         excluded = set(self.settings.build_cells(self.turn, "wall")) | set(self.strategy.layout.tower_sites)

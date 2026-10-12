@@ -7,14 +7,18 @@ from agent.protocol import Pos, TOWER_TYPES, distance, station_footprint
 
 
 def base_surrounding_offsets(kind: str, mirrored: bool = False) -> tuple[Pos, ...]:
-    """User drawing relative to the 2x2 base's top-left: rear guns and a U wall.
+    """User's revised drawing relative to the 2x2 base's top-left.
 
     Reflection is about the base centre x=0.5, so dx becomes 1-dx.
-    The open rear and the one-cell inner repair lane are never wall sites.
+    Seventeen walls protect the front, top, bottom and lower rear; the upper
+    rear entry and the one-cell inner repair lane stay open. Rear guns and P
+    retain the original positions.
     """
     if kind == "wall":
-        cells = [Pos(x, y) for y in (2, -3) for x in range(4)]
+        cells = [Pos(x, 2) for x in range(-1, 4)]
+        cells += [Pos(x, -3) for x in range(-2, 4)]
         cells += [Pos(3, y) for y in range(-2, 2)]
+        cells += [Pos(-2, y) for y in (-2, -1)]
     else:
         cells = [Pos(-1, y) for y in (1, 0, -1)]
     return tuple(Pos(1 - p.x, p.y) if mirrored else p for p in cells)

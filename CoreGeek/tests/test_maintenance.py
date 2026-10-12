@@ -77,6 +77,14 @@ class MaintenanceTests(unittest.TestCase):
                     target['health'] = 1500 * target['level'] if target['roleType'] == 'station' else 500 + 500 * target['level']
                 elif action == 'collect':
                     actor['backpack'].append(before.zones[Pos.load(command['targetPos'][0])])
+                elif action == 'remove':
+                    raw['teamOur']['roles'] = [r for r in raw['teamOur']['roles']
+                                              if not (r['roleType'] == 'wall' and r['pos'] == command['targetPos'][0])]
+                elif action == 'build':
+                    self.assertEqual(command['name'], 'wall')
+                    actor['backpack'].remove('stone')
+                    p = Pos.load(command['targetPos'][0])
+                    raw['teamOur']['roles'].append(unit(10000 + number, 'wall', p.x, p.y, health=1000))
                 elif action == 'sell':
                     for _ in range(command['num']): actor['backpack'].remove(command['name'])
                     raw['teamOur']['goldNum'] += command['num'] * before.vendor_prices[command['name']]
@@ -85,13 +93,14 @@ class MaintenanceTests(unittest.TestCase):
             if setup(raw)[0].upgrades_complete(): break
         else:
             self.fail('maintenance courier never completed upgrades')
-        self.assertEqual(purchases, ['WeaponUpgradeVoucher1', 'WeaponUpgradeVoucher2']
+        self.assertEqual([p for p in purchases if 'UpgradeVoucher' in p], ['WeaponUpgradeVoucher1', 'WeaponUpgradeVoucher2']
                          + ['WallUpgradeVoucher1'] * 2 + ['WallUpgradeVoucher2'] * 2
                          + ['WeaponUpgradeVoucher1']
                          + ['WallUpgradeVoucher1'] * 4 + ['WallUpgradeVoucher2'] * 4
                          + ['WeaponUpgradeVoucher2', 'WeaponUpgradeVoucher1', 'WeaponUpgradeVoucher2']
-                         + ['WallUpgradeVoucher1'] * 6)
-        self.assertEqual(wall_uses[1], [9] * 6 + [8] * 2 + [7] * 2 + [6] * 2)
+                         + ['WallUpgradeVoucher1'] * 10)
+        self.assertEqual(wall_uses[1][:6], [9] * 6)
+        self.assertCountEqual(wall_uses[1][6:], [8] * 2 + [7] * 2 + [6] * 2 + [5] + [4] * 3)
         self.assertEqual(wall_uses[2], [9] * 6)
 
     def purchase(self, raw):
@@ -226,7 +235,11 @@ class MaintenanceTests(unittest.TestCase):
     def test_destroyed_wall_rebuilt_before_upgrade_or_trade(self):
         for removed in (False, True):
             raw = fortified()
-            raw['teamOur']['roles'][2].update(pos={'x': 8, 'y': 7}, backpack=['stone', 'WeaponUpgradeVoucher1'])
+            # The daytime entrance is open before sealing a front breach, so
+            # the new exact drawing does not trap this courier inside.
+            raw['teamOur']['roles'] = [r for r in raw['teamOur']['roles']
+                                      if not (r['roleType'] == 'wall' and r['pos'] == {'x': 5, 'y': 9})]
+            raw['teamOur']['roles'][2].update(pos={'x': 8, 'y': 7}, backpack=['stone', 'stone', 'WeaponUpgradeVoucher1'])
             wall = next(r for r in raw['teamOur']['roles'] if r['roleType'] == 'wall' and r['pos'] == {'x': 9, 'y': 7})
             if removed: raw['teamOur']['roles'].remove(wall)
             else: wall['health'] = 0

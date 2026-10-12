@@ -2,7 +2,8 @@
 import unittest
 from dataclasses import replace
 
-from agent.protocol import Pos, Turn, Unit, distance, station_footprint
+from agent.protocol import Pos, Turn, Unit, Robot, distance, station_footprint
+from agent.grid import Routes
 from agent.robot_combat import blocking_wall, planning_building_blocker
 from agent.summoning import (enemy_layout_ready, enemy_layout_weapons, enemy_weapon_cells,
                             layout_operator_positions, scouted_spawn_candidates,
@@ -50,6 +51,22 @@ def scene(gap=None, vertical_guns=False, visible_operator=False, horizontal=Fals
 
 
 class ScoutedSpawnTests(unittest.TestCase):
+    def test_third_boss_does_not_price_a_walk_through_two_stationary_spawns(self):
+        turn,settings = scene(gap=Pos(13,14)),Settings()
+        first = scouted_spawn_position(turn,settings)
+        second = scouted_spawn_position(turn,settings,pending={first})
+        third = scouted_spawn_position(turn,settings,pending={first,second})
+        self.assertEqual(len({first,second,third}),3)
+        self.assertTrue(summon_cell_legal(turn,settings,third,{first,second}))
+        route = Routes(turn,Robot(39999,third,800,'bossRobot'),{first,second})
+        shots = {p for p in route.cost if 0<distance(p,OPERATOR)<=3
+                 and blocking_wall(turn,p,OPERATOR) is None
+                 and planning_building_blocker(turn,p,OPERATOR) is None}
+        goal = route.nearest(shots)
+        self.assertIsNotNone(goal)
+        self.assertEqual(route.cost[goal],1)
+        self.assertNotIn(route.step({goal}),{first,second})
+
     def test_twelve_weapon_ring_cells_exclude_base_and_wall_ring(self):
         turn = scene()
         cells = enemy_weapon_cells(turn)

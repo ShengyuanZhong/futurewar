@@ -19,8 +19,9 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT), str(ROOT / 'src')]
 from agent.protocol import CONTROLLABLE_TYPES, TOWER_TYPES, Pos, Turn, distance
-from agent.robot_combat import blocking_wall
-from tests.fixtures import request, robot
+from tests.fixtures import request, robot, unit
+from tools.smoke_first_day_flow import task_frame
+from tools.validate import independent_planning_clear
 from tests.test_layout_survey import (SCOUT, HOME, PIONEER, actor, enemy_blueprint, reveal,
                                      survey_request)
 
@@ -31,6 +32,8 @@ def fixture(name, pattern, mirror_x, mirror_y):
     raw, _ = survey_request(1)
     raw['teamOur'].update(teamId='scout-flow-' + name, goldNum=400, totalScore=0)
     actor(raw, PIONEER)['pos'] = Pos(2, 6).dump()
+    actor(raw, HOME)['backpack'] = ['stone']+['WallFixer']*5
+    actor(raw, SCOUT)['pos'] = Pos(3,6).dump()
     raw['teamOur']['playerTasks'] = copy.deepcopy(request()['teamOur']['playerTasks'])
     for index, pos in enumerate((Pos(1, 7), Pos(1, 6))):
         raw['teamOur']['playerTasks'][index].update(taskPosition=pos.dump(), timeoutRounds=12,
@@ -71,7 +74,7 @@ def apply(raw, truth, commands, spawns):
                            and target in before.footprint(u)), None)
             assert victim is not None, ('unseen attack', uid, target)
             assert 0 < distance(Pos.load(actors[uid]['pos']), target) <= 3
-            assert blocking_wall(before, Pos.load(actors[uid]['pos']), target) is None
+            assert independent_planning_clear(raw,Pos.load(actors[uid]['pos']),target)
             if victim.kind in ('worker', 'pioneer'):
                 assert any(distance(p, target) <= 4 for p in ordinary_sight(raw))
             hits.append((victim.unit_id, 40))
@@ -106,6 +109,18 @@ def apply(raw, truth, commands, spawns):
             raw['teamOur']['goldNum'] += before.vendor_prices[command['name']] * count
             for _ in range(count):
                 item['backpack'].remove(command['name'])
+        elif action == 'remove':
+            assert before.is_day
+            wall = next(u for u in raw['teamOur']['roles']
+                        if u['roleType']=='wall' and u['pos']==command['targetPos'][0])
+            raw['teamOur']['roles'].remove(wall)
+        elif action == 'build':
+            assert before.is_day and command['name']=='wall' and 'stone' in item['backpack']
+            point = Pos.load(command['targetPos'][0])
+            assert point not in before.occupied_cells() and distance(Pos.load(item['pos']),point)==1
+            item['backpack'].remove('stone')
+            new_id = max(u['id'] for u in raw['teamOur']['roles'])+1
+            raw['teamOur']['roles'].append(unit(new_id,'wall',point.x,point.y,health=1000))
         elif action in ('acceptTask', 'submitAnswer', 'attack'):
             pass
         else:
@@ -170,18 +185,11 @@ def main():
             spawns, first_use, buy_round, crew_attacks = [], None, None, []
             waited_for_scout = False
             for number in range(1, 131):
-                raw.update(roundNo=number, llmResp='', errors=[])
-                raw['phaseTask'] = ('Synthetic task one' if number in (2, 3)
-                                    else 'Synthetic task two' if number in (5, 6) else '')
-                if number in (3, 6):
-                    raw['llmResp'] = json.dumps({'action': 'final_answer', 'answer': 'fixture-result'})
-                if number in (4, 7):
-                    index = 0 if number == 4 else 1
-                    raw['teamOur']['playerTasks'][index].update(isValid=False, coldDownRounds=100)
-                    raw['teamOur']['goldNum'] += 100
-                    raw['teamOur']['totalScore'] += 51-index
+                task_frame(raw,number,(True,True,True))
                 if number == 71:
-                    assert len(spawns) == 2, (name, 'not deployed', spawns)
+                    assert len(spawns) == 3, (name, 'not deployed', spawns)
+                    assert len([u for u in raw['teamOur']['roles']
+                                if u['roleType']=='wall' and u['health']>0])==17
                     occupied = Turn.load(raw).occupied_cells()
                     assert all(Pos.load(p) not in occupied for p in spawns), ('spawn needs displacement', name)
                     raw['teamOur']['summonRobotList'] = [robot(30005+i, p['x'], p['y'],
@@ -200,10 +208,16 @@ def main():
                     assert set(result) == {'roleCommandMap', 'prompt', 'executeCmd'}
                     assert not result['executeCmd']
                     commands = result['roleCommandMap']
-                    if number < 7:
+                    if number < 37:
                         assert not any(c.get('name') == ORDER for c in commands.values())
-                    if number == 7:
-                        assert commands[str(PIONEER)] == {'action': 'buy', 'name': ORDER, 'num': 2}, commands
+                        assert not any(c['action']=='buy' and c.get('name','').startswith('WeaponUpgradeVoucher')
+                                       for c in commands.values())
+                    if number in (1,4,34):
+                        assert commands[str(PIONEER)]['action']=='acceptTask',commands
+                    if number in (3,6,36):
+                        assert commands[str(PIONEER)]['action']=='submitAnswer',commands
+                    if number == 37:
+                        assert commands[str(PIONEER)] == {'action': 'buy', 'name': ORDER, 'num': 3}, commands
                         buy_round = number
                     uses = [c for c in commands.values() if c.get('name') == ORDER and c['action'] == 'use']
                     if uses:
@@ -213,10 +227,10 @@ def main():
                         assert actor(raw, SCOUT)['health'] > 0
                         operator = next(u for u in truth if u['id'] == 994)
                         assert distance(Pos.load(actor(raw, SCOUT)['pos']), Pos.load(operator['pos'])) <= 4
-                    elif number > 7 and len(spawns) < 2 and actor(raw, PIONEER)['backpack'].count(ORDER):
+                    elif number > 37 and len(spawns) < 3 and actor(raw, PIONEER)['backpack'].count(ORDER):
                         waited_for_scout = True
                     for uid, command in commands.items():
-                        if uid in ('30005', '30006') and command['action'] == 'attack':
+                        if uid in ('30005', '30006', '30007') and command['action'] == 'attack':
                             target = command['targetPos'][0]
                             if any(u['pos'] == target and u['kind'] in ('worker', 'pioneer') for u in visible):
                                 crew_attacks.append({'round': number, 'robot': uid, 'target': target})
@@ -228,8 +242,8 @@ def main():
                     apply(raw, truth, commands, spawns)
                 finally:
                     conn.close()
-            assert buy_round == 7 and first_use > buy_round and waited_for_scout
-            assert len(spawns) == 2 and spawns[0] != spawns[1]
+            assert buy_round == 37 and first_use > buy_round
+            assert len(spawns) == 3 and len({(p['x'],p['y']) for p in spawns})==3
             assert crew_attacks, (name, 'no visible crew attacks')
             assert actor(raw, HOME)['health'] > 0
             cases.append(dict(case=name, pattern=pattern, mirror_x=mx, mirror_y=my, buy_round=buy_round,

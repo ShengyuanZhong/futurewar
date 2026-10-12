@@ -258,8 +258,75 @@ class RobotRaider:
                       fallback_reason=fallback,siege_until=focus,
                       reason='no_visible_operator_or_live_base' if base is None else
                              'fallback_to_base' if fallback else 'no_visible_operators_try_base')
-        return base is not None and self.pursue(robot, points, route, 'base',
-                fallback_reason=fallback,siege_until=focus,pursuit_rounds=0)
+        if base is None:
+            return False
+        extra = dict(fallback_reason=fallback,siege_until=focus,pursuit_rounds=0)
+        failed = old.get('failed_firing', {})
+        direct = [p for p in points if self.clear_shot(robot,p)
+                  and self.firing_key(p,robot.pos) not in failed
+                  and (not self.needs_close(robot,p) or distance(robot.pos,p)<=1)]
+        self.diag.set(robot,direct_base_cells=direct)
+        if direct:
+            # A disappeared gun outside ordinary sight is still remembered.
+            # Only a confirmed empty weapon layout allows this secondary sweep.
+            weapons = [u for u in self.memory.enemy_structures.values()
+                       if u.health > 0 and u.kind in TOWER_TYPES]
+            nearby = [u for u in self.turn.enemies if u.health > 0
+                      and u.kind in (PIONEER,WORKER)
+                      and min(distance(u.pos,p) for p in points)<=1
+                      and self.clear_shot(robot,u.pos)
+                      and self.firing_key(u.pos,robot.pos) not in failed] if not weapons else []
+            self.diag.set(robot,base_nearby_candidates=[entity(u) for u in nearby][:LIMIT],
+                          base_nearby_allowed=not weapons)
+            if nearby:
+                target = min(nearby,key=lambda u:(math.ceil(u.health/max(1,robot.attack_power)),
+                                                  u.health,u.unit_id))
+                self.diag.set(robot,selected=entity(target),secondary_reason='stationary_base_neighbour')
+                return self.issue(robot,'attack',target.pos,robot.pos,'base_nearby',
+                                  nearby_role_id=target.unit_id,**extra)
+            target = min(direct,key=lambda p:(p != old.get('verified_base_target'),distance(robot.pos,p),p))
+            return self.issue(robot,'attack',target,robot.pos,'base',**extra)
+        obstruction = self.base_weapon_obstruction(robot, points)
+        if obstruction is not None:
+            self.diag.set(robot,selected=entity(obstruction),
+                          siege_obstruction=entity(obstruction),
+                          secondary_reason='weapon_on_base_ray')
+            stage = 'weapon' if obstruction.kind in TOWER_TYPES else 'breach'
+            return self.issue(robot,'attack',obstruction.pos,robot.pos,stage,
+                              pursuit_kind='base',**extra)
+        return self.pursue(robot, points, route, 'base', **extra)
+
+    def base_weapon_obstruction(self, robot, points):
+        """Remove the visible first obstacle on an in-range base/weapon ray.
+
+        A weapon is a siege target only when it blocks this stationary attack
+        on the base. If a wall is in front of that weapon, hit the wall first.
+        Hidden remembered buildings are routing obstacles, never shot targets.
+        """
+        known = tuple(u for u in self.memory.enemy_structures.values()
+                      if u.health > 0 and u.kind in TOWER_TYPES)
+        if not known:
+            return None
+        guns_only = replace(self.turn,ours=(),enemies=known)
+        current = {u.unit_id:u for u in self.turn.enemies if u.health > 0}
+        failed = self.memory.robot_raids.get(robot.robot_id,{}).get('failed_firing',{})
+        choices = {}
+        for target in points:
+            if not 0 < distance(robot.pos,target) <= robot.range_of_attack():
+                continue
+            if planning_building_blocker(guns_only,robot.pos,target) is None:
+                continue
+            first = self.planning_blocker(robot.pos,target)
+            if first is None:
+                continue
+            obstruction = current.get(first[1].unit_id)
+            if (obstruction is None or obstruction.kind not in TOWER_TYPES+('wall',)
+                    or not self.clear_shot(robot,obstruction.pos)
+                    or self.firing_key(obstruction.pos,robot.pos) in failed):
+                continue
+            choices[obstruction.unit_id] = obstruction
+        return min(choices.values(),key=lambda u:(u.kind=='wall',
+            math.ceil(u.health/max(1,robot.attack_power)),distance(robot.pos,u.pos),u.unit_id)) if choices else None
 
     def direct_crew_breach(self, robot, target):
         """A scouted firing line needs one wall, rather than an extended detour.

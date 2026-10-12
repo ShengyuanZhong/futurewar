@@ -46,7 +46,9 @@ class FirstNightDefense:
         return permanent <= {w.pos for w in self.turn.walls()}
 
     def construction_ready(self):
-        return self.closed() or (self.enabled and self.s.gap_guard.other_walls_ready())
+        gate = getattr(self.s, 'day_gate', None)
+        return (self.closed() or (self.enabled and self.s.gap_guard.other_walls_ready())
+                or bool(self.enabled and gate and gate.day_ready(self.s.gap_guard.gaps)))
 
     def stock_target(self, role=None):
         role = role or self.guard_role()

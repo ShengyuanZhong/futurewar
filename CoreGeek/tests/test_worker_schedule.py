@@ -3,9 +3,9 @@ import unittest
 
 from agent.protocol import Pos
 from app.service.memory import GameMemory
-from tests.fixtures import robot
+from tests.fixtures import robot, unit
 from tests.test_maintenance import fortified
-from tests.test_worker_safety import strategy
+from tests.test_worker_safety import strategy, open_day_gate, apply_commands
 from tests.test_u_layout import point
 
 
@@ -29,9 +29,13 @@ class WorkerScheduleTests(unittest.TestCase):
             raw = self.courier(start)
             raw['teamOur']['goldNum'] = 0
             raw['teamOur']['roles'][2].update(pos={'x': 1, 'y': 5}, backpack=['WeaponUpgradeVoucher1'])
+            # The gate operator is a separate real worker. The focused upper
+            # rear rocket remains reachable from outside the sealed perimeter.
+            raw['teamOur']['roles'].append(unit(504,'worker',8,7,backpack=['stone']))
+            next(u for u in raw['teamOur']['roles'] if u['pos']==Pos(5,8).dump())['id'] = 600
             # Disable assignment of this courier as the third-day repairer.
             from app.config import Settings
-            memory = GameMemory(opening_complete=True)
+            memory = GameMemory(opening_complete=True,day_gate={'worker_id':504})
             targets = []
             for n in range(start, start+8):
                 raw['roundNo'] = n
@@ -44,7 +48,7 @@ class WorkerScheduleTests(unittest.TestCase):
                 job = memory.worker_tasks[501]
                 self.assertEqual(job['kind'], 'use:WeaponUpgradeVoucher1')
                 targets.append(job['target'])
-                raw['teamOur']['roles'][2]['pos'] = cmd['targetPos'][0]
+                apply_commands(self,raw,s.turn,plan)
                 memory.record(s.turn, plan)
             else:
                 self.fail('courier abandoned its voucher delivery')
@@ -125,8 +129,9 @@ class WorkerScheduleTests(unittest.TestCase):
         for start in (200, 260):
             raw = self.courier(start); raw['teamOur']['goldNum'] = 0
             raw['teamOur']['roles'][2].update(pos={'x': 1, 'y': 4}, backpack=['copper']*20)
+            raw['teamOur']['roles'].append(unit(504,'worker',8,7,backpack=['stone']))
             raw['vendorShopList'] = [{'name':'copper', 'price':5}]
-            memory = GameMemory(opening_complete=True)
+            memory = GameMemory(opening_complete=True,day_gate={'worker_id':504})
             for n in range(start, start+8):
                 raw['roundNo'] = n
                 s, plan = strategy(raw, memory, Settings(repair_start_day=10)); s.run()
@@ -136,7 +141,7 @@ class WorkerScheduleTests(unittest.TestCase):
                     break
                 self.assertEqual(cmd['action'], 'move')
                 self.assertEqual(memory.worker_tasks[501]['kind'], 'sell')
-                raw['teamOur']['roles'][2]['pos'] = cmd['targetPos'][0]
+                apply_commands(self,raw,s.turn,plan)
                 memory.record(s.turn, plan)
             else:
                 self.fail('worker abandoned sale at phase boundary')
@@ -161,18 +166,26 @@ class WorkerScheduleTests(unittest.TestCase):
         else:
             self.fail('guard never delivered wall voucher')
 
-    def test_guard_finishes_safe_shop_stop_at_dusk_then_returns(self):
-        raw = fortified(331)
+    def test_guard_finishes_safe_shop_stop_before_dusk_then_returns(self):
+        raw = fortified(319)
         raw['teamOur']['roles'][2]['pos'] = {'x': 3, 'y': 7}
+        open_day_gate(raw)
         memory = GameMemory(opening_complete=True)
         s, plan = strategy(raw, memory); s.run()
         self.assertEqual(plan.commands['501'], {'action':'buy', 'name':'WallFixer', 'num':5})
-        raw['roundNo'] += 1
-        raw['teamOur']['roles'][2]['backpack'] = ['WallFixer']*5
+        apply_commands(self,raw,s.turn,plan)
         memory.record(s.turn, plan)
-        s, plan = strategy(raw, memory); s.run()
-        self.assertEqual(plan.commands['501']['action'], 'move')
-        self.assertIn(memory.worker_tasks[501]['kind'], ('guard_post', 'return_guard'))
+        returning = False
+        for number in range(320,332):
+            raw['roundNo'] = number
+            s,plan = strategy(raw,memory);s.run()
+            command = plan.commands.get('501',{})
+            self.assertNotIn(command.get('action'),('collect','buy','sell'))
+            returning |= command.get('action')=='move'
+            apply_commands(self,raw,s.turn,plan);memory.record(s.turn,plan)
+        self.assertTrue(returning)
+        self.assertIn(Pos.load(raw['teamOur']['roles'][2]['pos']),s.guard.inner_cells())
+        self.assertTrue(set(s.settings.build_cells(s.turn,'wall')) <= {w.pos for w in s.turn.walls()})
 
     def test_guard_does_not_shop_from_exposed_position(self):
         raw = fortified(331)

@@ -9,6 +9,17 @@ from app.service.turn_service import TurnService
 from tests.fixtures import request, unit, layout_settings
 
 
+def opening_request():
+    """Keep NPC/mineral fixtures outside the revised legal building ring."""
+    raw = request()
+    for zone in raw['mapInfo']['zones']:
+        if zone['neutralType'] == 'weaponShop':
+            zone['pos'] = {'x': 15, 'y': 23}
+        elif zone['neutralType'] == 'copper':
+            zone['pos'] = {'x': 14, 'y': 22}
+    return raw
+
+
 class DefaultOpeningTests(unittest.TestCase):
     def test_default_enables_building_without_verified_coordinates(self):
         turn = Turn.load(request())
@@ -19,7 +30,7 @@ class DefaultOpeningTests(unittest.TestCase):
     def test_default_opening_finishes_rockets_then_stone_then_walls_before_night(self):
         for team in ("challenger", "defender"):
             with self.subTest(team=team):
-                raw = request()
+                raw = opening_request()
                 raw["teamOur"]["type"] = team
                 service = TurnService()
                 trace = []
@@ -92,7 +103,7 @@ class DefaultOpeningTests(unittest.TestCase):
                 self.assertNotIn(p, station_footprint(turn.station().pos))
 
     def test_existing_unverified_empty_layout_uses_enabled_fallback(self):
-        turn = Turn.load(request())
+        turn = Turn.load(opening_request())
         old = {"challenger": {"verified": False, "source": "old empty template", "weapons": [], "walls": []}}
         self.assertEqual(Settings(layouts=old).build_cells(turn, "rocket"), Settings().build_cells(turn, "rocket"))
         self.assertEqual(Settings(layouts=old, allow_base_surroundings=False).build_cells(turn, "rocket"), ())
@@ -103,7 +114,7 @@ class DefaultOpeningTests(unittest.TestCase):
         self.assertEqual(set(layout_settings().build_cells(turn, "wall")), {Pos(8, 22), Pos(13, 22)} - set(turn.zones))
 
     def test_default_layout_has_shared_control_space_and_wall_openings(self):
-        turn = Turn.load(request())
+        turn = Turn.load(opening_request())
         settings = Settings()
         layout = select_defense_layout(turn, settings)
         self.assertEqual(len(layout.tower_sites), 3)
@@ -113,5 +124,11 @@ class DefaultOpeningTests(unittest.TestCase):
         self.assertEqual(layout.operator_pos, Pos(8, 24))
         self.assertIn(Pos(10, 26), settings.build_cells(turn, "wall"))
         self.assertIn(Pos(11, 21), settings.build_cells(turn, "wall"))
-        self.assertNotIn(Pos(9, 26), settings.build_cells(turn, "wall"))
-        self.assertNotIn(Pos(9, 21), settings.build_cells(turn, "wall"))
+        self.assertEqual(len(settings.build_cells(turn, "wall")), 17)
+        self.assertIn(Pos(9, 26), settings.build_cells(turn, "wall"))
+        self.assertIn(Pos(9, 21), settings.build_cells(turn, "wall"))
+        self.assertIn(Pos(8, 21), settings.build_cells(turn, "wall"))
+        self.assertIn(Pos(8, 22), settings.build_cells(turn, "wall"))
+        self.assertIn(Pos(8, 23), settings.build_cells(turn, "wall"))
+        for p in (Pos(8, 24), Pos(8, 25), Pos(8, 26)):
+            self.assertNotIn(p, settings.build_cells(turn, "wall"))

@@ -19,8 +19,8 @@ def select_defense_layout(turn: Turn, settings, previous: DefenseLayout | None =
     walls = set(settings.build_cells(turn, "wall"))
     count = min(3, len(existing) + len(candidates))
     preferred = settings.default_operator_position(turn)
-    # Fix P as well as the three rear sites from the user drawing. Ignore moving
-    # roles here; temporary occupancy must not change the planned geometry.
+    # The revised 17-wall drawing retains P and the three rear gun sites. Ignore
+    # moving roles here; temporary occupancy must not change the planned geometry.
     if (count and preferred is not None and preferred not in buildings | walls | candidates
             and set(existing) <= allowed
             and all(distance(preferred, p) <= 1 for p in candidates | set(existing))):

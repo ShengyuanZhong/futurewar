@@ -27,6 +27,7 @@ class TaskAgentMemory:
     _self_evolve_diags: set[str] = field(default_factory=set)
     _self_evolve_fail_streak: int = 0
     accepted_task: dict | None = None
+    attempt_key: tuple[int, int, int, int] | None = None
     execution_round: int = 0
     observed_description: str = ""
     suspended: bool = False

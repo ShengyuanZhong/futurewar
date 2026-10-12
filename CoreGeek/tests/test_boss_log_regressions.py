@@ -230,8 +230,12 @@ class BossLogRegressionTests(unittest.TestCase):
         raw['lastRoundRoleActionResults'] = {str(BOSS_ID): True}
         raw['teamEnemy']['roles'] = raw['teamEnemy']['roles'][:1]
         s, plan, _ = raid_step(raw, memory)
-        self.assertEqual(plan.commands[str(BOSS_ID)],
-                         {'action':'move', 'targetPos':[Pos(8,21).dump()]})
+        # A clear base shot from the current cell now wins over walking back
+        # to a previously verified firing post.
+        self.assertEqual(plan.commands[str(BOSS_ID)]['action'],'attack')
+        target = Pos.load(plan.commands[str(BOSS_ID)]['targetPos'][0])
+        self.assertIn(target,s.turn.footprint(s.turn.enemies[0]))
+        self.assertEqual(memory.robot_raids[BOSS_ID]['goal'],Pos.load(moved))
 
     def test_two_boss_recovery_moves_have_distinct_next_cells(self):
         raw, memory = log_world(second=True), log_memory()

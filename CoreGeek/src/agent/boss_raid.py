@@ -1,7 +1,8 @@
-"""At most two first-day BOSS orders, confirmed from inventory and feedback."""
+"""At most three first-day BOSS orders, confirmed from inventory and feedback."""
 from dataclasses import replace
 from .grid import Routes, adjacent_cells
 from .protocol import PIONEER, Pos, distance
+from .first_day_tasks import FIRST_DAY_LIMIT, task_attempts, finished_count, success_count
 from .summoning import (rear_spawn_position, scouted_spawn_position,
                        enemy_base_position, summon_cell_legal)
 
@@ -36,7 +37,7 @@ class BossRaid:
         if 'acquired_count' not in self.state:
             old_deployed = 1 if self.state.get('status') == 'deployed' else 0
             self.state['deployed_count'] = self.state.get('deployed_count', old_deployed)
-            self.state['acquired_count'] = min(2, max(held + self.state['deployed_count'],
+            self.state['acquired_count'] = min(FIRST_DAY_LIMIT, max(held + self.state['deployed_count'],
                 int(bool(self.state.get('order_acquired')))))
             self.state.setdefault('spawns', [])
             if old_deployed and self.state.get('spawn') is not None:
@@ -56,7 +57,7 @@ class BossRaid:
             gain = held - pending_buy['held']
             if gain > 0:
                 acquired = min(gain, pending_buy['num'])
-                self.state['acquired_count'] = min(2, self.state['acquired_count'] + acquired)
+                self.state['acquired_count'] = min(FIRST_DAY_LIMIT, self.state['acquired_count'] + acquired)
                 self.state['bought_count'] = self.state.get('bought_count', 0) + acquired
                 if gain != pending_buy['num'] or result is False:
                     self.state['purchase_closed'] = True
@@ -86,7 +87,7 @@ class BossRaid:
             elif result is True or spent == 1:
                 if pending_use['spawn'] not in self.state['spawns']:
                     self.state['spawns'].append(pending_use['spawn'])
-                    self.state['deployed_count'] = min(2, self.state['deployed_count'] + 1)
+                    self.state['deployed_count'] = min(FIRST_DAY_LIMIT, self.state['deployed_count'] + 1)
                 self.state['status'] = 'deployed'
                 self.state['deployment_ledger_confirmed'] = True
                 if pending_use.get('scouted'):
@@ -113,7 +114,7 @@ class BossRaid:
                 self.state['status'] = 'order_missing'
                 self.state['inventory_warning'] = 'order_disappeared_without_use'
             if held > max(0, self.state['acquired_count'] - self.state['deployed_count']):
-                self.state['acquired_count'] = min(2, held + self.state['deployed_count'])
+                self.state['acquired_count'] = min(FIRST_DAY_LIMIT, held + self.state['deployed_count'])
         self.state['held_last'] = held
 
     def feedback(self, pending):
@@ -137,15 +138,14 @@ class BossRaid:
             self.plan.summon_used = max(0, self.plan.summon_used-1)
 
     def tasks_finished(self):
-        points = {(x,y) for day,x,y in self.memory.task_points_finished | self.memory.task_points_succeeded if day==1}
         return (self.turn.day==1 and self.turn.is_day and not self.turn.phase_task
-                and (len(points)>=2 or not self.s.settings.enable_tasks))
+                and (finished_count(self.memory)>=FIRST_DAY_LIMIT or not self.s.settings.enable_tasks))
 
     def successful_tasks(self):
-        return min(2,len({(x,y) for day,x,y in self.memory.task_points_succeeded if day==1}))
+        return success_count(self.memory)
 
     def tasks_succeeded(self):
-        return self.successful_tasks()==2
+        return self.successful_tasks()==FIRST_DAY_LIMIT
 
     def target_orders(self):
         if not self.tasks_finished():
@@ -181,8 +181,8 @@ class BossRaid:
 
     def diagnostic(self):
         return dict(round=self.turn.round_no,is_day=self.turn.is_day,
-            attempted_tasks=len({(x,y) for day,x,y in self.memory.task_points_attempted if day==1}),
-            finished_tasks=len({(x,y) for day,x,y in self.memory.task_points_finished | self.memory.task_points_succeeded if day==1}),
+            attempted_tasks=len(task_attempts(self.memory)),
+            finished_tasks=finished_count(self.memory),task_schedule=self.memory.task_schedule,
             successful_tasks=self.successful_tasks(),active_task=bool(self.turn.phase_task),
             target_orders=self.state.get('target_count') if 'order_decision_round' in self.state else None,
             decision_round=self.state.get('order_decision_round'),
@@ -229,11 +229,11 @@ class BossRaid:
                 or (self.state['deployed_count'] and not self.state['deployment_ledger_confirmed'])
                 or self.state.get('pending_buy')):
             return 0
-        # Before both tasks end this is a potential two-order reserve, not a
+        # Before all three attempts end this is a potential three-order reserve, not a
         # purchase decision. After settlement it follows the frozen success quota.
         target = self.target_orders()
         if target is None:
-            target = 2
+            target = FIRST_DAY_LIMIT
         elif target==0 or self.preparation(role) is None:
             return 0
         return max(0,target-self.state['acquired_count'])*price
@@ -335,7 +335,7 @@ class BossRaid:
             missing_walls=len(self.s.missing_walls()),reason='evaluating')
         if not self.day_available():
             self.state['decision']['reason'] = ('disabled' if not self.s.settings.enable_boss_raid else
-                'after_day_one' if self.turn.day!=1 else 'night' if not self.turn.is_day else 'active_task' if self.turn.phase_task else 'waiting_for_two_tasks')
+                'after_day_one' if self.turn.day!=1 else 'night' if not self.turn.is_day else 'active_task' if self.turn.phase_task else 'waiting_for_three_tasks')
             return False
         self.decide_orders()
         if self.state['target_count']==0:

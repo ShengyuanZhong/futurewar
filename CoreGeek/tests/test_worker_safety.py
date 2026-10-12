@@ -18,6 +18,56 @@ def strategy(raw, memory=None, settings=None):
     return Strategy(turn, plan, memory or GameMemory(opening_complete=True)), plan
 
 
+def open_day_gate(raw, owner=501):
+    """Observed open door and the designated worker's real replacement stone."""
+    turn = Turn.load(raw)
+    base = turn.station()
+    gate = Pos(base.pos.x+(2 if Settings().mirrored_layout(turn) else -1),base.pos.y+2)
+    raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles'] if u['pos'] != gate.dump()]
+    worker = next(u for u in raw['teamOur']['roles'] if u['id']==owner)
+    if 'stone' not in worker['backpack']:
+        worker['backpack'].append('stone')
+    return raw
+
+
+def apply_commands(test, raw, turn, plan):
+    """Settle synthetic observations, including the door's remove/build actions."""
+    destinations = set()
+    for uid,command in plan.commands.items():
+        actor = next(u for u in raw['teamOur']['roles'] if str(u['id'])==uid)
+        action = command['action']
+        if action=='move':
+            pos = Pos.load(command['targetPos'][0])
+            test.assertEqual(distance(Pos.load(actor['pos']),pos),1)
+            test.assertNotIn(pos,turn.occupied_cells())
+            test.assertNotIn(pos,destinations)
+            destinations.add(pos)
+            actor['pos'] = pos.dump()
+        elif action=='remove':
+            raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles']
+                if u['roleType']!='wall' or u['pos']!=command['targetPos'][0]]
+        elif action=='build' and command['name']=='wall':
+            pos = Pos.load(command['targetPos'][0])
+            test.assertNotIn(pos,turn.occupied_cells())
+            actor['backpack'].remove('stone')
+            wall_id = max(u['id'] for u in raw['teamOur']['roles'])+1
+            raw['teamOur']['roles'].append(unit(wall_id,'wall',pos.x,pos.y,health=1000))
+        elif action=='buy':
+            count = command.get('num',1)
+            raw['teamOur']['goldNum'] -= turn.shop_prices[command['name']]*count
+            actor['backpack'] += [command['name']]*count
+        elif action=='collect':
+            actor['backpack'].append(turn.zones[Pos.load(command['targetPos'][0])])
+        elif action=='sell':
+            count = command['num']
+            raw['teamOur']['goldNum'] += turn.vendor_prices[command['name']]*count
+            for _ in range(count):
+                actor['backpack'].remove(command['name'])
+        elif action=='use':
+            actor['backpack'].remove(command['name'])
+    raw['lastRoundRoleActionResults'] = {uid: True for uid in plan.commands}
+
+
 class WorkerSafetyTests(unittest.TestCase):
     def test_worker_route_detours_outside_robot_range_and_buffer(self):
         raw = request(71)
@@ -96,6 +146,7 @@ class WorkerSafetyTests(unittest.TestCase):
     def test_guard_buys_five_fixers_from_day_three(self):
         raw = fortified(261)
         raw['teamOur']['roles'][2]['pos'] = {'x': 3, 'y': 7}
+        open_day_gate(raw)
         s, plan = strategy(raw)
         s.run()
         self.assertEqual(plan.commands['501'], {'action': 'buy', 'name': 'WallFixer', 'num': 5})
@@ -178,6 +229,7 @@ class WorkerSafetyTests(unittest.TestCase):
             raw = fortified(318, mirrored=mirrored)
             raw['teamOur']['goldNum'] = 0
             raw['teamOur']['roles'][2]['pos'] = point(3, 7, mirrored).dump()
+            raw['teamOur']['roles'][2]['backpack'] = ['stone']
             memory = GameMemory(opening_complete=True)
             for number in range(318, 332):
                 raw['roundNo'] = number
@@ -185,9 +237,10 @@ class WorkerSafetyTests(unittest.TestCase):
                 s.run()
                 command = plan.commands.get('501', {})
                 self.assertNotEqual(command.get('action'), 'buy')
-                if command.get('action') == 'move':
-                    raw['teamOur']['roles'][2]['pos'] = command['targetPos'][0]
+                apply_commands(self,raw,s.turn,plan)
+                memory.record(s.turn,plan)
             self.assertIn(Pos.load(raw['teamOur']['roles'][2]['pos']), s.guard.inner_cells())
+            self.assertTrue(set(s.settings.build_cells(s.turn,'wall')) <= {w.pos for w in s.turn.walls()})
 
     def test_guard_patrol_to_far_critical_wall_stays_inside(self):
         for mirrored in (False, True):
@@ -236,6 +289,7 @@ class WorkerSafetyTests(unittest.TestCase):
             raw = fortified(261)
             raw['teamOur']['goldNum'] = gold
             raw['teamOur']['roles'][2].update(pos={'x': 3, 'y': 7}, backpack=bag)
+            open_day_gate(raw)
             raw['weaponShopList'][-1]['price'] = price
             s, plan = strategy(raw)
             s.run()
@@ -272,5 +326,6 @@ class WorkerSafetyTests(unittest.TestCase):
         self.assertNotEqual(service.decide(copy.deepcopy(raw))['roleCommandMap'].get('501', {}).get('name'), 'WallFixer')
         raw['roundNo'] = 391
         raw['teamOur']['roles'][2]['pos'] = {'x': 3, 'y': 7}
+        open_day_gate(raw)
         # Day four target is eight, and actual inventory contains one kit.
         self.assertEqual(service.decide(copy.deepcopy(raw))['roleCommandMap']['501'], {'action': 'buy', 'name': 'WallFixer', 'num': 7})

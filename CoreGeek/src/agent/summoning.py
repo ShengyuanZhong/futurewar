@@ -207,6 +207,9 @@ def scouted_spawn_candidates(turn, settings, remembered=(), pending=(), failed=(
     blocked.update(r.pos for r in turn.robots if r.health > 0)
     blocked.update(g.pos for g in guns)
     blocked.update(base_cells)
+    # Selected robots will appear together at night. A later BOSS must not
+    # price a walk or firing post through an earlier stationary spawn.
+    blocked.update(pending)
     routes = {target: _approach_costs(turn, target, blocked, static)
               for target in set(targets) | set(base_cells)}
     wall_free = replace(turn, ours=tuple(u for u in turn.ours if u.kind != 'wall'),

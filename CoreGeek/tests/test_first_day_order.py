@@ -1,40 +1,38 @@
-"""Two task attempts precede success-count BOSS purchases and weapon shopping."""
+"""Three task attempts precede success-count BOSS purchases and weapon shopping."""
 import copy
 import unittest
 from unittest.mock import patch
 from agent.protocol import Pos
+from agent.first_day_tasks import record_attempt, finish_attempt
 from app.config import Settings
 from app.service.memory import GameMemory
 from app.service.turn_service import Session,TurnService
 from tests.fixtures import request
 from tests.test_gap_defense import role
-from tests.test_summon_control import ORDER,provide_scout,raid_request
+from tests.test_summon_control import ORDER,finished_tasks,provide_scout,raid_request
 from tests.test_worker_safety import strategy
 
 
-POINTS = {(1,3,9),(1,4,9)}
+def task_memory(successes=1,attempts=3,number=30):
+    memory = finished_tasks(successes, attempts)
+    memory.day, memory.last_round = 1, number-1
+    return memory
 
 
-def task_memory(successes=1,attempts=2,number=30):
-    return GameMemory(opening_complete=True,day=1,last_round=number-1,
-        task_points_attempted=set(sorted(POINTS)[:attempts]),
-        task_points_finished=set(sorted(POINTS)[:attempts]),
-        task_points_succeeded=set(sorted(POINTS)[:successes]))
-
-
-def day_strategy(successes=1,attempts=2,gold=1000,number=30):
+def day_strategy(successes=1,attempts=3,gold=1000,number=30):
     raw = raid_request(number)
     raw['teamOur']['goldNum'] = gold
     raw['teamEnemy']['roles'] = raw['teamEnemy']['roles'][:1]
-    role(raw,501).update(pos=Pos(2,8).dump(),backpack=['WallFixer']*5)
+    raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles'] if u['pos'] != Pos(5,9).dump()]
+    role(raw,501).update(pos=Pos(2,8).dump(),backpack=['WallFixer']*5+['stone'])
     memory = task_memory(successes,attempts,number)
     s,plan = strategy(raw,memory,Settings(enable_news=False))
     return raw,memory,s,plan
 
 
 class FirstDayOrderTests(unittest.TestCase):
-    def test_rich_pioneer_cannot_buy_before_two_attempts(self):
-        for attempts in (0,1):
+    def test_rich_pioneer_cannot_buy_before_three_attempts(self):
+        for attempts in (0,1,2):
             raw,memory,s,plan = day_strategy(successes=attempts,attempts=attempts)
             pioneer = next(u for u in s.turn.controllable() if u.kind=='pioneer')
             self.assertFalse(s.boss_raid.pioneer(pioneer))
@@ -42,26 +40,26 @@ class FirstDayOrderTests(unittest.TestCase):
             self.assertNotIn('order_decision_round',memory.boss_raid)
             self.assertFalse(any(c.get('name')==ORDER for c in plan.commands.values()))
 
-    def test_active_second_task_blocks_purchase_even_after_two_accepts(self):
+    def test_active_third_task_blocks_purchase_even_after_three_accepts(self):
         raw,memory,_,_ = day_strategy()
-        raw['phaseTask'] = 'unfinished second task'
+        raw['phaseTask'] = 'unfinished third task'
         s,plan = strategy(raw,memory,Settings(enable_news=False))
         pioneer = next(u for u in s.turn.controllable() if u.kind=='pioneer')
         self.assertFalse(s.boss_raid.pioneer(pioneer))
         self.assertIsNone(s.boss_raid.target_orders())
         self.assertFalse(s.boss_raid.weapon_upgrades_ready())
 
-    def test_second_accept_without_task_start_does_not_count_as_finished(self):
-        raw,memory,_,_ = day_strategy(1)
-        memory.task_points_finished = set(sorted(POINTS)[:1])
+    def test_third_accept_without_task_start_does_not_count_as_finished(self):
+        raw,memory,_,_ = day_strategy(1,attempts=2)
+        record_attempt(memory,1,35,(3,9),'自进化类1',origin='isolated_fixture')
         s,plan = strategy(raw,memory,Settings(enable_news=False))
         self.assertFalse(s.boss_raid.pioneer(next(u for u in s.turn.controllable() if u.kind=='pioneer')))
         self.assertIsNone(s.boss_raid.target_orders())
         self.assertFalse(s.boss_raid.weapon_upgrades_ready())
         self.assertNotIn('order_decision_round',memory.boss_raid)
 
-    def test_zero_one_two_successes_define_purchase_quantity(self):
-        for successes in (0,1,2):
+    def test_zero_one_two_three_successes_define_purchase_quantity(self):
+        for successes in (0,1,2,3):
             with self.subTest(successes=successes):
                 raw,memory,s,plan = day_strategy(successes)
                 pioneer = next(u for u in s.turn.controllable() if u.kind=='pioneer')
@@ -87,7 +85,9 @@ class FirstDayOrderTests(unittest.TestCase):
 
     def test_task_successes_from_previous_days_do_not_inflate_quota(self):
         raw,memory,_,_ = day_strategy(1)
-        memory.task_points_succeeded.update({(2,3,9),(3,4,9)})
+        for day in (2,3):
+            key = record_attempt(memory,day,(day-1)*130+3,(3,9),'自进化类1')
+            finish_attempt(memory,key,(day-1)*130+6,succeeded=True)
         s,plan = strategy(raw,memory,Settings(enable_news=False))
         s.boss_raid.pioneer(next(u for u in s.turn.controllable() if u.kind=='pioneer'))
         self.assertEqual(plan.commands['502']['num'],1)
@@ -105,9 +105,9 @@ class FirstDayOrderTests(unittest.TestCase):
         raw['teamOur']['goldNum'] = 1000
         raw['weaponShopList'].append({'name':ORDER,'price':120})
         first = raw['teamOur']['playerTasks'][0]['taskPosition']
-        memory = GameMemory(opening_complete=True,last_round=19,day=1,
-            task_points_attempted={(1,first['x'],first['y'])},
-            task_points_succeeded={(1,first['x'],first['y'])})
+        memory = GameMemory(opening_complete=True,last_round=19,day=1)
+        key = record_attempt(memory,1,1,(first['x'],first['y']),'自进化类1')
+        finish_attempt(memory,key,4,succeeded=True)
         s,plan = strategy(raw,memory,Settings(enable_news=False))
         with patch.object(s,'treasure',return_value=True) as treasure,patch.object(s,'task',wraps=s.task) as task:
             s.run()
@@ -145,9 +145,9 @@ class FirstDayOrderTests(unittest.TestCase):
         self.assertEqual(s.boss_raid.budget_reserve(),240)
         self.assertFalse(s.boss_raid.weapon_upgrades_ready())
 
-    def test_task_phase_reserves_possible_two_orders_without_deciding(self):
+    def test_task_phase_reserves_possible_three_orders_without_deciding(self):
         _,memory,s,_ = day_strategy(1,attempts=1)
-        self.assertEqual(s.boss_raid.budget_reserve(),240)
+        self.assertEqual(s.boss_raid.budget_reserve(),360)
         self.assertNotIn('target_count',memory.boss_raid)
         self.assertNotIn('order_decision_round',memory.boss_raid)
 
@@ -156,7 +156,8 @@ class FirstDayOrderTests(unittest.TestCase):
         role(raw,502)['pos'] = Pos(4,7).dump()
         s,_ = strategy(raw,memory,Settings(enable_news=False))
         s.boss_raid.pioneer(next(u for u in s.turn.controllable() if u.kind=='pioneer'))
-        memory.task_points_succeeded = set(POINTS)
+        for key in memory.task_attempts:
+            finish_attempt(memory,key,31,succeeded=True)
         raw.update(roundNo=31)
         raw['teamOur']['goldNum'] = 1000
         s,plan = strategy(raw,memory,Settings(enable_news=False))

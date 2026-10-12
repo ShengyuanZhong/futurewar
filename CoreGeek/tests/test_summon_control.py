@@ -3,6 +3,7 @@ import unittest
 
 from agent.actions import ActionPlan
 from agent.combat import choose_targets
+from agent.first_day_tasks import record_attempt, finish_attempt
 from agent.protocol import Pos, Turn, build_command, distance, move_command
 from agent.summoning import enemy_weapon_cells, layout_operator_positions
 from agent.worker_safety import robot_danger
@@ -30,11 +31,21 @@ def raid_request(number=30, boss=False):
     return raw
 
 
-def finished_tasks(successes=1):
-    points = {(1,3,9),(1,4,9)}
-    return GameMemory(opening_complete=True,task_points_attempted=points,
-                      task_points_finished=points.copy(),
-                      task_points_succeeded=set(sorted(points)[:successes]))
+def finished_tasks(successes=1, attempts=3):
+    """Isolate inventory policy using three distinct first-day attempt records.
+
+    The third visit repeats point one. These observations seed history rather
+    than simulate elapsed rounds; HTTP lifecycle tests enforce the cooldown.
+    """
+    memory = GameMemory(opening_complete=True)
+    for index, (accepted, ended, point, kind) in enumerate((
+            (1, 4, (3, 9), '自进化类1'),
+            (8, 11, (4, 9), '自进化类2'),
+            (35, 38, (3, 9), '自进化类1'))[:attempts]):
+        key = record_attempt(memory, 1, accepted, point, kind, origin='isolated_fixture')
+        finish_attempt(memory, key, ended, succeeded=index < successes)
+    memory.task_active_attempt = None
+    return memory
 
 
 def provide_scout(raw, memory=None):
@@ -177,14 +188,14 @@ class SummonControlTests(unittest.TestCase):
         plan = ActionPlan(Turn.load(raw), Settings(), summon_positions={Pos(40, 25)})
         self.assertFalse(plan.add(502, {'action': 'use', 'name': ORDER, 'targetPos': [{'x': 40, 'y': 25}]}))
 
-    def test_two_tasks_must_end_before_buying_exactly_one_boss_order(self):
+    def test_three_tasks_must_end_before_buying_exactly_one_boss_order(self):
         raw = raid_request()
         memory = finished_tasks()
         s, plan = strategy(raw, memory); s.run()
         self.assertEqual(plan.commands['502'], {'action': 'buy', 'name': ORDER, 'num': 1})
         raw['phaseTask'] = 'active task'; s, plan = strategy(raw, memory); s.run()
         self.assertNotEqual(plan.commands.get('502', {}).get('action'), 'buy')
-        raw['phaseTask'] = ''; memory.task_points_attempted = {(1, 3, 9)}
+        raw['phaseTask'] = ''; memory = finished_tasks(attempts=2)
         s, plan = strategy(raw, memory); s.run()
         self.assertNotEqual(plan.commands.get('502', {}).get('action'), 'buy')
 

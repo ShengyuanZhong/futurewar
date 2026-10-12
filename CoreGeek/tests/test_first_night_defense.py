@@ -12,6 +12,7 @@ from app.config import Settings
 from app.service.memory import GameMemory
 from tests.fixtures import robot, unit
 from tests.test_maintenance import fortified
+from tests.test_summon_control import finished_tasks
 from tests.test_u_layout import point
 
 
@@ -28,6 +29,14 @@ def setup(raw=None, memory=None, boss=False, **overrides):
 
 def actor(raw, uid=501):
     return next(u for u in raw['teamOur']['roles'] if u['id'] == uid)
+
+
+def open_entrance(raw):
+    """A real open daytime gate with one stone retained for the evening seal."""
+    raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles'] if u['pos'] != Pos(5,9).dump()]
+    if 'stone' not in actor(raw)['backpack']:
+        actor(raw)['backpack'].append('stone')
+    return raw
 
 
 def ready(raw, position=(8,7), stock=5):
@@ -116,7 +125,7 @@ class FirstNightDefenseTests(unittest.TestCase):
         raw = fortified(30)
         next(i for i in raw['weaponShopList'] if i['name']==FIXER)['price'] = 15
         actor(raw)['pos'] = Pos(3,7).dump()
-        actor(raw,504)['backpack'] = [VOUCHER]
+        actor(raw,504).update(pos=Pos(6,5).dump(),backpack=[VOUCHER])
         _,plan,defense = setup(raw)
         self.assertTrue(plan.add(501,{'action':'buy','name':FIXER,'num':5}))
         self.assertTrue(plan.add(504,{'action':'use','name':VOUCHER,'targetPos':[Pos(5,6).dump()]}))
@@ -124,7 +133,7 @@ class FirstNightDefenseTests(unittest.TestCase):
         self.assertFalse(defense.prepared())
 
     def test_supply_buys_five_kits_then_one_coupon_at_the_same_stop(self):
-        raw = fortified(30)
+        raw = open_entrance(fortified(30))
         actor(raw)['pos'] = Pos(3,7).dump()
         next(i for i in raw['weaponShopList'] if i['name']==FIXER)['price'] = 15
         memory = GameMemory(opening_complete=True)
@@ -133,7 +142,7 @@ class FirstNightDefenseTests(unittest.TestCase):
         self.assertEqual(plan.commands['501'],{'action':'buy','name':FIXER,'num':5})
         memory.record(s.turn,plan)
         raw['roundNo'] += 1
-        actor(raw)['backpack'] = [FIXER]*5
+        actor(raw)['backpack'] = [FIXER]*5+['stone']
         raw['teamOur']['goldNum'] -= 75
         raw['lastRoundRoleActionResults'] = {'501':True}
         s,plan,defense = setup(raw,memory)
@@ -142,7 +151,7 @@ class FirstNightDefenseTests(unittest.TestCase):
 
     def test_owned_coupon_is_delivered_without_another_purchase(self):
         raw = fortified(30)
-        actor(raw)['pos'] = Pos(4,5).dump()
+        actor(raw)['pos'] = Pos(5,5).dump()
         actor(raw)['backpack'] = [FIXER]*5+[VOUCHER]
         actor(raw,504)['pos'] = Pos(4,9).dump()
         s,plan,defense = setup(raw)
@@ -150,7 +159,7 @@ class FirstNightDefenseTests(unittest.TestCase):
         self.assertEqual(plan.commands['501'],{'action':'use','name':VOUCHER,'targetPos':[Pos(5,6).dump()]})
 
     def test_minimum_prepared_guard_continues_normal_l3_upgrade_purchase(self):
-        raw = ready(fortified(30),position=(3,7))
+        raw = open_entrance(ready(fortified(30),position=(3,7)))
         s,plan,defense = setup(raw)
         self.assertTrue(defense.worker(s.turn.workers()[0]))
         self.assertEqual(plan.commands['501'],{'action':'buy','name':'WeaponUpgradeVoucher2','num':1})
@@ -192,10 +201,10 @@ class FirstNightDefenseTests(unittest.TestCase):
             self.assertIn(Pos.load(command['targetPos'][0]),s.guard.inner_cells())
 
     def test_dusk_from_a_distant_mine_returns_without_a_new_supply_or_collect_trip(self):
-        raw = ready(fortified(70),position=(20,7))
+        raw = open_entrance(ready(fortified(70),position=(20,7)))
         raw['mapInfo']['zones'].append({'neutralType':'iron','pos':Pos(20,6).dump()})
         s,plan,defense = setup(raw)
-        self.assertTrue(defense.worker(s.turn.workers()[0]))
+        s.run()  # The entrance controller owns the final daytime return.
         self.assertEqual(plan.commands['501']['action'],'move')
         self.assertLess(plan.commands['501']['targetPos'][0]['x'],20)
 
@@ -289,7 +298,6 @@ class FirstNightDefenseTests(unittest.TestCase):
         self.assertEqual(s.memory.raid_scouts.get('home_worker_id'),501)
 
     def test_strategy_boss_purchase_has_priority_over_defense_stock(self):
-        tasks = {(1,3,9),(1,4,9)}
         for prepared,gold,expected_reserve,quantity in ((False,120,175,1),(False,240,175,2),(True,240,0,2)):
             with self.subTest(prepared=prepared):
                 raw = fortified(30)
@@ -300,9 +308,8 @@ class FirstNightDefenseTests(unittest.TestCase):
                 raw['teamOur']['goldNum'] = gold
                 if prepared:
                     ready(raw)
-                memory = GameMemory(opening_complete=True,task_points_attempted=tasks,
-                                    task_points_finished=tasks.copy(),
-                                    task_points_succeeded=(set(sorted(tasks)[:1]) if gold==120 else tasks),first_night_defense={'worker_id':501})
+                memory = finished_tasks(1 if gold==120 else 2)
+                memory.first_night_defense = {'worker_id':501}
                 s,plan,defense = setup(raw,memory,boss=True)
                 self.assertEqual(defense.reserve_gold(),expected_reserve)
                 pioneer = next(u for u in s.turn.controllable() if u.kind=='pioneer')

@@ -1,4 +1,4 @@
-"""User drawing regression: base (6,7), rear rockets, twelve U-shaped walls."""
+"""Revised drawing regression: base (6,7), rear rockets, seventeen walls."""
 import copy
 import unittest
 
@@ -13,10 +13,11 @@ from app.service.turn_service import TurnService
 from tests.fixtures import request, robot, unit
 
 
-WALLS = {(6, 9), (7, 9), (8, 9), (9, 9), (9, 8), (9, 7),
-         (9, 6), (9, 5), (9, 4), (8, 4), (7, 4), (6, 4)}
+WALLS = {(5, 9), (6, 9), (7, 9), (8, 9), (9, 9), (9, 8), (9, 7),
+         (9, 6), (9, 5), (9, 4), (8, 4), (7, 4), (6, 4), (5, 4), (4, 4),
+         (4, 5), (4, 6)}
 ROCKETS = {(5, 8), (5, 7), (5, 6)}
-LANE = {(6, 8), (7, 8), (8, 8), (8, 7), (8, 6), (8, 5), (7, 5), (6, 5)}
+LANE = {(6, 8), (7, 8), (8, 8), (8, 7), (8, 6), (8, 5), (7, 5), (6, 5), (5, 5)}
 
 
 def point(x, y, mirrored=False):
@@ -28,7 +29,7 @@ def drawing_request(mirrored=False, team="challenger", built=False, round_no=1):
     raw["teamOur"].update(type=team, playerTasks=[])
     raw["mapInfo"]["zones"] = []
     raw["teamOur"]["roles"] = [unit(503, "station", 33 if mirrored else 6, 7)]
-    for uid, kind, x, y in ((502, "pioneer", 4, 7), (501, "worker", 4, 9), (504, "worker", 4, 5)):
+    for uid, kind, x, y in ((502, "pioneer", 4, 7), (501, "worker", 4, 9), (504, "worker", 3, 6)):
         p = point(x, y, mirrored)
         raw["teamOur"]["roles"].append(unit(uid, kind, p.x, p.y))
     if built:
@@ -46,13 +47,14 @@ class ULayoutTests(unittest.TestCase):
                 raw = drawing_request(mirrored)
                 for x, y in ((3, 9), (3, 5)):
                     raw["mapInfo"]["zones"].append({"neutralType": "stone", "pos": point(x, y, mirrored).dump()})
-                service = TurnService()
+                service = TurnService(Settings(enable_first_night_defense=False,
+                                               enable_boss_raid=False, enable_tasks=False))
                 trace = []
                 for number in range(1, 71):
                     raw["roundNo"] = number
                     before = Turn.load(raw)
                     response = service.decide(copy.deepcopy(raw))
-                    if service.sessions[(before.team_id, before.team_type)].memory.opening_complete:
+                    if len(before.walls()) == 17:
                         break
                     roles = {str(u["id"]): u for u in raw["teamOur"]["roles"]}
                     destinations = set()
@@ -89,7 +91,7 @@ class ULayoutTests(unittest.TestCase):
                 self.assertEqual({w.pos for w in final.walls()}, {point(x, y, mirrored) for x, y in WALLS})
                 self.assertEqual({w.pos for w in final.weapons()}, {point(x, y, mirrored) for x, y in ROCKETS})
                 self.assertEqual(final.gold, 0)
-                self.assertGreaterEqual(sum(kind == "stone" for _, kind in trace), 12)
+                self.assertGreaterEqual(sum(kind == "stone" for _, kind in trace), 17)
                 self.assertLess(max(n for n, kind in trace if kind == "rocket"), min(n for n, kind in trace if kind == "stone"))
                 self.assertLess(min(n for n, kind in trace if kind == "stone"), min(n for n, kind in trace if kind == "wall"))
 
@@ -116,6 +118,7 @@ class ULayoutTests(unittest.TestCase):
             for uid, (x, y) in enumerate(sorted(WALLS), 701):
                 p = point(x, y, mirrored)
                 raw["teamOur"]["roles"].append(unit(uid, "wall", p.x, p.y))
+            raw["teamOur"]["roles"][2]["pos"] = point(6, 8, mirrored).dump()
             turn = Turn.load(raw)
             lane = {point(x, y, mirrored) for x, y in LANE}
             reachable = Routes(turn, turn.workers()[0]).cost

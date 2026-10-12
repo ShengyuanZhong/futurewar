@@ -48,6 +48,8 @@ def ready_roles(raw):
 class RaidScoutTests(unittest.TestCase):
     def test_daytime_breach_returns_assigned_observer_to_construction(self):
         raw, memory = scout_request(), scout_memory()
+        raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles'] if not (u['roleType']=='wall' and u['pos']==Pos(5,9).dump())]
+        role(raw,HOME_ID).update(pos=Pos(3,7).dump(),backpack=['stone']+['WallFixer']*5)
         strategy(raw, memory)
         self.assertEqual(memory.raid_scouts['worker_id'], WORKER_ID)
         raw['roundNo'] = 21
@@ -91,6 +93,8 @@ class RaidScoutTests(unittest.TestCase):
 
     def test_submitted_last_wall_does_not_release_worker_before_next_observation(self):
         raw = scout_request(35)
+        raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles'] if not (u['roleType']=='wall' and u['pos']==Pos(5,9).dump())]
+        role(raw,HOME_ID).update(pos=Pos(3,7).dump(),backpack=['stone']+['WallFixer']*5)
         raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles']
             if not (u['roleType'] == 'wall' and u['pos'] == GAP.dump())]
         role(raw, WORKER_ID).update(pos={'x': 8, 'y': 7}, backpack=['stone'])

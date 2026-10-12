@@ -103,17 +103,23 @@ class CombatStrategyTests(unittest.TestCase):
         self.assertEqual(self.execute(raw, Settings(enable_news=False, allow_base_surroundings=False)).commands["504"], {"action": "use", "name": "WeaponUpgradeVoucher1", "targetPos": [{"x": 11, "y": 22}]})
 
     def test_second_task_cell_and_dusk_task_admission(self):
+        from agent.first_day_tasks import record_attempt, finish_attempt
         raw = request()
         raw["teamOur"]["playerTasks"][0]["isValid"] = False
         raw["teamOur"]["roles"][2]["pos"] = {"x": 15, "y": 17}
-        self.assertEqual(self.execute(raw).commands["502"], {"action": "acceptTask"})
+        memory = GameMemory()
+        key = record_attempt(memory,1,1,(14,14),'自进化类1',origin='isolated_fixture')
+        finish_attempt(memory,key,1)
+        self.assertEqual(self.execute(raw,memory=memory).commands["502"], {"action": "acceptTask"})
         raw["roundNo"] = 69
-        self.assertNotEqual(self.execute(raw).commands.get("502", {}).get("action"), "acceptTask")
+        self.assertNotEqual(self.execute(raw,memory=memory).commands.get("502", {}).get("action"), "acceptTask")
 
     def test_treasure_waits_then_sacrifices_exact_list(self):
         raw = request(5)
         raw["teamOur"]["roles"][2]["backpack"] = ["StarSand", "Medicine"]
-        memory = GameMemory(opening_complete=True, task_points_attempted={(1,14,14),(1,17,17)}, task_points_finished={(1,14,14),(1,17,17)}, treasure={"targetPos": {"x": 15, "y": 13}, "items": ["StarSand"], "startRound": 6, "endRound": 9})
+        from tests.test_summon_control import finished_tasks
+        memory = finished_tasks(0)
+        memory.treasure = {"targetPos": {"x": 15, "y": 13}, "items": ["StarSand"], "startRound": 6, "endRound": 9}
         self.assertNotIn("502", self.execute(raw, memory=memory).commands)
         raw["roundNo"] = 6
         cmd = self.execute(raw, memory=memory).commands["502"]

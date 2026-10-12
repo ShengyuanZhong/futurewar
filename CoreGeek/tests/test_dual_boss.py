@@ -1,9 +1,10 @@
-"""Observed-inventory accounting for at most two first-night BOSS deployments."""
+"""Observed-inventory accounting, retaining single and dual BOSS safety cases."""
 import copy
 import unittest
 
 from agent.actions import ActionPlan
 from agent.brain import Strategy
+from agent.first_day_tasks import record_attempt, finish_attempt
 from agent.protocol import Pos, Turn
 from app.config import Settings
 from app.service.llm_service import LLMService
@@ -55,7 +56,7 @@ class DualBossTests(unittest.TestCase):
     def command(self, plan):
         return plan.commands.get(str(PIONEER_ID), {})
 
-    def test_wealth_without_two_task_attempts_does_not_buy(self):
+    def test_wealth_without_three_task_attempts_does_not_buy(self):
         raw = raid_request(); raw['teamOur']['goldNum'] = 500
         memory = memory_for(raw,attempted=False)
         s,plan = policy_step(raw,memory)
@@ -81,25 +82,24 @@ class DualBossTests(unittest.TestCase):
         memory = memory_for(raw)
         s, plan = policy_step(raw, memory)
         self.assertEqual(self.command(plan), {})
-        self.assertEqual(s.boss_raid.budget_reserve(), 240)
+        self.assertEqual(s.boss_raid.budget_reserve(), 360)
 
-    def test_two_attempts_with_one_success_buy_only_one(self):
+    def test_three_attempts_with_one_success_buy_only_one(self):
         raw = raid_request(); memory = memory_for(raw,successes=1)
         s,plan = policy_step(raw,memory)
         self.assertEqual(self.command(plan),{'action':'buy','name':ORDER,'num':1})
         self.assertFalse(s.boss_raid.tasks_succeeded())
         raw = raid_request(); memory = memory_for(raw,attempted=False)
-        memory.task_points_attempted = {(1,3,9)}
-        memory.task_points_succeeded = {(1,3,9)}
+        key = record_attempt(memory,1,1,(3,9),'自进化类1')
+        finish_attempt(memory,key,4,succeeded=True)
         s,plan = policy_step(raw,memory)
         self.assertEqual(self.command(plan),{})
 
     def test_confirmed_two_successes_enable_preparation_without_overbuying(self):
         raw = raid_request(); raw['teamOur']['goldNum'] = 50
         memory = memory_for(raw)
-        memory.task_points_succeeded = {(1, 3, 9), (1, 4, 9)}
         s, plan = policy_step(raw, memory)
-        self.assertTrue(s.boss_raid.tasks_succeeded())
+        self.assertEqual(s.boss_raid.successful_tasks(),2)
         self.assertEqual(memory.boss_raid['target_count'], 2)
         self.assertIn(PIONEER_ID, plan.used)
         self.assertNotIn(str(PIONEER_ID), plan.commands)
@@ -326,7 +326,7 @@ class DualBossTests(unittest.TestCase):
         s, plan = policy_step(raw, memory)
         self.assertNotIn(self.command(plan).get('action'), ('buy', 'use'))
 
-    def test_unknown_history_cannot_buy_and_carried_orders_still_wait_for_two_tasks(self):
+    def test_unknown_history_cannot_buy_and_carried_orders_still_wait_for_three_tasks(self):
         for held in (0,1,2):
             raw = raid_request(); pioneer(raw)['backpack'] = [ORDER]*held
             raw['teamOur']['goldNum'] = 500
@@ -361,9 +361,11 @@ class DualBossTests(unittest.TestCase):
                 ('phase_only', False), ('other_sale', False)):
             with self.subTest(mode=mode):
                 raw = raid_request(); raw['teamOur']['goldNum'] = 100; raw['teamOur']['totalScore'] = 10
-                memory = memory_for(raw)
-                memory.task_points_succeeded.clear()
+                memory = memory_for(raw,attempted=False)
+                memory.task_started = raw['roundNo']-3
                 agent = memory.task_agent
+                agent.self_evolve_started_round = memory.task_started
+                agent.attempt_key = record_attempt(memory,1,memory.task_started,(3,9),'自进化类1')
                 agent.self_evolve_active = True
                 agent.self_evolve_last_action = 'submitAnswer'
                 agent.self_evolve_task_desc = 'synthetic task'
@@ -390,12 +392,15 @@ class DualBossTests(unittest.TestCase):
                 self.assertEqual((1,3,9) in memory.task_points_succeeded, expected)
                 self.assertNotIn((1,4,9), memory.task_points_succeeded)
 
-    def test_two_rewarded_task_points_are_recorded_distinctly_and_enable_two(self):
+    def test_two_rewarded_attempts_wait_for_third_failure_then_enable_two(self):
         raw = raid_request(); raw['teamOur']['goldNum'] = 100; raw['teamOur']['totalScore'] = 10
         memory = memory_for(raw, attempted=False)
-        for point in ((3,9), (4,9)):
-            memory.task_points_attempted.add((1,*point))
+        for index, point in enumerate(((3,9), (4,9))):
             agent = memory.task_agent
+            memory.task_started = raw['roundNo']-2
+            agent.self_evolve_started_round = memory.task_started
+            agent.attempt_key = record_attempt(memory,1,memory.task_started,point,
+                '自进化类'+str(index+1),origin='isolated_fixture')
             agent.self_evolve_active = True
             agent.self_evolve_last_action = 'submitAnswer'
             agent.self_evolve_task_desc = 'synthetic task'
@@ -413,7 +418,12 @@ class DualBossTests(unittest.TestCase):
             raw['roundNo'] += 1
         self.assertEqual(memory.task_points_succeeded, {(1,3,9), (1,4,9)})
         s, plan = policy_step(raw, memory)
-        self.assertTrue(s.boss_raid.tasks_succeeded())
+        self.assertFalse(s.boss_raid.tasks_finished())
+        self.assertEqual(self.command(plan),{})
+        third = record_attempt(memory,1,raw['roundNo'],(3,9),'自进化类1',origin='isolated_fixture')
+        finish_attempt(memory,third,raw['roundNo'],succeeded=False)
+        s, plan = policy_step(raw, memory)
+        self.assertEqual(s.boss_raid.successful_tasks(),2)
         self.assertEqual(self.command(plan), {'action':'buy', 'name':ORDER, 'num':2})
 
 

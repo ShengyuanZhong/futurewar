@@ -1,12 +1,14 @@
 # CoreGeek 参赛 Agent
 
-当前程序版本为 v1.2.8：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后两翼六墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回墙内，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
+当前程序版本为 v1.2.9：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后其余11块侧后墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回墙内，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
 
 此目录可作为参赛程序目录提交。沿用示例的 `main3.py`、`src/agent/protocol.py`、`grid.py`、`brain.py`；HTTP 处理与跨回合协作放在 `app`。新增代码无第三方运行依赖。
 
-当前v1.2.8已通过569项回归、320份合成压力及四种布局520次跨帧HTTP检查；检查范围与实际结果见[验证报告](../reports/VALIDATION-v1.2.8.md)，未运行新官方对局。历史v1.2.7的529项回归、80份合成压力及跨帧HTTP证据保留在[历史报告](../reports/VALIDATION-v1.2.7.md)。
+历史v1.2.8通过569项回归、320份合成压力及四种布局520次跨帧HTTP检查；证据见[验证报告](../reports/VALIDATION-v1.2.8.md)，未运行新官方对局。历史v1.2.7的529项回归、80份合成压力及跨帧HTTP证据保留在[历史报告](../reports/VALIDATION-v1.2.7.md)。
 
-v1.2.8增加[真实布局侦察与阵型召唤](docs/LAYOUT_SCOUTING.md)：非留守工人在三炮及可建原墙实际完成后立即探路，不再等L2火箭和修包。敌基地/墙全局可见，炮台及普通角色受视野限制，BOSS没有视野。布局通过真实三炮或12格武器圈累计扫描确认；实际用券还需活侦察工人就近、当前普通共享视野覆盖共同操炮位及可见炮手。按实测炮阵选择合法出生点，利用45度缺口、直射或一堵墙突破，并维持第一夜视野。购券仍在两任务结束后按成功数冻结0/1/2张，只有use等待侦察；火箭升级采购等购券尝试之后。缺口留守、任务prompt、普通升级及经济路线保持。首日完整时序见[FIRST_DAY_PLAN](docs/FIRST_DAY_PLAN.md)。
+v1.2.9更新[首日三任务与三券](docs/FIRST_DAY_V129.md)：固定尝试任务1→任务2→任务1，按实际冷却等待第三次，全部三次结束后按成功次数冻结0～3张BOSS券；用券仍等真实侦察和当前视野。己方采用[17墙镜像蓝图与白天入口](docs/HOME_LAYOUT_V129.md)，夜前封回完整图；BOSS清完炮手后可清除基地射线首个挡路炮，无已知炮台且原地能打基地时优先原地可射的基地旁角色，详见[攻城策略](docs/ROBOT_SIEGE_V129.md)。
+
+历史v1.2.8增加[真实布局侦察与阵型召唤](docs/LAYOUT_SCOUTING.md)：非留守工人在三炮及可建原墙实际完成后立即探路，不再等L2火箭和修包。敌基地/墙全局可见，炮台及普通角色受视野限制，BOSS没有视野。布局通过真实三炮或12格武器圈累计扫描确认；实际用券还需活侦察工人就近、当前普通共享视野覆盖共同操炮位及可见炮手。按实测炮阵选择合法出生点，利用45度缺口、直射或一堵墙突破，并维持第一夜视野。购券仍在两任务结束后按成功数冻结0/1/2张，只有use等待侦察；火箭升级采购等购券尝试之后。缺口留守、任务prompt、普通升级及经济路线保持。首日完整时序见[FIRST_DAY_PLAN](docs/FIRST_DAY_PLAN.md)。
 
 沿用[有限追击与双BOSS](docs/BOSS_EFFICIENCY.md)的战斗与库存反馈框架；旧“财富提前买两张、晚间降为一张、后续收入补第二张”采购条件已由任务结果冻结数量替代。
 
@@ -72,7 +74,7 @@ python main3.py 8080 --config config.local.json
 
 也可设置 `FUTUREWAR_CONFIG`。相对路径以启动命令的当前目录解析；生产环境建议使用绝对路径。程序启动时读取一次配置，修改后需重启。
 
-默认无需配置文件即可开局建造。`allow_base_surroundings=true`在2×2基地外第一圈武器、第二圈墙的合法范围内生成12格U墙、后排三炮和P位，保留维修通道，右侧镜像；显式配置也不能越圈建造。
+默认无需配置文件即可开局建造。`allow_base_surroundings=true`在2×2基地外第一圈武器、第二圈墙的合法范围内生成17墙、后排三炮和P位，白天实际开一堵后上墙、夜前封回，右侧镜像；显式配置也不能越圈建造。
 
 需要自定义时，可在layouts中填写各阵营相对基地左上角的`{x,y}`偏移、source及verified:true，优先覆盖默认布局。旧模板的未核验空坐标不会阻止默认建造。`loadout`为`["rocket","rocket","rocket"]`；默认先造三炮，再采石建墙。详见[开发文档](docs/DEVELOPMENT.md)。
 
@@ -133,13 +135,13 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | [main3.py](main3.py) | `main()` | 读取`port/--config`，启动服务 |
 | [app/config.py](app/config.py) | `Settings.load(path=None)` | 文件/环境变量加载及配置校验，返回Settings |
 | 同上 | `Settings.build_cells(turn, kind)` | 优先自定义确认布局，否则按启用的基地周围布局计算绝对建造格 |
-| 同上 | `base_surrounding_offsets(kind, mirrored=False)` | 三炮和12格U形墙偏移；镜像为dx→1-dx，详见[布局说明](docs/U_LAYOUT.md) |
+| 同上 | `base_surrounding_offsets(kind, mirrored=False)` | 三炮和17格城墙偏移；镜像为dx→1-dx，详见[当前布局](docs/HOME_LAYOUT_V129.md) |
 | [app/server.py](app/server.py) | `serve(port, settings=None)` | 绑定0.0.0.0并阻塞服务 |
 | 同上 | `AgentServer(address, service)` | HTTP服务器与复用TurnService绑定 |
 | 同上 | `Handler.do_POST/do_GET/send_json` | 请求处理、健康检查、编码输出 |
 | [app/service/turn_service.py](app/service/turn_service.py) | `TurnService.decide(payload)` | 返回含三个官方字段的完整响应，提交跨回合状态 |
 | 同上 | `Session`、`empty_response()` | 会话数据、独立空响应 |
-| [app/service/memory.py](app/service/memory.py) | `GameMemory.observe(turn)` | 更新额度、新闻、任务及行为反馈 |
+| [app/service/memory.py](app/service/memory.py) | `GameMemory.observe(turn)` | 更新额度、新闻、独立任务尝试身份及行为反馈 |
 | 同上 | `GameMemory.record(turn, plan)` | 保存本轮输出，等待下一轮关联反馈 |
 | 同上 | `treasure_signature(clue)` | 宝藏目标、精确物品和时间窗口的去重签名 |
 | [app/service/llm_service.py](app/service/llm_service.py) | `parse_object(text)`、`digest(value)` | 结构化文本解析、稳定指纹 |
@@ -177,11 +179,13 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | 同上 | `damage_for(turn, tower, target, health)` | 计算单发预计伤害字典 |
 | 同上 | `choose_targets(turn, tower, expected_health, deadline=inf)` | 火箭按占用中心Σ(分/当前HP)最大选点、三级2+1；符合数量/范围后更新预测HP |
 | [src/agent/gap_defense.py](src/agent/gap_defense.py) | `WallGapDefense(strategy).worker/imp/other_walls_ready` | 合法墙施工、工人守缺口、捣乱鬼待命和真实死亡后的接替 |
-| [src/agent/boss_raid.py](src/agent/boss_raid.py) | `BossRaid(strategy).pioneer(role)` | 两任务结束后按成功数买0/1/2张；真实侦察门通过后按炮阵用券、回防 |
-| [src/agent/robot_raider.py](src/agent/robot_raider.py) | `RobotRaider(strategy).decide(robot)` | 第一夜BOSS独立追击、搜索、绕墙/破墙与攻基地 |
+| [src/agent/boss_raid.py](src/agent/boss_raid.py) | `BossRaid(strategy).pioneer(role)` | Task1→Task2→Task1三次结束后按独立成功数买0～3张；真实侦察门通过后按炮阵逐张用券、回防 |
+| [src/agent/robot_raider.py](src/agent/robot_raider.py) | `RobotRaider(strategy).decide(robot)` | 第一夜BOSS清炮手、单墙突破、基地首挡路炮清障与原位基地旁角色判断 |
 | [src/agent/raid_diagnostics.py](src/agent/raid_diagnostics.py) | `RaidDiagnostics(strategy).set/event/finish` | 复用观测和路径检查，记录目标、移动/攻击反馈与最终指令；字段/参数见[诊断说明](docs/ROBOT_DIAGNOSTICS.md) |
 | [src/agent/first_night_defense.py](src/agent/first_night_defense.py) | `FirstNightDefense(strategy).closed/construction_ready/prepared/worker` | 区分实际墙完整和其它墙完成；先保留BOSS费用，再首日补给/回防，见[当前接口](docs/GAP_DEFENSE.md) |
 | [src/agent/raid_scouts.py](src/agent/raid_scouts.py) | `RaidScouts(strategy).imp/worker/post` | 墙完派非留守工人、12格扫描/实际三炮、持续操炮区视野；参数见[布局侦察](docs/LAYOUT_SCOUTING.md) |
+| [src/agent/day_gate.py](src/agent/day_gate.py) | `DayGate.worker(role)/day_ready()` | 17墙的白天临时通路、封口石、门券、双工回防与夜前封口 |
+| [src/agent/first_day_tasks.py](src/agent/first_day_tasks.py) | `record_attempt/finish_attempt/finished_count/success_count` | 用领取回合区分重复Task1，幂等计3次结束和0～3次成功 |
 | [src/agent/summoning.py](src/agent/summoning.py) | `scouted_spawn_position(turn, settings, remembered=(), pending=(), failed=(), surveyed=())` | 真实炮阵/墙/操炮位选择合法出生点；旧rear仅买前可行性 |
 | [src/agent/server.py](src/agent/server.py) | `Handler/serve` | 转发新网络层，兼容demo旧导入 |
 
@@ -226,3 +230,5 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 当前0.4.1以用户确认的v0.4为基准，修正成功SOP混入API/脚本失败、跨题结构丢失和短预算问题。新增`app/service/task_evidence.py`，日志证据、函数参数及验证见[失败任务修正](docs/TASK_FAILURE_LEARNING.md)。
 
 0.4.2接入用户提供的`print_log.py`格式：每个新回合记录`[TASK-DEBUG]`，完整打印phaseTask、llmResp、lastCmdResult、本轮prompt和executeCmd。stderr为默认输出，具体映射见[任务日志](docs/TASK_LOGGING.md)。
+
+当前版本已通过625项回归、320份合成压力与1105次本地HTTP检查，详情见[验证报告](../reports/VALIDATION-v1.2.9.md)，本轮未运行新官方对局。

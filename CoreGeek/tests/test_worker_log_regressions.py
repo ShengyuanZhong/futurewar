@@ -30,6 +30,11 @@ def move_feedback(raw, s, plan):
             raise AssertionError('illegal occupied/simultaneous destination')
         destinations.append(p)
         next(r for r in raw['teamOur']['roles'] if str(r['id'])==uid)['pos'] = p.dump()
+    for uid,cmd in plan.commands.items():
+        if cmd['action']=='remove':
+            raw['teamOur']['roles'] = [r for r in raw['teamOur']['roles']
+                if not (r['roleType']=='wall' and r['pos']==cmd['targetPos'][0])]
+    raw['lastRoundRoleActionResults'] = {uid:True for uid in plan.commands}
 
 
 class WorkerLogRegressionTests(unittest.TestCase):
@@ -107,12 +112,12 @@ class WorkerLogRegressionTests(unittest.TestCase):
             raw = drawing_request(mirrored, built=True, round_no=25)
             raw['mapInfo']['zones'] = [{'neutralType':'vendor', 'pos':point(2, 12, mirrored).dump()}]
             for r, p in zip(raw['teamOur']['roles'][2:4], ((10, 6), (7, 10))):
-                r.update(pos=point(*p, mirrored).dump(), backpack=['stone']*6)
+                r.update(pos=point(*p, mirrored).dump(), backpack=['stone']*9)
             memory = GameMemory()
             for n in range(25, 71):
                 raw['roundNo'] = n
                 s, plan = strategy(raw, memory); s.run()
-                if not s.missing_walls():
+                if set(s.settings.build_cells(s.turn,'wall')) <= {w.pos for w in s.turn.walls()}:
                     break
                 move_feedback(raw, s, plan)
                 for uid, cmd in plan.commands.items():
@@ -124,7 +129,7 @@ class WorkerLogRegressionTests(unittest.TestCase):
                 self.assertEqual(plan.rejections, [])
                 memory.record(s.turn, plan)
             else:
-                self.fail('two builders failed to finish the U wall before night')
+                self.fail('two builders failed to restore all 17 walls by night')
 
     def test_diagnostic_routes_keep_planned_sites_blocked(self):
         raw = log_layout()

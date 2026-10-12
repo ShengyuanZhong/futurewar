@@ -19,7 +19,7 @@ sys.path[:0] = [str(ROOT),str(ROOT/'src')]
 from tests.fixtures import unit,robot
 from tests.test_gap_defense import occupied,role,GAP
 from agent.protocol import Pos
-from tools.smoke_first_day_flow import fixture
+from tools.smoke_first_day_flow import fixture,task_frame,apply_commands
 
 
 def copy_frame(raw,number,phase=''):
@@ -31,51 +31,40 @@ def copy_frame(raw,number,phase=''):
 def observations():
     first = fixture('gap-relay')
     first['teamOur']['goldNum'] = 20
-    records = [('accept_first',copy_frame(first,1))]
-    one = copy_frame(first,2,phase='Local first fixture task.')
-    one['lastRoundRoleActionResults'] = {'502':True}
-    records.append(('prompt_first',one))
-    answer = copy_frame(one,3,phase=one['phaseTask'])
-    answer['llmResp'] = json.dumps({'action':'final_answer','answer':'first-fixture-result'})
-    records.append(('submit_first',answer))
-    second = copy_frame(first,4)
-    second['lastRoundRoleActionResults'] = {'502':True}
-    second['teamOur']['goldNum'] = 120
-    second['teamOur']['totalScore'] = 51
-    second['teamOur']['playerTasks'][0].update(isValid=False,coldDownRounds=100)
-    records.append(('accept_second',second))
-    two = copy_frame(second,5,phase='Local second fixture task.')
-    two['lastRoundRoleActionResults'] = {'502':True}
-    records.append(('prompt_second',two))
-    answer = copy_frame(two,6,phase=two['phaseTask'])
-    answer['llmResp'] = json.dumps({'action':'final_answer','answer':'second-fixture-result'})
-    records.append(('submit_second',answer))
-    buy = copy_frame(second,7)
-    buy['teamOur']['playerTasks'][1].update(isValid=False,coldDownRounds=100)
-    buy['lastRoundRoleActionResults'] = {'502':True}
-    buy['errors'] = [{'errorCode':2}]
-    use = json.loads(json.dumps(buy))
-    use.update(roundNo=8,lastRoundRoleActionResults={'502':True})
-    use['errors'] = []
-    use['teamOur']['goldNum'] = 0
-    role(use,502)['backpack'] = ['BossRobotSummonOrder']
-    evening = json.loads(json.dumps(use))
-    evening.update(roundNo=70,lastRoundRoleActionResults={})
-    role(evening,502).update(pos=Pos(4,7).dump(),backpack=[])
-    role(evening,501).update(pos=Pos(8,7).dump(),backpack=['stone'])
-    role(evening,505)['pos'] = Pos(8,8).dump()
-    role(evening,504)['pos'] = Pos(38,23).dump()
-    night = json.loads(json.dumps(evening))
-    night.update(roundNo=71,lastRoundRoleActionResults={})
-    night['teamEnemy']['roles'] = [u for u in night['teamEnemy']['roles'] if u['id']!=901]
-    night['teamEnemy']['roles'].append(unit(992,'pioneer',36,25,health=500))
+    first['teamOur']['roles'] = [u for u in first['teamOur']['roles']
+                                if not (u['roleType']=='wall' and u['pos']==GAP.dump())]
+    first['teamOur']['roles'].append(unit(505,'imp',8,8,health=500))
+    first['teamEnemy']['roles'].append(unit(901,'worker',GAP.x,GAP.y,health=500))
+    names = {1:'accept_first',2:'prompt_first',3:'submit_first',4:'accept_second',
+             5:'prompt_second',6:'submit_second',7:'settle_second',
+             34:'accept_third',35:'prompt_third',36:'submit_third',37:'buy',38:'use'}
+    # This short evidence path skips uneventful waiting/walking observations.
+    # R34 is genuinely 30 rounds after the first R4 outcome, never an early CD.
+    for number in list(range(1,8))+list(range(34,39)):
+        task_frame(first,number,(True,False,False))
+        yield names[number],first
+    task_frame(first,68,(True,False,False))
+    role(first,502).update(pos=Pos(4,7).dump(),backpack=[])
+    role(first,501).update(pos=Pos(6,8).dump(),backpack=['stone']+['WallFixer']*5)
+    role(first,505)['pos'] = Pos(8,8).dump()
+    yield 'seal_gate',first
+    for number in (69,70):
+        task_frame(first,number,(True,False,False))
+        yield 'evening',first
+    first.update(roundNo=71,phaseTask='',llmResp='',errors=[])
+    role(first,501)['pos'] = Pos(8,7).dump()
+    role(first,505)['pos'] = Pos(8,8).dump()
+    first['teamEnemy']['roles'] = [u for u in first['teamEnemy']['roles'] if u['id']!=901]
+    first['teamEnemy']['roles'].append(unit(992,'pioneer',36,25,health=500))
+    # The short relay fixture supplies one observed BOSS at its own intended
+    # deployment neighbourhood; it does not simulate spawn displacement.
     boss = robot(31035,37,25,health=800,roleType='bossRobot',targetTeam='defender')
-    night['teamOur']['summonRobotList'] = [boss]
-    night['robot']['roles'] = [boss]
-    fallen = json.loads(json.dumps(night))
-    fallen.update(roundNo=72,lastRoundRoleActionResults={'501':True})
-    role(fallen,501).update(pos=GAP.dump(),health=0)
-    return records+[('buy',buy),('use',use),('evening',evening),('worker',night),('imp',fallen)]
+    first['teamOur']['summonRobotList'] = [boss]
+    first['robot']['roles'] = [boss]
+    yield 'worker',first
+    first.update(roundNo=72,lastRoundRoleActionResults={'501':True})
+    role(first,501).update(pos=GAP.dump(),health=0)
+    yield 'imp',first
 
 
 def main():
@@ -117,9 +106,9 @@ def main():
                 assert response.status==200
                 assert set(payload)=={'roleCommandMap','prompt','executeCmd'}
                 commands = payload['roleCommandMap']
-                if stage in ('accept_first','accept_second'):
+                if stage in ('accept_first','accept_second','accept_third'):
                     assert commands['502']['action']=='acceptTask',commands
-                if stage.startswith(('accept_','prompt_','submit_')):
+                if stage.startswith(('accept_','prompt_','submit_','settle_')):
                     assert not any(c.get('name')=='BossRobotSummonOrder' for c in commands.values())
                     assert not any(c.get('action')=='buy' and c.get('name','').startswith('WeaponUpgradeVoucher') for c in commands.values())
                 if stage=='buy':
@@ -127,14 +116,17 @@ def main():
                 elif stage=='use':
                     assert commands['502']['action']=='use' and commands['502']['name']=='BossRobotSummonOrder'
                 elif stage=='worker':
+                    assert len([u for u in raw['teamOur']['roles'] if u['roleType']=='wall'])==16
                     assert commands['501']=={'action':'move','targetPos':[GAP.dump()]},commands
                     assert commands['31035']['action'] in ('move','attack')
                 elif stage=='imp':
                     assert commands['505']=={'action':'move','targetPos':[GAP.dump()]},commands
                     assert '501' not in commands
-                assert not any(c['action']=='remove' for c in commands.values())
+                if raw['roundNo']>=71:
+                    assert not any(c['action'] in ('remove','build') for c in commands.values())
                 results.append(dict(stage=stage,round=raw['roundNo'],status=response.status,
                                     elapsed_ms=round(elapsed,3),response=payload))
+                apply_commands(raw,commands)
             finally:
                 conn.close()
     finally:
