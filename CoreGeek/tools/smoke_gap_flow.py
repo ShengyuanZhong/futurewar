@@ -39,7 +39,7 @@ def observations():
              5:'prompt_second',6:'submit_second',7:'settle_second',
              34:'accept_third',35:'prompt_third',36:'submit_third',37:'buy',38:'use'}
     # This short evidence path skips uneventful waiting/walking observations.
-    # R34 is genuinely 30 rounds after the first R4 outcome, never an early CD.
+    # Task2 at R34 is genuinely 30 rounds after its first R4 outcome.
     for number in list(range(1,8))+list(range(34,39)):
         task_frame(first,number,(True,False,False))
         yield names[number],first
@@ -142,7 +142,8 @@ def main():
                 diagnostics.append(dict(log_type=marker,data=json.loads(line.split(marker+' ',1)[1])))
     assert 'action_rejected' not in logs
     assert any(r['log_type']=='gap_defense' and r['data'].get('imp_status')=='holding_gap' for r in diagnostics)
-    report = dict(scope='Synthetic HTTP observations, not an official match simulation',results=results,
+    report = dict(scope='Synthetic HTTP observations, not an official match simulation',
+                  task_sequence=[2,1,2],accepted_rounds=[1,4,34],results=results,
                   diagnostics=diagnostics,bind_verified=f'0.0.0.0:{port}' in logs,bash_executed=False)
     args.output.parent.mkdir(parents=True,exist_ok=True)
     args.output.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')

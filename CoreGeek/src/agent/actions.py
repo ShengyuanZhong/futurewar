@@ -78,7 +78,10 @@ class ActionPlan:
             self.used.add(unit_id)
             return
         role = self.units[unit_id]
-        if action in ("move", "build", "remove", "collect", "destroy", "summonTreasure"):
+        if action == "move":
+            limit = 2 if self.turn.is_day and role.is_driving else 1
+            require(1 <= len(points) <= limit, "incorrect movement path length")
+        elif action in ("build", "remove", "collect", "destroy", "summonTreasure"):
             require(len(points) == 1, "exactly one target required")
         name = command.get("name", "")
         if action in ("buy", "sell", "build", "use", "drop"):
@@ -102,9 +105,13 @@ class ActionPlan:
         else:
             require(role.kind in CONTROLLABLE_TYPES, "unit is not controllable")
         if action == "move":
-            require(distance(role.pos, target) == 1, "movement must be one of eight neighbours")
-            require(self.turn.land(target) and target not in self.turn.blocked(role), "occupied destination")
-            require(target not in self.reserved, "destination already reserved")
+            previous = role.pos
+            blocked = self.turn.blocked(role)
+            for point in points:
+                require(distance(previous, point) == 1, "movement must follow eight-way neighbour steps")
+                require(self.turn.walkable(point) and point not in blocked, "occupied destination")
+                require(point not in self.reserved, "destination already reserved")
+                previous = point
         elif action in ("buy", "sell"):
             num = command.get("num", 1)
             require(type(num) is int and num > 0, "num must be a positive integer")
@@ -122,6 +129,7 @@ class ActionPlan:
             require(name in TOWER_TYPES + ("wall",), "unknown building")
             require(distance(role.pos, target) == 1, "build out of reach")
             require(target in self.settings.build_cells(self.turn, name), "unverified or wrong build zone")
+            require(target not in self.turn.vehicle_cells() | self.turn.vehicle_cells(False), "cannot build on a vehicle")
             require(target not in self.reserved, "build target reserved")
             existing = next((u for u in self.turn.ours if u.health > 0 and u.pos == target and u.kind in TOWER_TYPES), None)
             if existing and name in TOWER_TYPES:
@@ -188,7 +196,9 @@ class ActionPlan:
             self.summon_positions.add(target)
         self.commands[str(unit_id)] = command
         self.used.update((unit_id, actor.unit_id))
-        if action in ("move", "build"):
+        if action == "move":
+            self.reserved.update(points)
+        elif action == "build":
             self.reserved.add(target)
         if action == "build":
             self.build_targets.add(target)

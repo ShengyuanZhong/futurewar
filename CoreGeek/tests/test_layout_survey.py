@@ -330,15 +330,20 @@ class LayoutSurveyTests(unittest.TestCase):
         actor(raw,PIONEER)['backpack'] = [ORDER,ORDER]
         memory = finished_tasks(2)
         s,plan = strategy(raw,memory,Settings(enable_news=False)); s.run()
-        self.assertTrue(memory.boss_raid['summon_window_closed'])
+        self.assertFalse(memory.boss_raid.get('summon_window_closed',False))
+        self.assertEqual(memory.boss_raid['status'],'waiting_for_scout')
         self.assertTrue(s.boss_raid.weapon_upgrades_ready())
         self.assertEqual(s.boss_raid.budget_reserve(),0)
         self.assertFalse(any(c.get('name')==ORDER for c in plan.commands.values()))
         raw['roundNo'] = 70
         s,plan = strategy(raw,memory,Settings(enable_news=False)); s.run()
-        self.assertFalse(s.raid_scouts.active)
+        self.assertTrue(memory.boss_raid['summon_window_closed'])
         self.assertFalse(any(c.get('name')==ORDER for c in plan.commands.values()))
         self.assertEqual(actor(raw,PIONEER)['backpack'],[ORDER,ORDER])
+        raw['roundNo'] = 71
+        s,plan = strategy(raw,memory,Settings(enable_news=False)); s.run()
+        self.assertFalse(s.raid_scouts.active)
+        self.assertFalse(any(c.get('name')==ORDER for c in plan.commands.values()))
 
     def test_remembered_hidden_cannon_blocks_both_actual_and_relaxed_scout_routes(self):
         raw,_ = survey_request(20)
@@ -358,16 +363,22 @@ class LayoutSurveyTests(unittest.TestCase):
         self.assertFalse(s.coordinator.move_to(scout,{hidden.pos},'raid_scout',BASE,allow_risk=True))
         self.assertNotIn(str(SCOUT),plan.commands)
 
-    def test_second_use_window_expiry_keeps_sight_for_the_already_summoned_boss(self):
-        raw,truth = survey_request(69,near=True)
+    def test_last_daytime_second_use_has_no_return_budget_and_keeps_scout_sight(self):
+        raw,truth = survey_request(70,near=True)
         actor(raw,PIONEER)['backpack'] = [ORDER]
         memory = finished_tasks(2)
         memory.boss_raid.update(status='deployed',deployed_count=1,acquired_count=2,
             deployment_ledger_confirmed=True,spawns=[Pos(21,15)],scouted_spawns=[Pos(21,15)])
         memory.raid_scouts.update(worker_id=SCOUT,home_worker_id=HOME)
         s,plan = strategy(raw,memory,Settings(enable_news=False)); s.run()
-        self.assertTrue(memory.boss_raid['summon_window_closed'])
+        command = plan.commands[str(PIONEER)]
+        self.assertEqual(command['action'],'use')
+        self.assertEqual(command['name'],ORDER)
+        self.assertFalse(memory.boss_raid.get('summon_window_closed',False))
+        memory.record(s.turn,plan)
         raw['roundNo'] = 71
+        raw['lastRoundRoleActionResults'] = {str(PIONEER):True}
+        actor(raw,PIONEER)['backpack'] = []
         boss = robot(30005,21,15,health=800,roleType='bossRobot')
         raw['teamOur']['summonRobotList'] = [boss]; raw['robot']['roles'] = [boss]
         reveal(raw,truth)

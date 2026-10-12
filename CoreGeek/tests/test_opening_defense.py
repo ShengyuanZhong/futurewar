@@ -16,7 +16,7 @@ def opening_settings():
         "verified": True, "source": "synthetic regression only",
         "weapons": [{"x": -1, "y": 1}, {"x": 0, "y": 1}, {"x": 1, "y": 1}],
         "walls": [{"x": -2, "y": 0}, {"x": -2, "y": -1}, {"x": 3, "y": 0}, {"x": 3, "y": 1}],
-    }}, enable_news=False,enable_first_night_defense=False)
+    }}, enable_news=False,enable_first_night_defense=False,enable_tasks=False)
 
 
 def opening_request(round_no=1, towers=False):
@@ -128,16 +128,16 @@ class OpeningDefenseTests(unittest.TestCase):
         self.assertFalse(any(c["action"] == "attack" for c in plan.commands.values()))
         self.assertEqual(plan.commands["501"]["action"], "collect")
 
-    def test_active_task_yields_to_night_defence(self):
-        raw = opening_request(66, towers=True)
+    def test_second_day_active_task_retains_previous_night_defence_priority(self):
+        raw = opening_request(196, towers=True)
         raw["phaseTask"] = "active task"
         service = TurnService(opening_settings())
         self.assertTrue(service.decide(raw)["prompt"])
-        raw.update(roundNo=67, llmResp='{"executeCmd":"pwd"}')
+        raw.update(roundNo=197, llmResp='{"executeCmd":"pwd"}')
         result = service.decide(raw)
         self.assertEqual(result["executeCmd"], "")
         self.assertEqual(result["prompt"], "")
-        raw.update(roundNo=71, llmResp="")
+        raw.update(roundNo=201, llmResp="")
         raw["robot"]["roles"] = [robot(900, 10, 29, health=500)]
         result = service.decide(raw)
         self.assertTrue(any(c.get("controllerId") == "502" for c in result["roleCommandMap"].values()))

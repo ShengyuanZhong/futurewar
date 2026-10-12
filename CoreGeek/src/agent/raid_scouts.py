@@ -1,4 +1,5 @@
 """Actual first-day layout survey and continuous hero sight; robots have none."""
+from dataclasses import replace
 from .protocol import CONTROLLABLE_TYPES, IMP, TOWER_TYPES, Pos, distance, move_command, station_footprint
 from .grid import Routes
 from .worker_safety import wall_shelters
@@ -14,6 +15,8 @@ class RaidScouts:
         self.s = strategy
         self.turn, self.plan, self.memory = strategy.turn, strategy.plan, strategy.memory
         self.state = self.memory.raid_scouts
+        self.vehicle_routes = {}
+        self.vehicle_options = {}
         self.base = enemy_base_position(self.turn)
         alive_boss = any(r.kind == 'bossRobot' and r.health > 0 for r in self.turn.summon_robots)
         if alive_boss:
@@ -59,7 +62,7 @@ class RaidScouts:
             for worker in candidates:
                 post = self.post(worker)
                 if post is not None:
-                    cost = self.scout_route(worker).cost[post]
+                    cost = self.travel_budget(worker,post,self.scout_route(worker))[0]
                     if cost <= self.turn.daylight_left:
                         choices.append((cost,worker.unit_id))
             if choices:
@@ -73,7 +76,7 @@ class RaidScouts:
 
     def release(self, finished=False):
         for uid, job in list(self.memory.worker_tasks.items()):
-            if job.get('kind') == 'raid_scout':
+            if job.get('kind','').startswith('raid_scout'):
                 self.memory.worker_tasks.pop(uid)
         self.state.clear()
         if finished:
@@ -210,7 +213,8 @@ class RaidScouts:
             # in the cannon crew's gap or block the planned BOSS firing lane.
             if min(distance(p,cell) for cell in station_footprint(self.base)) <= 2:
                 continue
-            if role.kind != IMP and self.turn.is_day and route.cost[p] > self.turn.daylight_left:
+            rounds = self.travel_budget(role,p,route)[0]
+            if role.kind != IMP and self.turn.is_day and rounds > self.turn.daylight_left:
                 continue
             coverage = sum(distance(p,target) <= SIGHT for target in targets)
             catch_distance = min((distance(p,u.pos) for u in catchers),default=10_000)
@@ -223,8 +227,47 @@ class RaidScouts:
                 return p
             options.append((role.kind==IMP and catch_distance<3,-coverage,
                             self.s.danger.get(p,0),p!=old,p!=role.pos,
-                            route.cost[p],distance(p,self.preferred(role)),p))
+                            rounds,distance(p,self.preferred(role)),p))
         return min(options)[-1] if options else None
+
+    def travel_budget(self, role, goal, route):
+        """Return travel rounds and a worthwhile, actually observed parked car.
+
+        Boarding costs the walking route to the car. Subsequent two-step moves
+        cost one round each; a final single step dismounts at the lookout. A
+        missing/occupied car never creates a waiting or pursuit mission.
+        """
+        steps = route.cost.get(goal,10_000)
+        driving = role.kind != IMP and self.turn.is_day and role.is_driving
+        direct = (steps+1)//2 if driving else steps
+        if (role.kind == IMP or not self.turn.is_day or driving or not steps
+                or not self.turn.vehicle_cells(own=True)):
+            return direct,None
+        avoided = frozenset(self.state.get('avoided_vehicle_sites',set()))
+        option_key = (role.unit_id,role.pos,frozenset(self.plan.reserved),avoided)
+        if option_key not in self.vehicle_options:
+            occupied = (self.turn.blocked(role) | self.plan.reserved
+                        | self.s.coordinator.claimed_goals(role)
+                        | self.spawn_cells() | self.attack_lanes())
+            options = []
+            for cell in self.turn.vehicle_cells(own=True):
+                if (cell==role.pos or cell in occupied or cell in avoided
+                        or cell not in route.cost or route.cost[cell]>=self.turn.daylight_left):
+                    continue
+                key = (role.unit_id,cell,frozenset(self.plan.reserved))
+                if key not in self.vehicle_routes:
+                    self.vehicle_routes[key] = self.scout_route(replace(role,pos=cell,is_driving=True))
+                options.append((cell,route.cost[cell],self.vehicle_routes[key]))
+            self.vehicle_options[option_key] = options
+        best = (direct,None)
+        for cell,boarding,driven in self.vehicle_options[option_key]:
+            after = driven.cost.get(goal,10_000)
+            rounds = boarding+(after+1)//2
+            # A one-round theoretical gain can disappear after shared movement;
+            # take the car only when it gives a meaningful route improvement.
+            if rounds+1 < best[0] and rounds<=self.turn.daylight_left:
+                best = (rounds,cell)
+        return best
 
     def scout_route(self, role):
         reserved = self.s.movement_reserved(role)
@@ -268,10 +311,17 @@ class RaidScouts:
             self.plan.used.add(role.unit_id)
             return True
         route = self.scout_route(role)
+        old = self.s.coordinator.job(role) if role.kind=='worker' else {}
+        if (old.get('kind')=='raid_scout_vehicle' and old.get('stalled',0)>=2
+                and isinstance(old.get('goal'),Pos)):
+            self.state.setdefault('avoided_vehicle_sites',set()).add(old['goal'])
+        rounds,car = self.travel_budget(role,post,route)
         self.state.setdefault('posts',{})[role.unit_id] = dict(goal=post,
             status='holding' if post==role.pos else 'travelling',round=self.turn.round_no,
             mode='watch' if self.state.get('layout_ready') else 'survey',
-            steps=route.cost[post],ready_by_night=route.cost[post]<=self.turn.daylight_left if self.turn.is_day else None,
+            steps=route.cost[post],travel_rounds=rounds,vehicle=car,
+            is_driving=role.is_driving,
+            ready_by_night=rounds<=self.turn.daylight_left if self.turn.is_day else None,
             coverage=sum(distance(post,p)<=SIGHT for p in self.watch_cells()))
         if role.kind==IMP:
             self.memory.imp_tasks.pop(role.unit_id,None)
@@ -287,7 +337,13 @@ class RaidScouts:
             self.s.coordinator.assign(role,'raid_scout',self.base,post)
             self.plan.used.add(role.unit_id)
             return True
-        self.s.coordinator.move_to(role,{post},'raid_scout',self.base,allow_risk=True)
+        if car is not None:
+            self.state['posts'][role.unit_id]['status'] = 'collecting_vehicle'
+            self.s.coordinator.move_to(role,{car},'raid_scout_vehicle',self.base,
+                                       allow_risk=True,route=route)
+        else:
+            self.s.coordinator.move_to(role,{post},'raid_scout',self.base,
+                                       allow_risk=True,route=route)
         # No fallback mining can interrupt an active view mission.
         self.plan.used.add(role.unit_id)
         return True

@@ -1,12 +1,12 @@
 # CoreGeek 参赛 Agent
 
-当前程序版本为 v1.2.10：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后其余11块侧后墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回墙内，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
+当前程序版本为 v1.2.11：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后其余11块侧后墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回墙内，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
 
 此目录可作为参赛程序目录提交。沿用示例的 `main3.py`、`src/agent/protocol.py`、`grid.py`、`brain.py`；HTTP 处理与跨回合协作放在 `app`。新增代码无第三方运行依赖。
 
 历史v1.2.8通过569项回归、320份合成压力及四种布局520次跨帧HTTP检查；证据见[验证报告](../reports/VALIDATION-v1.2.8.md)，未运行新官方对局。历史v1.2.7的529项回归、80份合成压力及跨帧HTTP证据保留在[历史报告](../reports/VALIDATION-v1.2.7.md)。
 
-v1.2.10根据bug_log1/bug_log2修复[首日挂机与购券死锁](docs/OPENING_BUG_V1210.md)：未建墙可通行，只为炮位和明确施工目标预留；空闲工人并行采石，观测三炮后再造墙。开拓者仍尝试任务1→任务2→任务1；剩余任务的完整时限与购券/召唤/回防预算不足时，明确关闭行程并按真实成功次数采购0～3张，不虚构第三次任务。安全捣乱鬼的当前视野可以满足侦察准入，确认炮位持久记忆，工人仍等墙构造就绪后离家。己方[17墙镜像蓝图与白天入口](docs/HOME_LAYOUT_V129.md)、[BOSS攻城优先级](docs/ROBOT_SIEGE_V129.md)保持。当前验证仅覆盖第一天。
+v1.2.11更新[首日任务与车辆侦查](docs/TASK2_VEHICLE_V1211.md)：固定任务二→任务一→任务二，取消任务的完整耗时、购物和回防预算门；三次尚未结束时，即使入夜仍优先继续合法尝试，结束后恢复操炮。完成任务二实际刷出己方小车后，侦查工人可顺路取车，确认isDriving后每轮发送两个连续相邻坐标；两格均避障和预约，夜间恢复步行。工人仍等建墙完成后离家，安全捣乱鬼实时视野准入、三炮/17墙、维修升级与BOSS清炮手策略保持。验证仅覆盖第一天。
 
 历史v1.2.8增加[真实布局侦察与阵型召唤](docs/LAYOUT_SCOUTING.md)：非留守工人在三炮及可建原墙实际完成后立即探路，不再等L2火箭和修包。敌基地/墙全局可见，炮台及普通角色受视野限制，BOSS没有视野。布局通过真实三炮或12格武器圈累计扫描确认；实际用券还需活侦察工人就近、当前普通共享视野覆盖共同操炮位及可见炮手。按实测炮阵选择合法出生点，利用45度缺口、直射或一堵墙突破，并维持第一夜视野。购券仍在两任务结束后按成功数冻结0/1/2张，只有use等待侦察；火箭升级采购等购券尝试之后。缺口留守、任务prompt、普通升级及经济路线保持。首日完整时序见[FIRST_DAY_PLAN](docs/FIRST_DAY_PLAN.md)。
 
@@ -149,7 +149,7 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | 同上 | `task_prompt/news_prompt` | 构造任务/普通新闻提示，更新相应调用状态 |
 | 同上 | `apply_news(turn, memory, data)` | 校验并保存停矿和宝藏推理 |
 | [app/service/task_logging.py](app/service/task_logging.py) | `task_debug_message(turn, response)` | 生成用户提供格式的多行任务日志；由TurnService在成功回合记录 |
-| [app/service/task_service.py](app/service/task_service.py) | `TaskService.active(turn, memory, plan, llm, reply, defense_due=False)` | 返回`(prompt, executeCmd)`；回防时让出开拓者，其余时候处理任务并保持站位 |
+| [app/service/task_service.py](app/service/task_service.py) | `TaskService.active(turn, memory, plan, llm, reply, defense_due=False)` | 返回`(prompt, executeCmd)`；首日不因回防预算中断任务；处理任务并保持站位 |
 | [src/agent/protocol.py](src/agent/protocol.py) | `Turn.load(payload)` | 官方请求转观测模型 |
 | 同上 | `Pos/Unit/Robot/PlayerTask/CommandResult` | 坐标、单位、机器人、任务点、沙盒结果 |
 | 同上 | `distance/station_footprint` | 切比雪夫距离、基地四格 |
@@ -157,11 +157,12 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | [src/agent/actions.py](src/agent/actions.py) | `ActionPlan(turn, settings, summon_used=0, summon_positions=())` | 预算、待生成位置与原生机器人move/attack权限 |
 | 同上 | `ActionPlan.add(unit_id, command)` | 校验并加入命令，成功True、拒绝False |
 | 同上 | `near/near_zone` | 通用相邻交互检查 |
+| [src/agent/vehicle.py](src/agent/vehicle.py) | `move_targets(turn,role,route,goals)` | 已驾驶白天两段真实路线、普通或夜间一步 |
 | [src/agent/grid.py](src/agent/grid.py) | `Routes(turn, role, reserved=None, danger=None, allowed=None)` | BFS或风险优先Dijkstra；保存步数、累计风险和第一步，allowed限制巡护区域 |
 | [src/agent/worker_safety.py](src/agent/worker_safety.py) | `robot_danger(turn)` | 机器人射程及警戒缓冲的风险图，供工人寻路与矿点筛选 |
 | [src/agent/wall_guard.py](src/agent/wall_guard.py) | `WallGuard(strategy)`、`daytime/nighttime` | 单人夜修/完成后白天经济、双人夜修，均衡备包、轮流采购与墙内阈值维修 |
 | [src/agent/imp_policy.py](src/agent/imp_policy.py) | `ImpController(strategy).decide(role)` | 捣乱鬼独立选敌方矿、合法步行、连续destroy和复活恢复 |
-| 同上 | `Routes.nearest(goals)/step(goals)` | 最近可达站位/到该站位的第一步 |
+| 同上 | `Routes.nearest(goals)/step(goals)/path(goals,limit=None)` | 最近可达站位、第一步或真实路径；limit限制返回步数 |
 | 同上 | `adjacent_cells(turn, targets)` | 建筑或矿点周围的候选交互格 |
 | 同上 | `next_step(turn, moving, goal)` | 单个精确目的地的旧兼容接口 |
 | [src/agent/construction.py](src/agent/construction.py) | `DefenseLayout`、`select_defense_layout(turn, settings, previous=None)` | 保存/选择炮位、操控格和是否具备共同邻格 |
@@ -169,7 +170,7 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | 同上 | `route/travel/cost/interact` | 缓存寻路、走一步、估算成本、靠近或操作 |
 | 同上 | `opening_stage/opening_worker/stone_targets/missing_walls` | 开局阶段、建造顺序、石头配额和缺墙列表 |
 | 同上 | `night_worker/clear_build_cell` | night_worker兼容转入run_worker；昼夜经济统一、墙材保护及建筑位避让 |
-| 同上 | `control_position/pioneer_should_defend/move_to_control/operate_weapons` | 选择操控格、黄昏回防、就位和单人轮换 |
+| 同上 | `control_position/pioneer_should_defend/move_to_control/operate_weapons` | 选择操控格；首日先完成三次任务再回防，其它天沿用黄昏回防；单人轮换 |
 | 同上 | `worker/build_weapon/build_wall/wall_keeps_exit` | 后续工人策略、建炮、建墙和通路检查 |
 | 同上 | `consume/sell/buy_upgrade/mine` | 使用物品、销售、购买升级券、采矿 |
 | 同上 | `task/treasure` | 开拓者接取任务与执行宝藏计划 |
@@ -179,7 +180,7 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | 同上 | `damage_for(turn, tower, target, health)` | 计算单发预计伤害字典 |
 | 同上 | `choose_targets(turn, tower, expected_health, deadline=inf)` | 火箭按占用中心Σ(分/当前HP)最大选点、三级2+1；符合数量/范围后更新预测HP |
 | [src/agent/gap_defense.py](src/agent/gap_defense.py) | `WallGapDefense(strategy).worker/imp/other_walls_ready` | 合法墙施工、工人守缺口、捣乱鬼待命和真实死亡后的接替 |
-| [src/agent/boss_raid.py](src/agent/boss_raid.py) | `BossRaid(strategy).pioneer(role)` | Task1→Task2→Task1结束或预算关闭行程后按真实成功数买0～3张；真实侦察门通过后按炮阵逐张用券、回防 |
+| [src/agent/boss_raid.py](src/agent/boss_raid.py) | `BossRaid(strategy).pioneer(role)` | Task2→Task1→Task2三次结束后按真实成功数买0～3张；真实侦察门通过后按炮阵逐张用券、回防 |
 | [src/agent/robot_raider.py](src/agent/robot_raider.py) | `RobotRaider(strategy).decide(robot)` | 第一夜BOSS清炮手、单墙突破、基地首挡路炮清障与原位基地旁角色判断 |
 | [src/agent/raid_diagnostics.py](src/agent/raid_diagnostics.py) | `RaidDiagnostics(strategy).set/event/finish` | 复用观测和路径检查，记录目标、移动/攻击反馈与最终指令；字段/参数见[诊断说明](docs/ROBOT_DIAGNOSTICS.md) |
 | [src/agent/first_night_defense.py](src/agent/first_night_defense.py) | `FirstNightDefense(strategy).closed/construction_ready/prepared/worker` | 区分实际墙完整和其它墙完成；先保留BOSS费用，再首日补给/回防，见[当前接口](docs/GAP_DEFENSE.md) |
@@ -231,4 +232,4 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 
 0.4.2接入用户提供的`print_log.py`格式：每个新回合记录`[TASK-DEBUG]`，完整打印phaseTask、llmResp、lastCmdResult、本轮prompt和executeCmd。stderr为默认输出，具体映射见[任务日志](docs/TASK_LOGGING.md)。
 
-当前验证仅覆盖第一天，见[首日验证报告](../reports/VALIDATION-v1.2.10.md)。v1.2.9的全量回归为历史证据；本轮未运行新官方对局。
+当前验证仅覆盖第一天，见[首日验证报告](../reports/VALIDATION-v1.2.11.md)。v1.2.9的全量回归为历史证据；本轮未运行新官方对局。

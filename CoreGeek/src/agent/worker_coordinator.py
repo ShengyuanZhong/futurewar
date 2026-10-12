@@ -1,6 +1,7 @@
 """Per-worker task memory, distinct destinations and legal cooperative yielding."""
 from .grid import Routes
 from .protocol import Pos, distance, move_command
+from .vehicle import move_targets
 
 
 class WorkerCoordinator:
@@ -76,7 +77,7 @@ class WorkerCoordinator:
     def reserved(self):
         return self.s.movement_reserved()
 
-    def move_to(self, role, goals, kind='travel', target=None, allowed=None, allow_risk=False):
+    def move_to(self, role, goals, kind='travel', target=None, allowed=None, allow_risk=False, route=None):
         goals = set(goals) - self.claimed_goals(role)
         if kind.startswith('build:'):
             # Unbuilt sites are legal transit cells, but a builder must stop
@@ -86,7 +87,7 @@ class WorkerCoordinator:
             goals -= set(self.s.construction_walls()) | set(self.s.layout.tower_sites)
         if allowed is not None:
             goals &= allowed
-        route = self.s.route(role,allowed)
+        route = route if route is not None else self.s.route(role,allowed)
         if not self.turn.is_day and not allow_risk:
             goals = {p for p in goals if not self.s.danger.get(p,0)}
         old = self.job(role)
@@ -98,8 +99,8 @@ class WorkerCoordinator:
             if role.pos == goal:
                 self.assign(role,kind,target,goal)
                 return False
-            step = route.step({goal})
-            if step is not None and self.plan.add(role.unit_id,move_command(step)):
+            points = move_targets(self.turn,role,route,{goal})
+            if points and self.plan.add(role.unit_id,move_command(points)):
                 self.assign(role,kind,target,goal,True)
                 return True
         # A relaxed route is diagnostic only. Never step into the blocker's cell.
@@ -120,7 +121,12 @@ class WorkerCoordinator:
                 return True
             return False
         if step is not None and step not in self.turn.blocked(role) and step not in self.plan.reserved:
-            if self.plan.add(role.unit_id,move_command(step)):
+            points = move_targets(self.turn,role,relaxed,{goal})
+            # The relaxed search ignores a coworker only to diagnose blocking.
+            # Never drive its second segment through that coworker's real cell.
+            if any(p in self.turn.blocked(role) or p in self.plan.reserved for p in points):
+                points = (step,)
+            if self.plan.add(role.unit_id,move_command(points)):
                 self.assign(role,kind,target,goal,True)
                 return True
         return False

@@ -257,6 +257,7 @@ def main():
     if failure is None and 'action_rejected' in logs:
         failure = AssertionError('HTTP process logged action_rejected')
     report = dict(scope='Synthetic map, task answers, verdicts and damage over real HTTP; not an official match',
+        task_sequence=[2,1,2],accepted_rounds=[1,4,34],
         visibility='Only living ordinary friendly units supply range-four sight; enemy base/wall global; BOSS no sight',
         requests=len(rows), cases=cases, results=rows, diagnostics=diagnostics(logs),
         bind_verified=f'0.0.0.0:{port}' in logs, execute_cmd_executed=False,

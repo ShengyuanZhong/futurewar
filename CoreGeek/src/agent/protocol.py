@@ -57,6 +57,7 @@ class Unit:
     attack_range: int = 0
     capacity: int = 0
     backpack: tuple[str, ...] = ()
+    is_driving: bool = False
 
     @classmethod
     def load(cls, raw: dict[str, Any]) -> "Unit":
@@ -65,7 +66,7 @@ class Unit:
                    integer(raw["health"], "health"), int(raw.get("level") or 0),
                    int(raw.get("cooldown") or 0), int(raw.get("attackRange") or 0),
                    int(raw.get("backPackCapability", {WORKER: 100, PIONEER: 40}.get(kind, 0))),
-                   tuple(raw.get("backpack") or ()))
+                   tuple(raw.get("backpack") or ()), raw.get("isDriving") is True)
 
     @property
     def backpack_full(self) -> bool:
@@ -273,11 +274,23 @@ class Turn:
     def land(self, pos: Pos) -> bool:
         return self.in_bounds(pos) and self.zones.get(pos, LAND) == LAND
 
+    def vehicle_cells(self, own: bool = True) -> frozenset[Pos]:
+        team = self.team_type if own else ('defender' if self.team_type == 'challenger' else 'challenger')
+        return frozenset(p for p, kind in self.zones.items() if kind == team + 'Vehicle')
+
+    def walkable(self, pos: Pos) -> bool:
+        """A friendly daytime car can be entered, but never built upon."""
+        return self.land(pos) or (self.is_day and self.in_bounds(pos)
+                                  and self.zones.get(pos) == self.team_type + 'Vehicle')
+
     def occupied_cells(self) -> frozenset[Pos]:
         return frozenset(p for u in self.ours + self.enemies if u.health > 0 for p in self.footprint(u))
 
     def blocked(self, moving: Unit) -> frozenset[Pos]:
-        cells = {p for p, k in self.zones.items() if k != LAND}
+        driveable = self.is_day and moving.kind in CONTROLLABLE_TYPES
+        friendly_vehicle = self.team_type + 'Vehicle'
+        cells = {p for p, k in self.zones.items()
+                 if k != LAND and not (driveable and k == friendly_vehicle)}
         cells.update(p for t in self.tasks for p in self.task_cells(t))
         cells.update(self.occupied_cells())
         cells.update(r.pos for r in self.robots if r.health > 0)
@@ -285,8 +298,9 @@ class Turn:
         return frozenset(cells)
 
 
-def move_command(pos: Pos) -> dict[str, Any]:
-    return {"action": "move", "targetPos": [pos.dump()]}
+def move_command(pos: Pos | list[Pos] | tuple[Pos, ...]) -> dict[str, Any]:
+    points = [pos] if isinstance(pos, Pos) else pos
+    return {"action": "move", "targetPos": [p.dump() for p in points]}
 
 
 def collect_command(pos: Pos) -> dict[str, Any]:

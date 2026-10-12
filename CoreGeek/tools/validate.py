@@ -224,10 +224,42 @@ def independent_contract(raw, response, controller_budget=4):
             assert isinstance(command["targetPos"], list)
             assert all(0 <= p["x"] < 41 and 0 <= p["y"] < 32 for p in command["targetPos"])
         if command["action"] == "move":
-            target = Pos.load(command["targetPos"][0])
-            assert distance(Pos.load(units[key]["pos"]), target) == 1
+            daylight = (raw['roundNo'] - 1) % 130 < 70
+            driving = (key not in owned and daylight and units[key].get('isDriving') is True)
+            points = command['targetPos']
+            assert 1 <= len(points) <= (2 if driving else 1)
+            # Parked friendly cars are enterable only by ordinary heroes.
+            # Keep actual unit occupancy even when a car occupies that cell.
+            friendly_cars = ({Pos.load(z['pos']) for z in raw['mapInfo']['zones']
+                              if z['neutralType'] == raw['teamOur']['type'] + 'Vehicle'}
+                             if key not in owned and daylight else set())
+            actor_cells = {p for group in ('teamOur', 'teamEnemy', 'robot')
+                           for u in raw[group]['roles'] if u['health'] > 0
+                           for p in independent_footprint(u)}
+            actor_cells.update(p for u in raw['teamOur'].get('summonRobotList', [])
+                               if u['health'] > 0 for p in independent_footprint(u))
+            task_cells = set()
+            for task in raw['teamOur'].get('playerTasks', []):
+                suffix = '2' if task['taskType'].endswith('2') else '1'
+                name = raw['teamOur']['type'] + 'TaskPoint' + suffix
+                cells = {Pos.load(z['pos']) for z in raw['mapInfo']['zones'] if z['neutralType'] == name}
+                task_cells.update(cells or {Pos.load(task['taskPosition'])})
+            movement_blocked = (blocked - friendly_cars) | actor_cells | task_cells
+            origin = Pos.load(units[key]['pos'])
+            movement_blocked.discard(origin)
+            previous = origin
+            for point in points:
+                target = Pos.load(point)
+                assert distance(previous, target) == 1
+                assert target not in destinations
+                assert target not in movement_blocked
+                destinations.add(target)
+                previous = target
+        if command['action'] == 'build':
+            target = Pos.load(command['targetPos'][0])
             assert target not in destinations
-            assert target not in blocked
+            assert not any(z['pos'] == target.dump() and z['neutralType'].endswith('Vehicle')
+                           for z in raw['mapInfo']['zones'])
             destinations.add(target)
         if command["action"] == "attack":
             assert (raw["roundNo"] - 1) % 130 >= 70

@@ -34,14 +34,14 @@ def raid_request(number=30, boss=False):
 def finished_tasks(successes=1, attempts=3):
     """Isolate inventory policy using three distinct first-day attempt records.
 
-    The third visit repeats point one. These observations seed history rather
+    The third visit repeats point two. These observations seed history rather
     than simulate elapsed rounds; HTTP lifecycle tests enforce the cooldown.
     """
     memory = GameMemory(opening_complete=True)
     for index, (accepted, ended, point, kind) in enumerate((
-            (1, 4, (3, 9), '自进化类1'),
-            (8, 11, (4, 9), '自进化类2'),
-            (35, 38, (3, 9), '自进化类1'))[:attempts]):
+            (1, 4, (4, 9), '自进化类2'),
+            (4, 7, (3, 9), '自进化类1'),
+            (34, 37, (4, 9), '自进化类2'))[:attempts]):
         key = record_attempt(memory, 1, accepted, point, kind, origin='isolated_fixture')
         finish_attempt(memory, key, ended, succeeded=index < successes)
     memory.task_active_attempt = None

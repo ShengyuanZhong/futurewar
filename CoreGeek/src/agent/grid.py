@@ -16,6 +16,7 @@ class Routes:
         self.cost = {role.pos: 0}
         self.exposure = {role.pos: 0}
         self.first: dict[Pos, Pos] = {}
+        self.previous: dict[Pos, Pos] = {}
         if danger:
             frontier = [(0, 0, role.pos)]
             while frontier:
@@ -23,7 +24,7 @@ class Routes:
                 if (risk, steps) != (self.exposure[here], self.cost[here]):
                     continue
                 for there in here.neighbours():
-                    if (not turn.land(there) or there in blocked
+                    if (not turn.walkable(there) or there in blocked
                             or (allowed is not None and there not in allowed)):
                         continue
                     score = (risk + danger.get(there, 0), steps + 1)
@@ -31,18 +32,20 @@ class Routes:
                         continue
                     self.exposure[there], self.cost[there] = score
                     self.first[there] = there if here == role.pos else self.first[here]
+                    self.previous[there] = here
                     heappush(frontier, (*score, there))
             return
         frontier = deque([role.pos])
         while frontier:
             here = frontier.popleft()
             for there in here.neighbours():
-                if (not turn.land(there) or there in blocked or there in self.cost
+                if (not turn.walkable(there) or there in blocked or there in self.cost
                         or (allowed is not None and there not in allowed)):
                     continue
                 self.cost[there] = self.cost[here] + 1
                 self.exposure[there] = 0
                 self.first[there] = there if here == role.pos else self.first[here]
+                self.previous[there] = here
                 frontier.append(there)
 
     def nearest(self, goals) -> Pos | None:
@@ -52,10 +55,22 @@ class Routes:
     def step(self, goals) -> Pos | None:
         return self.first.get(self.nearest(goals))
 
+    def path(self, goals, limit: int | None = None) -> tuple[Pos, ...]:
+        """The actual searched path, excluding the actor's starting cell."""
+        here = self.nearest(goals)
+        if here is None or here == self.start:
+            return ()
+        points = []
+        while here != self.start:
+            points.append(here)
+            here = self.previous[here]
+        points.reverse()
+        return tuple(points if limit is None else points[:limit])
+
 
 def adjacent_cells(turn: Turn, targets) -> set[Pos]:
     targets = set(targets)
-    return {p for t in targets for p in t.neighbours() if p not in targets and turn.land(p)}
+    return {p for t in targets for p in t.neighbours() if p not in targets and turn.walkable(p)}
 
 
 def next_step(turn: Turn, moving: Unit, goal: Pos) -> Pos | None:

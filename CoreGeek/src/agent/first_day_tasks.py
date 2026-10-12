@@ -1,6 +1,6 @@
-"""Real task attempts, including a repeated first point, without coordinate dedup."""
+"""Real task attempts, including a repeated second point, without coordinate dedup."""
 
-TASK_SEQUENCE = (1, 2, 1)
+TASK_SEQUENCE = (2, 1, 2)
 FIRST_DAY_LIMIT = len(TASK_SEQUENCE)
 
 

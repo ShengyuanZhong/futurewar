@@ -140,7 +140,6 @@ class BossRaid:
     def tasks_finished(self):
         return (self.turn.day==1 and self.turn.is_day and not self.turn.phase_task
                 and (finished_count(self.memory)>=FIRST_DAY_LIMIT
-                     or self.memory.task_schedule.get('itinerary_closed',False)
                      or not self.s.settings.enable_tasks))
 
     def successful_tasks(self):
@@ -208,7 +207,7 @@ class BossRaid:
                    max(0, self.state['acquired_count']-self.state['deployed_count']))
 
     def shop_trip(self, role, use_count=1, start=None):
-        """Budget a real route through the shop, uses and return to the guns.
+        """Budget the route to the shop, purchase and remaining daytime uses.
 
         ``start`` forecasts the final task's completion position without
         modifying the live actor or the strategy's current-position route cache.
@@ -216,9 +215,6 @@ class BossRaid:
         key = (role.unit_id,role.pos if start is None else start,use_count,start is not None)
         if key in self.trip:
             return self.trip[key]
-        control = self.s.control_position(role)
-        if control is None:
-            return None
         shops = [p for p, kind in self.turn.zones.items() if kind == 'weaponShop']
         if start is None:
             route = self.s.route(role)
@@ -230,12 +226,7 @@ class BossRaid:
         for post in adjacent_cells(self.turn, shops):
             if post not in route.cost:
                 continue
-            moved = replace(role, pos=post)
-            simulated = replace(self.turn, ours=tuple(moved if u.unit_id == role.unit_id else u for u in self.turn.ours))
-            back = Routes(simulated, moved, self.s.movement_reserved(role)).cost.get(control)
-            if back is None:
-                continue
-            total = route.cost[post] + 1 + use_count + back + self.s.settings.return_margin
+            total = route.cost[post] + 1 + use_count
             if start is not None or total <= self.turn.daylight_left:
                 options.append((total, route.cost[post], post))
         self.trip[key] = min(options) if options else None
@@ -316,11 +307,7 @@ class BossRaid:
                 return None
         else:
             trip = None
-            control = self.s.control_position(role)
-            if control is None:
-                return None
-            cost = self.s.route(role).cost.get(control,10_000)
-            if cost+uses+(self.s.settings.return_margin if cost else 0)>self.turn.daylight_left:
+            if uses>self.turn.daylight_left:
                 return None
         positions = self.spawn_positions(uses)
         if len(positions)!=uses:

@@ -1,0 +1,5339 @@
+{
+  "scope": "First-day synthetic sequential observations over real HTTP; not an official match",
+  "requests": 84,
+  "cases": [
+    {
+      "case": "task2-car-early",
+      "board_round": 6,
+      "driving_rounds": [
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        15,
+        16,
+        17,
+        18
+      ],
+      "dismount_round": 46,
+      "spawns": [
+        {
+          "x": 34,
+          "y": 10
+        },
+        {
+          "x": 34,
+          "y": 9
+        },
+        {
+          "x": 34,
+          "y": 11
+        }
+      ]
+    },
+    {
+      "case": "late-car-night-boundary",
+      "night_round": 71,
+      "night_event": {
+        "event": "walk_one_step",
+        "origin": {
+          "x": 27,
+          "y": 8
+        },
+        "path": [
+          {
+            "x": 26,
+            "y": 9
+          }
+        ],
+        "next_observed_is_driving": false,
+        "round": 71
+      },
+      "timeline": [
+        {
+          "event": "walk_one_step",
+          "origin": {
+            "x": 12,
+            "y": 10
+          },
+          "path": [
+            {
+              "x": 13,
+              "y": 9
+            }
+          ],
+          "next_observed_is_driving": false,
+          "round": 59
+        },
+        {
+          "event": "board_observed_car",
+          "origin": {
+            "x": 13,
+            "y": 9
+          },
+          "path": [
+            {
+              "x": 14,
+              "y": 10
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 60
+        },
+        {
+          "event": "drive_two_steps",
+          "origin": {
+            "x": 14,
+            "y": 10
+          },
+          "path": [
+            {
+              "x": 15,
+              "y": 9
+            },
+            {
+              "x": 16,
+              "y": 8
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 61
+        },
+        {
+          "event": "drive_two_steps",
+          "origin": {
+            "x": 16,
+            "y": 8
+          },
+          "path": [
+            {
+              "x": 17,
+              "y": 7
+            },
+            {
+              "x": 18,
+              "y": 6
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 62
+        },
+        {
+          "event": "drive_two_steps",
+          "origin": {
+            "x": 18,
+            "y": 6
+          },
+          "path": [
+            {
+              "x": 19,
+              "y": 5
+            },
+            {
+              "x": 20,
+              "y": 4
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 63
+        },
+        {
+          "event": "drive_two_steps",
+          "origin": {
+            "x": 20,
+            "y": 4
+          },
+          "path": [
+            {
+              "x": 21,
+              "y": 3
+            },
+            {
+              "x": 22,
+              "y": 2
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 64
+        },
+        {
+          "event": "drive_two_steps",
+          "origin": {
+            "x": 22,
+            "y": 2
+          },
+          "path": [
+            {
+              "x": 23,
+              "y": 1
+            },
+            {
+              "x": 24,
+              "y": 2
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 65
+        },
+        {
+          "event": "drive_two_steps",
+          "origin": {
+            "x": 24,
+            "y": 2
+          },
+          "path": [
+            {
+              "x": 25,
+              "y": 3
+            },
+            {
+              "x": 26,
+              "y": 4
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 66
+        },
+        {
+          "event": "drive_two_steps",
+          "origin": {
+            "x": 26,
+            "y": 4
+          },
+          "path": [
+            {
+              "x": 27,
+              "y": 5
+            },
+            {
+              "x": 28,
+              "y": 6
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 67
+        },
+        {
+          "event": "drive_two_steps",
+          "origin": {
+            "x": 28,
+            "y": 6
+          },
+          "path": [
+            {
+              "x": 27,
+              "y": 7
+            },
+            {
+              "x": 27,
+              "y": 8
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 68
+        },
+        {
+          "event": "walk_one_step",
+          "origin": {
+            "x": 27,
+            "y": 8
+          },
+          "path": [
+            {
+              "x": 26,
+              "y": 9
+            }
+          ],
+          "next_observed_is_driving": false,
+          "round": 71
+        }
+      ]
+    }
+  ],
+  "results": [
+    {
+      "case": "task2-car-early",
+      "round": 1,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 12,
+          "y": 10
+        },
+        "isDriving": false
+      },
+      "observed_cars": [],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 13,
+            "y": 9
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 13,
+          "y": 9
+        },
+        "isDriving": false
+      },
+      "movement_events": [
+        {
+          "event": "walk_one_step",
+          "origin": {
+            "x": 12,
+            "y": 10
+          },
+          "path": [
+            {
+              "x": 13,
+              "y": 9
+            }
+          ],
+          "next_observed_is_driving": false,
+          "round": 1
+        }
+      ],
+      "commands": {
+        "502": {
+          "action": "acceptTask"
+        },
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 5,
+              "y": 11
+            }
+          ]
+        },
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 4,
+              "y": 8
+            }
+          ]
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 13,
+              "y": 9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 2,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 13,
+          "y": 9
+        },
+        "isDriving": false
+      },
+      "observed_cars": [],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 14,
+            "y": 8
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 14,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [
+        {
+          "event": "walk_one_step",
+          "origin": {
+            "x": 13,
+            "y": 9
+          },
+          "path": [
+            {
+              "x": 14,
+              "y": 8
+            }
+          ],
+          "next_observed_is_driving": false,
+          "round": 2
+        }
+      ],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 6,
+              "y": 10
+            }
+          ]
+        },
+        "501": {
+          "action": "remove",
+          "targetPos": [
+            {
+              "x": 5,
+              "y": 9
+            }
+          ]
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 14,
+              "y": 8
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 3,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 14,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 15,
+            "y": 7
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 15,
+          "y": 7
+        },
+        "isDriving": false
+      },
+      "movement_events": [
+        {
+          "event": "walk_one_step",
+          "origin": {
+            "x": 14,
+            "y": 8
+          },
+          "path": [
+            {
+              "x": 15,
+              "y": 7
+            }
+          ],
+          "next_observed_is_driving": false,
+          "round": 3
+        }
+      ],
+      "commands": {
+        "502": {
+          "action": "submitAnswer",
+          "taskAnswer": "fixture-result-3"
+        },
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 7,
+              "y": 10
+            }
+          ]
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 15,
+              "y": 7
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 4,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 15,
+          "y": 7
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 14,
+            "y": 10
+          }
+        }
+      ],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 14,
+            "y": 8
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 14,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [
+        {
+          "event": "walk_one_step",
+          "origin": {
+            "x": 15,
+            "y": 7
+          },
+          "path": [
+            {
+              "x": 14,
+              "y": 8
+            }
+          ],
+          "next_observed_is_driving": false,
+          "round": 4
+        }
+      ],
+      "commands": {
+        "502": {
+          "action": "acceptTask"
+        },
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 8,
+              "y": 10
+            }
+          ]
+        },
+        "501": {
+          "action": "sell",
+          "name": "stone",
+          "num": 1
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 14,
+              "y": 8
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 5,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 14,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 14,
+            "y": 10
+          }
+        }
+      ],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 13,
+            "y": 9
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 13,
+          "y": 9
+        },
+        "isDriving": false
+      },
+      "movement_events": [
+        {
+          "event": "walk_one_step",
+          "origin": {
+            "x": 14,
+            "y": 8
+          },
+          "path": [
+            {
+              "x": 13,
+              "y": 9
+            }
+          ],
+          "next_observed_is_driving": false,
+          "round": 5
+        }
+      ],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 9,
+              "y": 10
+            }
+          ]
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 13,
+              "y": 9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 6,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 13,
+          "y": 9
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 14,
+            "y": 10
+          }
+        }
+      ],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 14,
+            "y": 10
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 14,
+          "y": 10
+        },
+        "isDriving": true
+      },
+      "movement_events": [
+        {
+          "event": "board_observed_car",
+          "origin": {
+            "x": 13,
+            "y": 9
+          },
+          "path": [
+            {
+              "x": 14,
+              "y": 10
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 6
+        }
+      ],
+      "commands": {
+        "502": {
+          "action": "submitAnswer",
+          "taskAnswer": "fixture-result-6"
+        },
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 9
+            }
+          ]
+        },
+        "501": {
+          "action": "sell",
+          "name": "stone",
+          "num": 1
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 14,
+              "y": 10
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 7,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 14,
+          "y": 10
+        },
+        "isDriving": true
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 14,
+            "y": 10
+          }
+        }
+      ],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 15,
+            "y": 9
+          },
+          {
+            "x": 16,
+            "y": 8
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 16,
+          "y": 8
+        },
+        "isDriving": true
+      },
+      "movement_events": [
+        {
+          "event": "drive_two_steps",
+          "origin": {
+            "x": 14,
+            "y": 10
+          },
+          "path": [
+            {
+              "x": 15,
+              "y": 9
+            },
+            {
+              "x": 16,
+              "y": 8
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 7
+        }
+      ],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 11,
+              "y": 8
+            }
+          ]
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 15,
+              "y": 9
+            },
+            {
+              "x": 16,
+              "y": 8
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 8,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 16,
+          "y": 8
+        },
+        "isDriving": true
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 16,
+            "y": 8
+          }
+        }
+      ],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 17,
+            "y": 7
+          },
+          {
+            "x": 18,
+            "y": 6
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 18,
+          "y": 6
+        },
+        "isDriving": true
+      },
+      "movement_events": [
+        {
+          "event": "drive_two_steps",
+          "origin": {
+            "x": 16,
+            "y": 8
+          },
+          "path": [
+            {
+              "x": 17,
+              "y": 7
+            },
+            {
+              "x": 18,
+              "y": 6
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 8
+        }
+      ],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 7
+            }
+          ]
+        },
+        "501": {
+          "action": "sell",
+          "name": "stone",
+          "num": 1
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 17,
+              "y": 7
+            },
+            {
+              "x": 18,
+              "y": 6
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 9,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 18,
+          "y": 6
+        },
+        "isDriving": true
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 18,
+            "y": 6
+          }
+        }
+      ],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 19,
+            "y": 5
+          },
+          {
+            "x": 20,
+            "y": 4
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 20,
+          "y": 4
+        },
+        "isDriving": true
+      },
+      "movement_events": [
+        {
+          "event": "drive_two_steps",
+          "origin": {
+            "x": 18,
+            "y": 6
+          },
+          "path": [
+            {
+              "x": 19,
+              "y": 5
+            },
+            {
+              "x": 20,
+              "y": 4
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 9
+        }
+      ],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 13,
+              "y": 6
+            }
+          ]
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 19,
+              "y": 5
+            },
+            {
+              "x": 20,
+              "y": 4
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 10,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 20,
+          "y": 4
+        },
+        "isDriving": true
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 20,
+            "y": 4
+          }
+        }
+      ],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 21,
+            "y": 3
+          },
+          {
+            "x": 22,
+            "y": 3
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 22,
+          "y": 3
+        },
+        "isDriving": true
+      },
+      "movement_events": [
+        {
+          "event": "drive_two_steps",
+          "origin": {
+            "x": 20,
+            "y": 4
+          },
+          "path": [
+            {
+              "x": 21,
+              "y": 3
+            },
+            {
+              "x": 22,
+              "y": 3
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 10
+        }
+      ],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 14,
+              "y": 5
+            }
+          ]
+        },
+        "501": {
+          "action": "sell",
+          "name": "stone",
+          "num": 1
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 21,
+              "y": 3
+            },
+            {
+              "x": 22,
+              "y": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 11,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 22,
+          "y": 3
+        },
+        "isDriving": true
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 22,
+            "y": 3
+          }
+        }
+      ],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 23,
+            "y": 4
+          },
+          {
+            "x": 24,
+            "y": 5
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 24,
+          "y": 5
+        },
+        "isDriving": true
+      },
+      "movement_events": [
+        {
+          "event": "drive_two_steps",
+          "origin": {
+            "x": 22,
+            "y": 3
+          },
+          "path": [
+            {
+              "x": 23,
+              "y": 4
+            },
+            {
+              "x": 24,
+              "y": 5
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 11
+        }
+      ],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 15,
+              "y": 4
+            }
+          ]
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 23,
+              "y": 4
+            },
+            {
+              "x": 24,
+              "y": 5
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 12,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 24,
+          "y": 5
+        },
+        "isDriving": true
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 24,
+            "y": 5
+          }
+        }
+      ],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 25,
+            "y": 6
+          },
+          {
+            "x": 26,
+            "y": 7
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 26,
+          "y": 7
+        },
+        "isDriving": true
+      },
+      "movement_events": [
+        {
+          "event": "drive_two_steps",
+          "origin": {
+            "x": 24,
+            "y": 5
+          },
+          "path": [
+            {
+              "x": 25,
+              "y": 6
+            },
+            {
+              "x": 26,
+              "y": 7
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 12
+        }
+      ],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 16,
+              "y": 3
+            }
+          ]
+        },
+        "501": {
+          "action": "sell",
+          "name": "stone",
+          "num": 1
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 25,
+              "y": 6
+            },
+            {
+              "x": 26,
+              "y": 7
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 13,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 26,
+          "y": 7
+        },
+        "isDriving": true
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 26,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 27,
+            "y": 8
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 27,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [
+        {
+          "event": "single_step_dismount",
+          "origin": {
+            "x": 26,
+            "y": 7
+          },
+          "path": [
+            {
+              "x": 27,
+              "y": 8
+            }
+          ],
+          "next_observed_is_driving": false,
+          "round": 13
+        }
+      ],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 17,
+              "y": 2
+            }
+          ]
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 27,
+              "y": 8
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 14,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 27,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 26,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 26,
+            "y": 7
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 26,
+          "y": 7
+        },
+        "isDriving": true
+      },
+      "movement_events": [
+        {
+          "event": "board_observed_car",
+          "origin": {
+            "x": 27,
+            "y": 8
+          },
+          "path": [
+            {
+              "x": 26,
+              "y": 7
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 14
+        }
+      ],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 18,
+              "y": 3
+            }
+          ]
+        },
+        "501": {
+          "action": "sell",
+          "name": "stone",
+          "num": 1
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 26,
+              "y": 7
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 15,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 26,
+          "y": 7
+        },
+        "isDriving": true
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 26,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 27,
+            "y": 6
+          },
+          {
+            "x": 28,
+            "y": 5
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 28,
+          "y": 5
+        },
+        "isDriving": true
+      },
+      "movement_events": [
+        {
+          "event": "drive_two_steps",
+          "origin": {
+            "x": 26,
+            "y": 7
+          },
+          "path": [
+            {
+              "x": 27,
+              "y": 6
+            },
+            {
+              "x": 28,
+              "y": 5
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 15
+        }
+      ],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 19,
+              "y": 4
+            }
+          ]
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 27,
+              "y": 6
+            },
+            {
+              "x": 28,
+              "y": 5
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 16,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 28,
+          "y": 5
+        },
+        "isDriving": true
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 28,
+            "y": 5
+          }
+        }
+      ],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 29,
+            "y": 4
+          },
+          {
+            "x": 30,
+            "y": 3
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 30,
+          "y": 3
+        },
+        "isDriving": true
+      },
+      "movement_events": [
+        {
+          "event": "drive_two_steps",
+          "origin": {
+            "x": 28,
+            "y": 5
+          },
+          "path": [
+            {
+              "x": 29,
+              "y": 4
+            },
+            {
+              "x": 30,
+              "y": 3
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 16
+        }
+      ],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 20,
+              "y": 5
+            }
+          ]
+        },
+        "501": {
+          "action": "sell",
+          "name": "stone",
+          "num": 1
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 29,
+              "y": 4
+            },
+            {
+              "x": 30,
+              "y": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 17,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 30,
+          "y": 3
+        },
+        "isDriving": true
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 30,
+            "y": 3
+          }
+        }
+      ],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 31,
+            "y": 4
+          },
+          {
+            "x": 32,
+            "y": 5
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 32,
+          "y": 5
+        },
+        "isDriving": true
+      },
+      "movement_events": [
+        {
+          "event": "drive_two_steps",
+          "origin": {
+            "x": 30,
+            "y": 3
+          },
+          "path": [
+            {
+              "x": 31,
+              "y": 4
+            },
+            {
+              "x": 32,
+              "y": 5
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 17
+        }
+      ],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 21,
+              "y": 6
+            }
+          ]
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 31,
+              "y": 4
+            },
+            {
+              "x": 32,
+              "y": 5
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 18,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 32,
+          "y": 5
+        },
+        "isDriving": true
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 32,
+            "y": 5
+          }
+        }
+      ],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 33,
+            "y": 6
+          },
+          {
+            "x": 34,
+            "y": 7
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 34,
+          "y": 7
+        },
+        "isDriving": true
+      },
+      "movement_events": [
+        {
+          "event": "drive_two_steps",
+          "origin": {
+            "x": 32,
+            "y": 5
+          },
+          "path": [
+            {
+              "x": 33,
+              "y": 6
+            },
+            {
+              "x": 34,
+              "y": 7
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 18
+        }
+      ],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 22,
+              "y": 7
+            }
+          ]
+        },
+        "501": {
+          "action": "sell",
+          "name": "stone",
+          "num": 1
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 33,
+              "y": 6
+            },
+            {
+              "x": 34,
+              "y": 7
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 19,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 34,
+          "y": 7
+        },
+        "isDriving": true
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 35,
+            "y": 8
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [
+        {
+          "event": "single_step_dismount",
+          "origin": {
+            "x": 34,
+            "y": 7
+          },
+          "path": [
+            {
+              "x": 35,
+              "y": 8
+            }
+          ],
+          "next_observed_is_driving": false,
+          "round": 19
+        }
+      ],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 23,
+              "y": 6
+            }
+          ]
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 35,
+              "y": 8
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 20,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 24,
+              "y": 5
+            }
+          ]
+        },
+        "501": {
+          "action": "sell",
+          "name": "stone",
+          "num": 1
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 21,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 25,
+              "y": 4
+            }
+          ]
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 22,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 26,
+              "y": 3
+            }
+          ]
+        },
+        "501": {
+          "action": "sell",
+          "name": "stone",
+          "num": 1
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 23,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 27,
+              "y": 4
+            }
+          ]
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 24,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 28,
+              "y": 5
+            }
+          ]
+        },
+        "501": {
+          "action": "sell",
+          "name": "stone",
+          "num": 1
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 25,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 29,
+              "y": 6
+            }
+          ]
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 26,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "501": {
+          "action": "sell",
+          "name": "stone",
+          "num": 1
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 27,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 28,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "501": {
+          "action": "sell",
+          "name": "stone",
+          "num": 1
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 29,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 30,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "501": {
+          "action": "sell",
+          "name": "stone",
+          "num": 1
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 31,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 32,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "501": {
+          "action": "sell",
+          "name": "stone",
+          "num": 1
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 33,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 34,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "502": {
+          "action": "acceptTask"
+        },
+        "501": {
+          "action": "sell",
+          "name": "stone",
+          "num": 1
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 35,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 36,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "502": {
+          "action": "submitAnswer",
+          "taskAnswer": "fixture-result-36"
+        },
+        "501": {
+          "action": "sell",
+          "name": "stone",
+          "num": 1
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 37,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "502": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 9
+            }
+          ]
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 38,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "502": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 11,
+              "y": 8
+            }
+          ]
+        },
+        "501": {
+          "action": "sell",
+          "name": "stone",
+          "num": 1
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 39,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "502": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 9
+            }
+          ]
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 40,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "502": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 9,
+              "y": 10
+            }
+          ]
+        },
+        "501": {
+          "action": "sell",
+          "name": "stone",
+          "num": 1
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 41,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "502": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 8,
+              "y": 10
+            }
+          ]
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 42,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "502": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 7,
+              "y": 10
+            }
+          ]
+        },
+        "501": {
+          "action": "sell",
+          "name": "stone",
+          "num": 1
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 43,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "502": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 6,
+              "y": 10
+            }
+          ]
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 44,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "502": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 5,
+              "y": 9
+            }
+          ]
+        },
+        "501": {
+          "action": "sell",
+          "name": "stone",
+          "num": 1
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 45,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 34,
+            "y": 7
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 34,
+          "y": 7
+        },
+        "isDriving": true
+      },
+      "movement_events": [
+        {
+          "event": "board_observed_car",
+          "origin": {
+            "x": 35,
+            "y": 8
+          },
+          "path": [
+            {
+              "x": 34,
+              "y": 7
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 45
+        }
+      ],
+      "commands": {
+        "502": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 4,
+              "y": 9
+            }
+          ]
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 34,
+              "y": 7
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 46,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 34,
+          "y": 7
+        },
+        "isDriving": true
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 35,
+            "y": 8
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [
+        {
+          "event": "single_step_dismount",
+          "origin": {
+            "x": 34,
+            "y": 7
+          },
+          "path": [
+            {
+              "x": 35,
+              "y": 8
+            }
+          ],
+          "next_observed_is_driving": false,
+          "round": 46
+        }
+      ],
+      "commands": {
+        "502": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 10
+            }
+          ]
+        },
+        "501": {
+          "action": "sell",
+          "name": "stone",
+          "num": 1
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 35,
+              "y": 8
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 47,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "502": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 2,
+              "y": 9
+            }
+          ]
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 48,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "502": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 1,
+              "y": 8
+            }
+          ]
+        },
+        "501": {
+          "action": "sell",
+          "name": "stone",
+          "num": 1
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 49,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "502": {
+          "action": "buy",
+          "name": "BossRobotSummonOrder",
+          "num": 3
+        },
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 7
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 50,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "502": {
+          "action": "use",
+          "name": "BossRobotSummonOrder",
+          "targetPos": [
+            {
+              "x": 34,
+              "y": 10
+            }
+          ]
+        },
+        "501": {
+          "action": "buy",
+          "name": "WeaponUpgradeVoucher1",
+          "num": 1
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 51,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "502": {
+          "action": "use",
+          "name": "BossRobotSummonOrder",
+          "targetPos": [
+            {
+              "x": 34,
+              "y": 9
+            }
+          ]
+        },
+        "501": {
+          "action": "buy",
+          "name": "WeaponUpgradeVoucher2",
+          "num": 1
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 52,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "502": {
+          "action": "use",
+          "name": "BossRobotSummonOrder",
+          "targetPos": [
+            {
+              "x": 34,
+              "y": 11
+            }
+          ]
+        },
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 4,
+              "y": 8
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 53,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "502": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 2,
+              "y": 8
+            }
+          ]
+        },
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 5,
+              "y": 9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 54,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "502": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 7
+            }
+          ]
+        },
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 6,
+              "y": 8
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 55,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "502": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 4,
+              "y": 7
+            }
+          ]
+        },
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 7,
+              "y": 8
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 56,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 8,
+              "y": 7
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 57,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 8,
+              "y": 6
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 58,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 7,
+              "y": 5
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 59,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 8,
+              "y": 6
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 60,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 8,
+              "y": 7
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 61,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 7,
+              "y": 8
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 62,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 6,
+              "y": 8
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 63,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "501": {
+          "action": "build",
+          "targetPos": [
+            {
+              "x": 5,
+              "y": 9
+            }
+          ],
+          "name": "wall"
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 64,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 7,
+              "y": 8
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 65,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 8,
+              "y": 7
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 66,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 8,
+              "y": 6
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 67,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 7,
+              "y": 5
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 68,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 6,
+              "y": 5
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 69,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "501": {
+          "action": "use",
+          "name": "WeaponUpgradeVoucher1",
+          "targetPos": [
+            {
+              "x": 5,
+              "y": 6
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 70,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 34,
+            "y": 7
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "501": {
+          "action": "use",
+          "name": "WeaponUpgradeVoucher2",
+          "targetPos": [
+            {
+              "x": 5,
+              "y": 6
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "task2-car-early",
+      "round": 71,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 35,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "movement_events": [],
+      "commands": {
+        "30005": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 33,
+              "y": 10
+            }
+          ]
+        },
+        "30006": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 33,
+              "y": 10
+            }
+          ]
+        },
+        "30007": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 33,
+              "y": 10
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "late-car-night-boundary",
+      "round": 59,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 12,
+          "y": 10
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 14,
+            "y": 10
+          }
+        }
+      ],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 13,
+            "y": 9
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 13,
+          "y": 9
+        },
+        "isDriving": false
+      },
+      "movement_events": [
+        {
+          "event": "walk_one_step",
+          "origin": {
+            "x": 12,
+            "y": 10
+          },
+          "path": [
+            {
+              "x": 13,
+              "y": 9
+            }
+          ],
+          "next_observed_is_driving": false,
+          "round": 59
+        }
+      ],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 5,
+              "y": 11
+            }
+          ]
+        },
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 4,
+              "y": 8
+            }
+          ]
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 13,
+              "y": 9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "late-car-night-boundary",
+      "round": 60,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 13,
+          "y": 9
+        },
+        "isDriving": false
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 14,
+            "y": 10
+          }
+        }
+      ],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 14,
+            "y": 10
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 14,
+          "y": 10
+        },
+        "isDriving": true
+      },
+      "movement_events": [
+        {
+          "event": "board_observed_car",
+          "origin": {
+            "x": 13,
+            "y": 9
+          },
+          "path": [
+            {
+              "x": 14,
+              "y": 10
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 60
+        }
+      ],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 6,
+              "y": 10
+            }
+          ]
+        },
+        "501": {
+          "action": "remove",
+          "targetPos": [
+            {
+              "x": 5,
+              "y": 9
+            }
+          ]
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 14,
+              "y": 10
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "late-car-night-boundary",
+      "round": 61,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 14,
+          "y": 10
+        },
+        "isDriving": true
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 14,
+            "y": 10
+          }
+        }
+      ],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 15,
+            "y": 9
+          },
+          {
+            "x": 16,
+            "y": 8
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 16,
+          "y": 8
+        },
+        "isDriving": true
+      },
+      "movement_events": [
+        {
+          "event": "drive_two_steps",
+          "origin": {
+            "x": 14,
+            "y": 10
+          },
+          "path": [
+            {
+              "x": 15,
+              "y": 9
+            },
+            {
+              "x": 16,
+              "y": 8
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 61
+        }
+      ],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 7,
+              "y": 10
+            }
+          ]
+        },
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 5,
+              "y": 9
+            }
+          ]
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 15,
+              "y": 9
+            },
+            {
+              "x": 16,
+              "y": 8
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "late-car-night-boundary",
+      "round": 62,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 16,
+          "y": 8
+        },
+        "isDriving": true
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 16,
+            "y": 8
+          }
+        }
+      ],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 17,
+            "y": 7
+          },
+          {
+            "x": 18,
+            "y": 6
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 18,
+          "y": 6
+        },
+        "isDriving": true
+      },
+      "movement_events": [
+        {
+          "event": "drive_two_steps",
+          "origin": {
+            "x": 16,
+            "y": 8
+          },
+          "path": [
+            {
+              "x": 17,
+              "y": 7
+            },
+            {
+              "x": 18,
+              "y": 6
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 62
+        }
+      ],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 8,
+              "y": 10
+            }
+          ]
+        },
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 6,
+              "y": 8
+            }
+          ]
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 17,
+              "y": 7
+            },
+            {
+              "x": 18,
+              "y": 6
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "late-car-night-boundary",
+      "round": 63,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 18,
+          "y": 6
+        },
+        "isDriving": true
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 18,
+            "y": 6
+          }
+        }
+      ],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 19,
+            "y": 5
+          },
+          {
+            "x": 20,
+            "y": 4
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 20,
+          "y": 4
+        },
+        "isDriving": true
+      },
+      "movement_events": [
+        {
+          "event": "drive_two_steps",
+          "origin": {
+            "x": 18,
+            "y": 6
+          },
+          "path": [
+            {
+              "x": 19,
+              "y": 5
+            },
+            {
+              "x": 20,
+              "y": 4
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 63
+        }
+      ],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 9,
+              "y": 10
+            }
+          ]
+        },
+        "501": {
+          "action": "build",
+          "targetPos": [
+            {
+              "x": 5,
+              "y": 9
+            }
+          ],
+          "name": "wall"
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 19,
+              "y": 5
+            },
+            {
+              "x": 20,
+              "y": 4
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "late-car-night-boundary",
+      "round": 64,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 20,
+          "y": 4
+        },
+        "isDriving": true
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 20,
+            "y": 4
+          }
+        }
+      ],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 21,
+            "y": 3
+          },
+          {
+            "x": 22,
+            "y": 2
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 22,
+          "y": 2
+        },
+        "isDriving": true
+      },
+      "movement_events": [
+        {
+          "event": "drive_two_steps",
+          "origin": {
+            "x": 20,
+            "y": 4
+          },
+          "path": [
+            {
+              "x": 21,
+              "y": 3
+            },
+            {
+              "x": 22,
+              "y": 2
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 64
+        }
+      ],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 9
+            }
+          ]
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 21,
+              "y": 3
+            },
+            {
+              "x": 22,
+              "y": 2
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "late-car-night-boundary",
+      "round": 65,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 22,
+          "y": 2
+        },
+        "isDriving": true
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 22,
+            "y": 2
+          }
+        }
+      ],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 23,
+            "y": 1
+          },
+          {
+            "x": 24,
+            "y": 2
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 24,
+          "y": 2
+        },
+        "isDriving": true
+      },
+      "movement_events": [
+        {
+          "event": "drive_two_steps",
+          "origin": {
+            "x": 22,
+            "y": 2
+          },
+          "path": [
+            {
+              "x": 23,
+              "y": 1
+            },
+            {
+              "x": 24,
+              "y": 2
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 65
+        }
+      ],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 11,
+              "y": 8
+            }
+          ]
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 23,
+              "y": 1
+            },
+            {
+              "x": 24,
+              "y": 2
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "late-car-night-boundary",
+      "round": 66,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 24,
+          "y": 2
+        },
+        "isDriving": true
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 24,
+            "y": 2
+          }
+        }
+      ],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 25,
+            "y": 3
+          },
+          {
+            "x": 26,
+            "y": 4
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 26,
+          "y": 4
+        },
+        "isDriving": true
+      },
+      "movement_events": [
+        {
+          "event": "drive_two_steps",
+          "origin": {
+            "x": 24,
+            "y": 2
+          },
+          "path": [
+            {
+              "x": 25,
+              "y": 3
+            },
+            {
+              "x": 26,
+              "y": 4
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 66
+        }
+      ],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 7
+            }
+          ]
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 25,
+              "y": 3
+            },
+            {
+              "x": 26,
+              "y": 4
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "late-car-night-boundary",
+      "round": 67,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 26,
+          "y": 4
+        },
+        "isDriving": true
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 26,
+            "y": 4
+          }
+        }
+      ],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 27,
+            "y": 5
+          },
+          {
+            "x": 28,
+            "y": 6
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 28,
+          "y": 6
+        },
+        "isDriving": true
+      },
+      "movement_events": [
+        {
+          "event": "drive_two_steps",
+          "origin": {
+            "x": 26,
+            "y": 4
+          },
+          "path": [
+            {
+              "x": 27,
+              "y": 5
+            },
+            {
+              "x": 28,
+              "y": 6
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 67
+        }
+      ],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 13,
+              "y": 6
+            }
+          ]
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 27,
+              "y": 5
+            },
+            {
+              "x": 28,
+              "y": 6
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "late-car-night-boundary",
+      "round": 68,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 28,
+          "y": 6
+        },
+        "isDriving": true
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 28,
+            "y": 6
+          }
+        }
+      ],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 27,
+            "y": 7
+          },
+          {
+            "x": 27,
+            "y": 8
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 27,
+          "y": 8
+        },
+        "isDriving": true
+      },
+      "movement_events": [
+        {
+          "event": "drive_two_steps",
+          "origin": {
+            "x": 28,
+            "y": 6
+          },
+          "path": [
+            {
+              "x": 27,
+              "y": 7
+            },
+            {
+              "x": 27,
+              "y": 8
+            }
+          ],
+          "next_observed_is_driving": true,
+          "round": 68
+        }
+      ],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 14,
+              "y": 5
+            }
+          ]
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 27,
+              "y": 7
+            },
+            {
+              "x": 27,
+              "y": 8
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "late-car-night-boundary",
+      "round": 69,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 27,
+          "y": 8
+        },
+        "isDriving": true
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 27,
+            "y": 8
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 27,
+          "y": 8
+        },
+        "isDriving": true
+      },
+      "movement_events": [],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 15,
+              "y": 4
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "late-car-night-boundary",
+      "round": 70,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 27,
+          "y": 8
+        },
+        "isDriving": true
+      },
+      "observed_cars": [
+        {
+          "neutralType": "challengerVehicle",
+          "pos": {
+            "x": 27,
+            "y": 8
+          }
+        }
+      ],
+      "scout_command": null,
+      "scout_after": {
+        "pos": {
+          "x": 27,
+          "y": 8
+        },
+        "isDriving": true
+      },
+      "movement_events": [],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 16,
+              "y": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "late-car-night-boundary",
+      "round": 71,
+      "status": 200,
+      "scout_before": {
+        "pos": {
+          "x": 27,
+          "y": 8
+        },
+        "isDriving": false
+      },
+      "observed_cars": [],
+      "scout_command": {
+        "action": "move",
+        "targetPos": [
+          {
+            "x": 26,
+            "y": 9
+          }
+        ]
+      },
+      "scout_after": {
+        "pos": {
+          "x": 26,
+          "y": 9
+        },
+        "isDriving": false
+      },
+      "movement_events": [
+        {
+          "event": "walk_one_step",
+          "origin": {
+            "x": 27,
+            "y": 8
+          },
+          "path": [
+            {
+              "x": 26,
+              "y": 9
+            }
+          ],
+          "next_observed_is_driving": false,
+          "round": 71
+        }
+      ],
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 17,
+              "y": 2
+            }
+          ]
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 26,
+              "y": 9
+            }
+          ]
+        },
+        "30005": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 33,
+              "y": 10
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "failure": null,
+  "rounds": "R1..R71 and a separate R59..R71 scenario, all day 1",
+  "assumptions": [
+    "Synthetic Task2 success supplies a car beside its point as an observed neutral element at R4; other case starts with an observed parked car.",
+    "Task verdicts at neighbouring points are prescribed fixture feedback; ambiguous point selection is not an official-judge validation.",
+    "Successful neighbour moves determine the next synthetic isDriving observation; no collision outcome is assumed.",
+    "Two-step driving transports the car; one-step movement leaves it parked; all cars disappear at R71.",
+    "Home fortifications begin completed; first-night procurement is disabled to isolate scouting transport.",
+    "The late observer scenario has no pioneer and starts with an observed parked car; one owned BOSS is supplied at R71 to keep the view mission active.",
+    "Enemy buildings/heroes are stationary fixture truth filtered by ordinary range-four friendly sight.",
+    "Combat damage and official sandbox execution are not simulated."
+  ],
+  "bind_verified": true,
+  "execute_cmd_executed": false
+}

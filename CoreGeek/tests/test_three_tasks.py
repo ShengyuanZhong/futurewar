@@ -1,4 +1,4 @@
-"""Three actual attempts, Task1 cooldown, and a three-order inventory ledger."""
+"""Three actual attempts in Task2/Task1/Task2 order with official cooldown."""
 import copy
 import unittest
 
@@ -34,8 +34,8 @@ def three_task_request(number=1,near=False):
 
 def completed_memory(outcomes=(True,True,True)):
     memory = GameMemory(opening_complete=True)
-    for accept,end,point,kind,success in zip((1,5,34),(4,8,37),((1,7),(1,6),(1,7)),
-                                          ('自进化类1','自进化类2','自进化类1'),outcomes):
+    for accept,end,point,kind,success in zip((1,4,34),(4,7,37),((1,6),(1,7),(1,6)),
+                                          ('自进化类2','自进化类1','自进化类2'),outcomes):
         key = record_attempt(memory,1,accept,point,kind)
         finish_attempt(memory,key,end,succeeded=success)
     return memory
@@ -52,8 +52,8 @@ class ThreeTaskTests(unittest.TestCase):
 
     def test_attempt_finish_and_success_are_idempotent(self):
         memory = GameMemory()
-        key = record_attempt(memory,1,1,(1,7),'自进化类1')
-        record_attempt(memory,1,1,(1,7),'自进化类1')
+        key = record_attempt(memory,1,1,(1,6),'自进化类2')
+        record_attempt(memory,1,1,(1,6),'自进化类2')
         for number in (4,5,6):
             finish_attempt(memory,key,number,succeeded=True)
         self.assertEqual(finished_count(memory),1)
@@ -63,8 +63,8 @@ class ThreeTaskTests(unittest.TestCase):
     def test_two_successful_attempts_do_not_allow_buy_before_third(self):
         raw,_ = three_task_request(20)
         memory = completed_memory()
-        del memory.task_attempts[(1,34,1,7)]
-        memory.task_active_attempt = (1,5,1,6)
+        del memory.task_attempts[(1,34,1,6)]
+        memory.task_active_attempt = (1,4,1,7)
         s,plan = strategy(raw,memory,Settings(enable_news=False))
         self.assertFalse(s.boss_raid.tasks_finished())
         self.assertFalse(s.boss_raid.pioneer(next(u for u in s.turn.controllable() if u.kind=='pioneer')))
@@ -95,54 +95,112 @@ class ThreeTaskTests(unittest.TestCase):
         self.assertEqual(memory.boss_raid['target_count'],3)
         self.assertNotEqual(plan.commands.get('502',{}).get('action'),'buy')
 
-    def test_third_task_one_waits_at_point_for_official_cooldown(self):
+    def test_third_task_two_waits_at_point_for_official_cooldown(self):
         raw,_ = three_task_request(20)
-        raw['teamOur']['playerTasks'][0].update(isValid=False,coldDownRounds=14)
+        raw['teamOur']['playerTasks'][1].update(isValid=False,coldDownRounds=14)
         memory = completed_memory()
-        del memory.task_attempts[(1,34,1,7)]
-        memory.task_active_attempt = (1,5,1,6)
+        del memory.task_attempts[(1,34,1,6)]
+        memory.task_active_attempt = (1,4,1,7)
         s,plan = strategy(raw,memory,Settings(enable_news=False))
         pioneer = next(u for u in s.turn.controllable() if u.kind=='pioneer')
         self.assertTrue(s.task(pioneer))
         self.assertIn(pioneer.unit_id,plan.used)
         self.assertNotIn('502',plan.commands)
         self.assertEqual(memory.task_schedule['status'],'waiting_cooldown')
-        self.assertEqual(memory.task_schedule['expected_point'],1)
+        self.assertEqual(memory.task_schedule['expected_point'],2)
         raw['roundNo'] = 34
-        raw['teamOur']['playerTasks'][0].update(isValid=True,coldDownRounds=0)
+        raw['teamOur']['playerTasks'][1].update(isValid=True,coldDownRounds=0)
         s,plan = strategy(raw,memory,Settings(enable_news=False))
         self.assertTrue(s.task(next(u for u in s.turn.controllable() if u.kind=='pioneer')))
         self.assertEqual(plan.commands['502'],{'action':'acceptTask'})
 
-    def test_first_task_is_task_one_even_if_task_two_is_closer(self):
+    def test_first_task_is_task_two_even_if_task_one_is_closer(self):
         raw,_ = three_task_request()
-        raw['teamOur']['playerTasks'][0]['taskPosition'] = Pos(1,9).dump()
-        raw['mapInfo']['zones'] = [z for z in raw['mapInfo']['zones'] if z['neutralType']!='challengerTaskPoint1']
-        raw['mapInfo']['zones'].append(dict(neutralType='challengerTaskPoint1',pos=Pos(1,9).dump()))
+        raw['teamOur']['playerTasks'][1]['taskPosition'] = Pos(1,9).dump()
+        raw['mapInfo']['zones'] = [z for z in raw['mapInfo']['zones'] if z['neutralType']!='challengerTaskPoint2']
+        raw['mapInfo']['zones'] += [dict(neutralType='challengerTaskPoint2',pos=p.dump())
+                                  for p in (Pos(1,9),Pos(1,8))]
         memory = GameMemory()
         s,plan = strategy(raw,memory,Settings(enable_news=False))
         self.assertTrue(s.task(next(u for u in s.turn.controllable() if u.kind=='pioneer')))
         self.assertEqual(plan.commands['502']['action'],'move')
-        self.assertEqual(memory.task_schedule['expected_point'],1)
+        self.assertEqual(memory.task_schedule['expected_point'],2)
 
     def test_failed_acceptance_is_not_a_task_attempt(self):
         raw,_ = three_task_request(2)
         raw['lastRoundRoleActionResults'] = {'502':False}
         memory = GameMemory(last_round=1,last_commands={'502':{'action':'acceptTask'}},
-                            task_accept_round=1,last_task_point=(1,7))
+                            task_accept_round=1,last_task_point=(1,6))
         memory.observe(Turn.load(raw))
         self.assertFalse(memory.task_attempts)
 
-    def test_expired_third_cooldown_returns_to_defend_without_false_finish(self):
+    def test_third_cooldown_past_dusk_stays_waiting_without_illegal_accept(self):
         raw,_ = three_task_request(69)
         memory = completed_memory()
-        del memory.task_attempts[(1,34,1,7)]
-        raw['teamOur']['playerTasks'][0].update(isValid=False,coldDownRounds=10)
+        del memory.task_attempts[(1,34,1,6)]
+        raw['teamOur']['playerTasks'][1].update(isValid=False,coldDownRounds=10)
         s,plan = strategy(raw,memory,Settings(enable_news=False))
-        self.assertFalse(s.task(next(u for u in s.turn.controllable() if u.kind=='pioneer')))
+        self.assertTrue(s.task(next(u for u in s.turn.controllable() if u.kind=='pioneer')))
         self.assertEqual(finished_count(memory),2)
-        self.assertTrue(s.boss_raid.tasks_finished())
-        self.assertTrue(memory.task_schedule['itinerary_closed'])
+        self.assertFalse(s.boss_raid.tasks_finished())
+        self.assertFalse(memory.task_schedule.get('itinerary_closed',False))
+        self.assertEqual(memory.task_schedule['status'],'waiting_cooldown')
+        self.assertNotIn('502',plan.commands)
+
+    def test_late_third_visit_is_accepted_without_task_or_home_budget(self):
+        raw,_ = three_task_request(70)
+        raw['teamOur']['playerTasks'][1].update(timeoutRounds=30)
+        memory = completed_memory()
+        del memory.task_attempts[(1,34,1,6)]
+        s,plan = strategy(raw,memory,Settings(enable_news=False))
+        self.assertTrue(s.task(next(u for u in s.turn.controllable() if u.kind=='pioneer')))
+        self.assertEqual(plan.commands['502'],{'action':'acceptTask'})
+        self.assertEqual(memory.task_schedule['expected_point'],2)
+        self.assertEqual(finished_count(memory),2)
+        self.assertFalse(s.boss_raid.tasks_finished())
+
+    def test_first_night_continues_third_visit_and_respects_actual_cooldown(self):
+        raw,_ = three_task_request(71)
+        raw['teamOur']['playerTasks'][1].update(isValid=False,coldDownRounds=1)
+        memory = completed_memory()
+        del memory.task_attempts[(1,34,1,6)]
+        s,plan = strategy(raw,memory,Settings(enable_news=False))
+        s.run()
+        self.assertEqual(memory.task_schedule['expected_point'],2)
+        self.assertEqual(memory.task_schedule['status'],'waiting_cooldown')
+        self.assertFalse(s.pioneer_should_defend(next(u for u in s.turn.controllable() if u.kind=='pioneer')))
+        self.assertNotIn('502',plan.commands)
+        raw.update(roundNo=72)
+        raw['teamOur']['playerTasks'][1].update(isValid=True,coldDownRounds=0)
+        s,plan = strategy(raw,memory,Settings(enable_news=False))
+        s.run()
+        self.assertEqual(plan.commands['502'],{'action':'acceptTask'})
+        self.assertEqual(finished_count(memory),2)
+        self.assertFalse(any(c.get('name')==ORDER for c in plan.commands.values()))
+
+    def test_daytime_accepted_active_third_task_continues_through_night(self):
+        raw,_ = three_task_request(70)
+        raw.update(phaseTask='active late task2',lastRoundRoleActionResults={'502':True})
+        memory = completed_memory()
+        del memory.task_attempts[(1,34,1,6)]
+        current = record_attempt(memory,1,69,(1,6),'自进化类2')
+        memory.task_agent.accept(Turn.load(raw).tasks[1])
+        memory.task_accept_round = 69
+        memory.last_task_point = (1,6)
+        memory.last_round = 69
+        memory.last_commands = {'502':{'action':'acceptTask'}}
+        service = TurnService(Settings(enable_news=False))
+        key = (raw['teamOur']['teamId'],raw['teamOur']['type'])
+        service.sessions[key] = Session(memory=memory)
+        response = service.decide(copy.deepcopy(raw))
+        self.assertTrue(response['prompt'])
+        self.assertNotIn('502',response['roleCommandMap'])
+        raw.update(roundNo=71,llmResp='{"action":"final_answer","answer":"night-completion"}',
+                   lastRoundRoleActionResults={})
+        response = service.decide(copy.deepcopy(raw))
+        self.assertEqual(response['roleCommandMap']['502']['action'],'submitAnswer')
+        self.assertFalse(service.sessions[key].memory.task_attempts[current]['finished'])
+        self.assertEqual(finished_count(service.sessions[key].memory),2)
 
     def test_three_confirmed_coupons_use_different_positions_without_rebuy(self):
         raw,truth = three_task_request(38,near=True)
@@ -175,10 +233,10 @@ class ThreeTaskTests(unittest.TestCase):
         raw['phaseTask'] = 'identical task text'
         raw['lastRoundRoleActionResults'] = {'502':True}
         memory = GameMemory(last_round=34,task_description=raw['phaseTask'],task_started=1,
-            task_accept_round=34,last_task_point=(1,7),last_commands={'502':{'action':'acceptTask'}})
-        old = record_attempt(memory,1,1,(1,7),'自进化类1')
+            task_accept_round=34,last_task_point=(1,6),last_commands={'502':{'action':'acceptTask'}})
+        old = record_attempt(memory,1,1,(1,6),'自进化类2')
         finish_attempt(memory,old,4,succeeded=True)
-        memory.task_agent.accept(Turn.load(raw).tasks[0])
+        memory.task_agent.accept(Turn.load(raw).tasks[1])
         memory.task_agent.attempt_key = old
         memory.task_agent.observed_description = raw['phaseTask']
         memory.task_agent.self_evolve_started_round = 1
@@ -188,7 +246,7 @@ class ThreeTaskTests(unittest.TestCase):
         service.sessions[key] = Session(memory=memory)
         response = service.decide(copy.deepcopy(raw))
         current = service.sessions[key].memory
-        self.assertEqual(current.task_agent.attempt_key,(1,34,1,7))
+        self.assertEqual(current.task_agent.attempt_key,(1,34,1,6))
         self.assertEqual(current.task_agent.self_evolve_started_round,34)
         self.assertEqual(len(current.task_attempts),2)
         self.assertEqual(success_count(current),1)
@@ -198,13 +256,13 @@ class ThreeTaskTests(unittest.TestCase):
         raw,_ = three_task_request(36)
         raw['phaseTask'] = 'third question arrived after a waiting frame'
         memory = completed_memory()
-        third = (1,34,1,7)
+        third = (1,34,1,6)
         memory.task_attempts[third].update(finished=False,succeeded=False)
-        memory.task_agent.accept(Turn.load(raw).tasks[0])
-        memory.task_agent.attempt_key = (1,5,1,6)
-        memory.task_agent.self_evolve_started_round = 5
+        memory.task_agent.accept(Turn.load(raw).tasks[1])
+        memory.task_agent.attempt_key = (1,4,1,7)
+        memory.task_agent.self_evolve_started_round = 4
         memory.task_accept_round = 34
-        memory.last_task_point = (1,7)
+        memory.last_task_point = (1,6)
         memory.last_round = 35
         service = TurnService(Settings(enable_news=False))
         key = (raw['teamOur']['teamId'],raw['teamOur']['type'])
@@ -213,7 +271,7 @@ class ThreeTaskTests(unittest.TestCase):
         active = service.sessions[key].memory
         self.assertTrue(reply['prompt'])
         self.assertEqual(active.task_agent.attempt_key,third)
-        self.assertEqual(active.task_agent.accepted_task['task_position'],(1,7))
+        self.assertEqual(active.task_agent.accepted_task['task_position'],(1,6))
         self.assertEqual(active.task_agent.self_evolve_started_round,34)
         raw.update(roundNo=37,llmResp='{"action":"final_answer","answer":"third-result"}')
         reply = service.decide(copy.deepcopy(raw))

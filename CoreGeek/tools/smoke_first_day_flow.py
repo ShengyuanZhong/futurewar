@@ -48,22 +48,22 @@ def fixture(case):
 
 
 def task_frame(raw,number,outcomes):
-    """Three real task phases; first point refreshes 30 rounds after R4."""
+    """Task2 -> Task1 -> Task2; repeated point refreshes 30 rounds after R4."""
     raw.update(roundNo=number,llmResp='',errors=[])
-    raw['phaseTask'] = ('Local first fixture task' if number in (2,3)
-        else 'Local second fixture task' if number in (5,6)
-        else 'Local first fixture task revisited' if number in (35,36) else '')
+    raw['phaseTask'] = ('Local task2 first fixture visit' if number in (2,3)
+        else 'Local task1 fixture visit' if number in (5,6)
+        else 'Local task2 fixture visit revisited' if number in (35,36) else '')
     if number in (3,6,36):
         raw['llmResp'] = json.dumps({'action':'final_answer','answer':'fixture-result-'+str(number)})
-    first,second = raw['teamOur']['playerTasks']
+    task_one,task_two = raw['teamOur']['playerTasks']
     if number>=4:
         refresh = 34 if number<37 else 67
-        first.update(isValid=number>=refresh,coldDownRounds=max(0,refresh-number))
+        task_two.update(isValid=number>=refresh,coldDownRounds=max(0,refresh-number))
     if number>=7:
-        second.update(isValid=number>=37,coldDownRounds=max(0,37-number))
+        task_one.update(isValid=number>=37,coldDownRounds=max(0,37-number))
     if number in (4,7,37):
         outcome = outcomes[(4,7,37).index(number)]
-        index = 1 if number==7 else 0
+        index = 0 if number==7 else 1
         if outcome:
             raw['teamOur']['goldNum'] += 100
             raw['teamOur']['totalScore'] += 51-index
@@ -202,7 +202,9 @@ def main():
                     rows.append(dict(case=case,outcomes=outcomes,round=number,status=response.status,
                         elapsed_ms=round(elapsed,3),commands=commands,prompt_chars=len(result['prompt']),
                         wall_count=sum(u['roleType']=='wall' and u['health']>0 for u in raw['teamOur']['roles']),
-                        task1_cooldown=raw['teamOur']['playerTasks'][0]['coldDownRounds']))
+                        accepted_task_number={1:2,4:1,34:2}.get(number),
+                        task1_cooldown=raw['teamOur']['playerTasks'][0]['coldDownRounds'],
+                        task2_cooldown=raw['teamOur']['playerTasks'][1]['coldDownRounds']))
                     apply_commands(raw,commands,spawns)
                 finally:
                     conn.close()
@@ -214,6 +216,8 @@ def main():
         capture.seek(0);logs = capture.read().decode('utf-8',errors='replace');capture.close()
     assert 'action_rejected' not in logs
     report = dict(scope='Synthetic verdicts and LLM answers over a real HTTP process; no sandbox or official match',
+        task_sequence=[2,1,2],accepted_rounds=[1,4,34],
+        repeated_task_cooldown={'task':2,'finished_round':4,'next_accept_round':34,'rounds':30},
         requests=len(rows),results=rows,bind_verified=f'0.0.0.0:{port}' in logs,bash_executed=False)
     args.output.parent.mkdir(parents=True,exist_ok=True)
     args.output.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')

@@ -145,11 +145,10 @@ class Strategy:
                     continue
                 if self.clear_build_cell(role):
                     continue
-                if (self.turn.day==1 and self.turn.is_day and self.settings.enable_tasks
+                if (self.turn.day==1 and self.settings.enable_tasks
                         and not self.boss_raid.tasks_finished()):
-                    # Resolve the Task1 -> Task2 -> Task1 itinerary before
-                    # shopping. An unavailable or over-budget task closes
-                    # the itinerary, without inventing a completed attempt.
+                    # Attempt Task2 -> Task1 -> Task2 before shopping. Day-one
+                    # task admission never reserves a shopping/return budget.
                     if not self.task(role):
                         if not self.boss_raid.pioneer(role):
                             self.move_to_control(role)
@@ -223,6 +222,12 @@ class Strategy:
             p != self.layout.operator_pos, route.cost[p], p))
 
     def pioneer_should_defend(self, role: Unit) -> bool:
+        if (self.turn.day==1 and self.settings.enable_tasks
+                and (self.turn.phase_task or
+                     finished_count(self.memory)<len(TASK_SEQUENCE))):
+            # Complete the three first-day attempts even after night arrives.
+            # Once they finish the normal night weapon schedule resumes.
+            return False
         if not self.turn.weapons():
             return False
         target = self.control_position(role)
@@ -662,8 +667,7 @@ class Strategy:
                          self.turn.round_no < agent.self_evolve_abandon_tick else None)
         first_day = self.turn.day==1
         if first_day:
-            if self.memory.task_schedule.get('itinerary_closed'):
-                return False
+            self.memory.task_schedule.update(itinerary_closed=False,budget_policy='task_first_no_return_reserve')
             attempts = task_attempts(self.memory)
             pending = next(((key,job) for key,job in attempts if not job['finished']),None)
             if pending:
@@ -699,39 +703,24 @@ class Strategy:
                 continue
             travel = route.cost[goal]
             duration = task.timeout if task.timeout > 0 else 15
-            control = self.control_position(role)
-            if control is None:
-                failures.append('route_blocked')
-                continue
-            moved = replace(role,pos=goal)
-            simulated = replace(self.turn,ours=tuple(moved if u.unit_id==role.unit_id else u for u in self.turn.ours))
-            return_trip = Routes(simulated,moved,self.movement_reserved(role)).cost.get(control)
-            if return_trip is None:
-                failures.append('route_blocked')
-                continue
             wait = max(0,task.cooldown)
             if (task.pos.x,task.pos.y)==cooling_point:
                 wait = max(wait,agent.self_evolve_abandon_tick-self.turn.round_no)
-            if not task.valid and not wait:
-                failures.append('point_unavailable')
-                continue
-            tail = return_trip + self.settings.return_margin
-            if first_day and step == len(TASK_SEQUENCE)-1 and self.settings.enable_boss_raid:
-                # Protect the paid-for raid window when scheduling the third
-                # task; its official cooldown can consume the remaining day.
-                trip = self.boss_raid.shop_trip(role,min(3,self.boss_raid.successful_tasks()+1),start=goal)
-                if trip is not None:
-                    tail = trip[0]
-            required = max(travel,wait) + duration + tail
             if first_day:
                 self.memory.task_schedule.update(travel_rounds=travel,cooldown=wait,timeout_rounds=duration,
-                    return_rounds=return_trip,tail_rounds=tail,required_rounds=required,
+                    return_rounds=0,tail_rounds=0,required_rounds=max(travel,wait),
                     daylight_left=self.turn.daylight_left,point=task.pos)
-            if required > self.turn.daylight_left:
-                failures.append('insufficient_daylight')
-                if first_day:
-                    self.memory.task_schedule['status'] = 'insufficient_daylight'
-                continue
+            else:
+                # Later-day admission is unchanged. Only the first day gives
+                # up the home/defence budget at the user's request.
+                control = self.control_position(role)
+                if control is None:
+                    continue
+                moved = replace(role,pos=goal)
+                simulated = replace(self.turn,ours=tuple(moved if u.unit_id==role.unit_id else u for u in self.turn.ours))
+                back = Routes(simulated,moved,self.movement_reserved(role)).cost.get(control)
+                if back is None or max(travel,wait)+duration+back+self.settings.return_margin>self.turn.daylight_left:
+                    continue
             if self.plan.near(role, cells):
                 if not task.valid or wait:
                     if first_day:
@@ -750,15 +739,9 @@ class Strategy:
                 return True
             failures.append('route_blocked')
         if first_day:
-            if 'route_blocked' in failures:
-                # A temporary occupied route is not a failed task or a reason
-                # to walk home and then reverse direction on the next frame.
-                self.memory.task_schedule['status'] = 'route_blocked'
-                self.plan.used.add(role.unit_id)
-                return True
-            self.memory.task_schedule.update(itinerary_closed=True,closed_round=self.turn.round_no,
-                status='itinerary_closed',close_reason='insufficient_daylight' if 'insufficient_daylight' in failures else 'point_unavailable',
-                unattempted_steps=list(TASK_SEQUENCE[step:]))
+            self.memory.task_schedule['status'] = 'route_blocked' if failures else 'missing_task_point'
+            self.plan.used.add(role.unit_id)
+            return True
         return False
 
     def treasure(self, role: Unit) -> bool:

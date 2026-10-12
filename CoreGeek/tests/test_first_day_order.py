@@ -51,7 +51,7 @@ class FirstDayOrderTests(unittest.TestCase):
 
     def test_third_accept_without_task_start_does_not_count_as_finished(self):
         raw,memory,_,_ = day_strategy(1,attempts=2)
-        record_attempt(memory,1,35,(3,9),'自进化类1',origin='isolated_fixture')
+        record_attempt(memory,1,34,(4,9),'自进化类2',origin='isolated_fixture')
         s,plan = strategy(raw,memory,Settings(enable_news=False))
         self.assertFalse(s.boss_raid.pioneer(next(u for u in s.turn.controllable() if u.kind=='pioneer')))
         self.assertIsNone(s.boss_raid.target_orders())
@@ -96,6 +96,7 @@ class FirstDayOrderTests(unittest.TestCase):
         raw = request(1)
         raw['teamOur']['goldNum'] = 1000
         raw['weaponShopList'].append({'name':ORDER,'price':120})
+        role(raw,502)['pos'] = Pos(17,16).dump()
         s,plan = strategy(raw,GameMemory(),Settings(enable_news=False));s.run()
         self.assertEqual(plan.commands['502'],{'action':'acceptTask'})
         self.assertFalse(any(c.get('name','').startswith('WeaponUpgradeVoucher') for c in plan.commands.values()))
@@ -104,9 +105,9 @@ class FirstDayOrderTests(unittest.TestCase):
         raw = request(20)
         raw['teamOur']['goldNum'] = 1000
         raw['weaponShopList'].append({'name':ORDER,'price':120})
-        first = raw['teamOur']['playerTasks'][0]['taskPosition']
+        first = raw['teamOur']['playerTasks'][1]['taskPosition']
         memory = GameMemory(opening_complete=True,last_round=19,day=1)
-        key = record_attempt(memory,1,1,(first['x'],first['y']),'自进化类1')
+        key = record_attempt(memory,1,1,(first['x'],first['y']),'自进化类2')
         finish_attempt(memory,key,4,succeeded=True)
         s,plan = strategy(raw,memory,Settings(enable_news=False))
         with patch.object(s,'treasure',return_value=True) as treasure,patch.object(s,'task',wraps=s.task) as task:
