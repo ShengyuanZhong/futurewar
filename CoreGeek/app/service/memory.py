@@ -58,6 +58,8 @@ class GameMemory:
     robot_motion: dict[int, dict[str, Any]] = field(default_factory=dict)
     raid_scouts: dict[str, Any] = field(default_factory=dict)
     enemy_structures: dict[int, Unit] = field(default_factory=dict)
+    # Confirmed immutable build sites are layout knowledge, not live targets.
+    enemy_weapon_sites: dict[Pos, str] = field(default_factory=dict)
     first_night_defense: dict[str, Any] = field(default_factory=dict)
     day_gate: dict[str, Any] = field(default_factory=dict)
     pending_summon_positions: set[Pos] = field(default_factory=set)

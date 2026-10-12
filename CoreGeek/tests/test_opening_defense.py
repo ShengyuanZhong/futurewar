@@ -150,6 +150,7 @@ class OpeningDefenseTests(unittest.TestCase):
         # Minimal action feedback fixture: no combat, refresh, scoring or judger claims.
         for number in range(1, 45):
             raw["roundNo"] = number
+            before = Turn.load(raw)
             commands = service.decide(copy.deepcopy(raw))["roleCommandMap"]
             units = {str(r["id"]): r for r in raw["teamOur"]["roles"]}
             for key, cmd in commands.items():
@@ -162,16 +163,20 @@ class OpeningDefenseTests(unittest.TestCase):
                     p = cmd["targetPos"][0]
                     if name == "rocket":
                         raw["teamOur"]["goldNum"] -= 25
+                        self.assertGreaterEqual(raw["teamOur"]["goldNum"], 0)
                         built.append(number)
                     else:
+                        self.assertEqual(len(before.weapons()), 3,
+                                         "walls still follow three observed rockets")
                         first_wall = first_wall or number
                         actor["backpack"].remove("stone")
                     raw["teamOur"]["roles"].append(unit(1000 + number*10 + int(key), name, p["x"], p["y"]))
                 elif action == "collect":
-                    self.assertEqual(len(built), 3)
                     first_collect = first_collect or number
                     p = cmd["targetPos"][0]
                     name = next(z["neutralType"] for z in raw["mapInfo"]["zones"] if z["pos"] == p)
+                    if name != "stone":
+                        self.assertEqual(len(before.weapons()), 3)
                     actor["backpack"].append(name)
                 elif action in ("sell", "buy"):
                     self.assertTrue(opening_done, "economy must wait for observed fortifications")
@@ -181,7 +186,7 @@ class OpeningDefenseTests(unittest.TestCase):
                 break
         self.assertTrue(opening_done)
         self.assertEqual(len(built), 3)
-        self.assertLess(max(built), first_collect)
+        self.assertLess(max(built), first_wall)
         self.assertLess(first_collect, first_wall)
         self.assertEqual(raw["teamOur"]["goldNum"], 0)
 

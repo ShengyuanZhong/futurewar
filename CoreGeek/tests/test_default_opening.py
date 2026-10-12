@@ -67,10 +67,11 @@ class DefaultOpeningTests(unittest.TestCase):
                                 actor["backpack"].remove("stone")
                             raw["teamOur"]["roles"].append(unit(10000 + number*10 + int(key), name, point.x, point.y))
                         elif action == "collect":
-                            self.assertEqual(len(before.weapons()), 3, "finish all three rockets before mining")
                             point = cmd["targetPos"][0]
                             name = next(z["neutralType"] for z in raw["mapInfo"]["zones"] if z["pos"] == point)
                             if name != "stone":
+                                self.assertEqual(len(before.weapons()), 3,
+                                                 "ordinary economy still follows the rocket opening")
                                 missing = len(Settings().build_cells(before, 'wall')) - len(before.walls())
                                 self.assertGreaterEqual(sum(w.backpack.count('stone') for w in before.workers()), missing)
                             trace.append((number, "collect"))
@@ -79,7 +80,7 @@ class DefaultOpeningTests(unittest.TestCase):
                     self.fail(f"default opening failed to finish before night: {trace}")
                 self.assertEqual([kind for _, kind in trace if kind != "collect"][:3], ["rocket"]*3)
                 self.assertTrue(any(kind == "wall" for _, kind in trace))
-                self.assertLess(max(n for n, kind in trace if kind == "rocket"), min(n for n, kind in trace if kind == "collect"))
+                self.assertLess(max(n for n, kind in trace if kind == "rocket"), min(n for n, kind in trace if kind == "wall"))
                 self.assertLess(min(n for n, kind in trace if kind == "collect"), min(n for n, kind in trace if kind == "wall"))
                 self.assertEqual(raw["teamOur"]["goldNum"], 0)
 

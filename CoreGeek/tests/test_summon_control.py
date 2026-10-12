@@ -196,6 +196,12 @@ class SummonControlTests(unittest.TestCase):
         raw['phaseTask'] = 'active task'; s, plan = strategy(raw, memory); s.run()
         self.assertNotEqual(plan.commands.get('502', {}).get('action'), 'buy')
         raw['phaseTask'] = ''; memory = finished_tasks(attempts=2)
+        # The remaining task must actually be available and fit the day.
+        # Exhausted points now close the itinerary and release the earned raid.
+        raw['teamOur']['playerTasks'] = [dict(taskType='自进化类1',
+            taskPosition=Pos(3,9).dump(),isValid=True,coldDownRounds=0,
+            timeoutRounds=12,goldReward=120,scoreReward=10)]
+        raw['mapInfo']['zones'].append(dict(neutralType='challengerTaskPoint1',pos=Pos(3,9).dump()))
         s, plan = strategy(raw, memory); s.run()
         self.assertNotEqual(plan.commands.get('502', {}).get('action'), 'buy')
 

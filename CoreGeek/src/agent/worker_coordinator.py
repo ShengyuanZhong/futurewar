@@ -78,6 +78,12 @@ class WorkerCoordinator:
 
     def move_to(self, role, goals, kind='travel', target=None, allowed=None, allow_risk=False):
         goals = set(goals) - self.claimed_goals(role)
+        if kind.startswith('build:'):
+            # Unbuilt sites are legal transit cells, but a builder must stop
+            # beside its target rather than occupy a different planned site.
+            # Keep this separate from route obstacles: reserving the entire
+            # future enclosure trapped both opening workers in real logs.
+            goals -= set(self.s.construction_walls()) | set(self.s.layout.tower_sites)
         if allowed is not None:
             goals &= allowed
         route = self.s.route(role,allowed)

@@ -139,7 +139,9 @@ class BossRaid:
 
     def tasks_finished(self):
         return (self.turn.day==1 and self.turn.is_day and not self.turn.phase_task
-                and (finished_count(self.memory)>=FIRST_DAY_LIMIT or not self.s.settings.enable_tasks))
+                and (finished_count(self.memory)>=FIRST_DAY_LIMIT
+                     or self.memory.task_schedule.get('itinerary_closed',False)
+                     or not self.s.settings.enable_tasks))
 
     def successful_tasks(self):
         return success_count(self.memory)
@@ -180,7 +182,12 @@ class BossRaid:
         return self.s.settings.enable_boss_raid and self.tasks_finished()
 
     def diagnostic(self):
+        role = next(iter(self.turn.alive((PIONEER,))),None)
         return dict(round=self.turn.round_no,is_day=self.turn.is_day,
+            pioneer=dict(id=role.unit_id,pos=role.pos,health=role.health,
+                command=self.plan.commands.get(str(role.unit_id))) if role else None,
+            tasks=[dict(kind=t.kind,pos=t.pos,valid=t.valid,cooldown=t.cooldown,timeout=t.timeout) for t in self.turn.tasks],
+            task_itinerary_closed=self.memory.task_schedule.get('itinerary_closed',False),
             attempted_tasks=len(task_attempts(self.memory)),
             finished_tasks=finished_count(self.memory),task_schedule=self.memory.task_schedule,
             successful_tasks=self.successful_tasks(),active_task=bool(self.turn.phase_task),
@@ -200,26 +207,39 @@ class BossRaid:
         return min(role.backpack.count(BOSS_ORDER),
                    max(0, self.state['acquired_count']-self.state['deployed_count']))
 
-    def shop_trip(self, role, use_count=1):
-        if use_count in self.trip:
-            return self.trip[use_count]
+    def shop_trip(self, role, use_count=1, start=None):
+        """Budget a real route through the shop, uses and return to the guns.
+
+        ``start`` forecasts the final task's completion position without
+        modifying the live actor or the strategy's current-position route cache.
+        """
+        key = (role.unit_id,role.pos if start is None else start,use_count,start is not None)
+        if key in self.trip:
+            return self.trip[key]
         control = self.s.control_position(role)
         if control is None:
             return None
         shops = [p for p, kind in self.turn.zones.items() if kind == 'weaponShop']
-        route = self.s.route(role)
+        if start is None:
+            route = self.s.route(role)
+        else:
+            moved = replace(role,pos=start)
+            simulated = replace(self.turn,ours=tuple(moved if u.unit_id==role.unit_id else u for u in self.turn.ours))
+            route = Routes(simulated,moved,self.s.movement_reserved(role))
         options = []
         for post in adjacent_cells(self.turn, shops):
             if post not in route.cost:
                 continue
             moved = replace(role, pos=post)
             simulated = replace(self.turn, ours=tuple(moved if u.unit_id == role.unit_id else u for u in self.turn.ours))
-            back = Routes(simulated, moved, self.s.movement_reserved(role)).cost.get(control, 10_000)
+            back = Routes(simulated, moved, self.s.movement_reserved(role)).cost.get(control)
+            if back is None:
+                continue
             total = route.cost[post] + 1 + use_count + back + self.s.settings.return_margin
-            if total <= self.turn.daylight_left:
+            if start is not None or total <= self.turn.daylight_left:
                 options.append((total, route.cost[post], post))
-        self.trip[use_count] = min(options) if options else None
-        return self.trip[use_count]
+        self.trip[key] = min(options) if options else None
+        return self.trip[key]
 
     def budget_reserve(self):
         role = next(iter(self.turn.alive((PIONEER,))),None)
@@ -252,7 +272,7 @@ class BossRaid:
                 if scouted:
                     pos = scouted_spawn_position(self.turn,self.s.settings,
                         self.memory.enemy_structures.values(),used,failed,
-                        self.memory.raid_scouts.get('surveyed',()))
+                        self.memory.raid_scouts.get('surveyed',()),self.memory.enemy_weapon_sites)
                 else:
                     # Purchase feasibility only. Actual use must wait for the
                     # scout and use the observed layout, never this template.

@@ -1,12 +1,12 @@
 # CoreGeek 参赛 Agent
 
-当前程序版本为 v1.2.9：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后其余11块侧后墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回墙内，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
+当前程序版本为 v1.2.10：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后其余11块侧后墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回墙内，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
 
 此目录可作为参赛程序目录提交。沿用示例的 `main3.py`、`src/agent/protocol.py`、`grid.py`、`brain.py`；HTTP 处理与跨回合协作放在 `app`。新增代码无第三方运行依赖。
 
 历史v1.2.8通过569项回归、320份合成压力及四种布局520次跨帧HTTP检查；证据见[验证报告](../reports/VALIDATION-v1.2.8.md)，未运行新官方对局。历史v1.2.7的529项回归、80份合成压力及跨帧HTTP证据保留在[历史报告](../reports/VALIDATION-v1.2.7.md)。
 
-v1.2.9更新[首日三任务与三券](docs/FIRST_DAY_V129.md)：固定尝试任务1→任务2→任务1，按实际冷却等待第三次，全部三次结束后按成功次数冻结0～3张BOSS券；用券仍等真实侦察和当前视野。己方采用[17墙镜像蓝图与白天入口](docs/HOME_LAYOUT_V129.md)，夜前封回完整图；BOSS清完炮手后可清除基地射线首个挡路炮，无已知炮台且原地能打基地时优先原地可射的基地旁角色，详见[攻城策略](docs/ROBOT_SIEGE_V129.md)。
+v1.2.10根据bug_log1/bug_log2修复[首日挂机与购券死锁](docs/OPENING_BUG_V1210.md)：未建墙可通行，只为炮位和明确施工目标预留；空闲工人并行采石，观测三炮后再造墙。开拓者仍尝试任务1→任务2→任务1；剩余任务的完整时限与购券/召唤/回防预算不足时，明确关闭行程并按真实成功次数采购0～3张，不虚构第三次任务。安全捣乱鬼的当前视野可以满足侦察准入，确认炮位持久记忆，工人仍等墙构造就绪后离家。己方[17墙镜像蓝图与白天入口](docs/HOME_LAYOUT_V129.md)、[BOSS攻城优先级](docs/ROBOT_SIEGE_V129.md)保持。当前验证仅覆盖第一天。
 
 历史v1.2.8增加[真实布局侦察与阵型召唤](docs/LAYOUT_SCOUTING.md)：非留守工人在三炮及可建原墙实际完成后立即探路，不再等L2火箭和修包。敌基地/墙全局可见，炮台及普通角色受视野限制，BOSS没有视野。布局通过真实三炮或12格武器圈累计扫描确认；实际用券还需活侦察工人就近、当前普通共享视野覆盖共同操炮位及可见炮手。按实测炮阵选择合法出生点，利用45度缺口、直射或一堵墙突破，并维持第一夜视野。购券仍在两任务结束后按成功数冻结0/1/2张，只有use等待侦察；火箭升级采购等购券尝试之后。缺口留守、任务prompt、普通升级及经济路线保持。首日完整时序见[FIRST_DAY_PLAN](docs/FIRST_DAY_PLAN.md)。
 
@@ -76,7 +76,7 @@ python main3.py 8080 --config config.local.json
 
 默认无需配置文件即可开局建造。`allow_base_surroundings=true`在2×2基地外第一圈武器、第二圈墙的合法范围内生成17墙、后排三炮和P位，白天实际开一堵后上墙、夜前封回，右侧镜像；显式配置也不能越圈建造。
 
-需要自定义时，可在layouts中填写各阵营相对基地左上角的`{x,y}`偏移、source及verified:true，优先覆盖默认布局。旧模板的未核验空坐标不会阻止默认建造。`loadout`为`["rocket","rocket","rocket"]`；默认先造三炮，再采石建墙。详见[开发文档](docs/DEVELOPMENT.md)。
+需要自定义时，可在layouts中填写各阵营相对基地左上角的`{x,y}`偏移、source及verified:true，优先覆盖默认布局。旧模板的未核验空坐标不会阻止默认建造。`loadout`为`["rocket","rocket","rocket"]`；默认先造三炮，空闲工人并行采石，观测三炮后建墙。详见[开发文档](docs/DEVELOPMENT.md)。
 
 从旧版升级时，已存在的外部配置会覆盖新默认值，需要把其中的`loadout`同步改成三个rocket后重启。已有旧炮不会被自动拆除替换。
 
@@ -179,7 +179,7 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | 同上 | `damage_for(turn, tower, target, health)` | 计算单发预计伤害字典 |
 | 同上 | `choose_targets(turn, tower, expected_health, deadline=inf)` | 火箭按占用中心Σ(分/当前HP)最大选点、三级2+1；符合数量/范围后更新预测HP |
 | [src/agent/gap_defense.py](src/agent/gap_defense.py) | `WallGapDefense(strategy).worker/imp/other_walls_ready` | 合法墙施工、工人守缺口、捣乱鬼待命和真实死亡后的接替 |
-| [src/agent/boss_raid.py](src/agent/boss_raid.py) | `BossRaid(strategy).pioneer(role)` | Task1→Task2→Task1三次结束后按独立成功数买0～3张；真实侦察门通过后按炮阵逐张用券、回防 |
+| [src/agent/boss_raid.py](src/agent/boss_raid.py) | `BossRaid(strategy).pioneer(role)` | Task1→Task2→Task1结束或预算关闭行程后按真实成功数买0～3张；真实侦察门通过后按炮阵逐张用券、回防 |
 | [src/agent/robot_raider.py](src/agent/robot_raider.py) | `RobotRaider(strategy).decide(robot)` | 第一夜BOSS清炮手、单墙突破、基地首挡路炮清障与原位基地旁角色判断 |
 | [src/agent/raid_diagnostics.py](src/agent/raid_diagnostics.py) | `RaidDiagnostics(strategy).set/event/finish` | 复用观测和路径检查，记录目标、移动/攻击反馈与最终指令；字段/参数见[诊断说明](docs/ROBOT_DIAGNOSTICS.md) |
 | [src/agent/first_night_defense.py](src/agent/first_night_defense.py) | `FirstNightDefense(strategy).closed/construction_ready/prepared/worker` | 区分实际墙完整和其它墙完成；先保留BOSS费用，再首日补给/回防，见[当前接口](docs/GAP_DEFENSE.md) |
@@ -231,4 +231,4 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 
 0.4.2接入用户提供的`print_log.py`格式：每个新回合记录`[TASK-DEBUG]`，完整打印phaseTask、llmResp、lastCmdResult、本轮prompt和executeCmd。stderr为默认输出，具体映射见[任务日志](docs/TASK_LOGGING.md)。
 
-当前版本已通过625项回归、320份合成压力与1105次本地HTTP检查，详情见[验证报告](../reports/VALIDATION-v1.2.9.md)，本轮未运行新官方对局。
+当前验证仅覆盖第一天，见[首日验证报告](../reports/VALIDATION-v1.2.10.md)。v1.2.9的全量回归为历史证据；本轮未运行新官方对局。

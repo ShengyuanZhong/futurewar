@@ -38,6 +38,8 @@ class RobotRaider:
                 self.memory.enemy_structures.pop(uid, None)
         for unit in current.values():
             if unit.kind in kinds and unit.health > 0:
+                if unit.kind in TOWER_TYPES:
+                    self.memory.enemy_weapon_sites[unit.pos] = unit.kind
                 for uid, remembered in list(self.memory.enemy_structures.items()):
                     if uid != unit.unit_id and remembered.pos == unit.pos:
                         self.memory.enemy_structures.pop(uid)

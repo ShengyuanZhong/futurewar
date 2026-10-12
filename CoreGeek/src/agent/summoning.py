@@ -101,16 +101,19 @@ def enemy_layout_weapons(turn, remembered=()):
     return tuple(sorted(known.values(), key=lambda u: (u.pos, u.unit_id)))
 
 
-def enemy_layout_ready(turn, remembered=(), surveyed=()):
+def enemy_layout_ready(turn, remembered=(), surveyed=(), confirmed_sites=()):
     """Three observed guns exhaust the cap; fewer require a surveyed ring.
 
     ``surveyed`` contains cells that actually entered ordinary friendly sight,
     not robot sight or cells assumed visible merely because walls are global.
+    ``confirmed_sites`` preserves real weapon-site knowledge across destruction
+    and rebuilding; those historical sites are not live guns or obstructions.
     Continued live coverage is separately checked by the observer controller.
     """
     cells = enemy_weapon_cells(turn)
     weapons = enemy_layout_weapons(turn, remembered)
-    return bool(cells) and (len(weapons) >= 3 or cells <= set(surveyed))
+    confirmed = set(confirmed_sites) & cells
+    return bool(cells) and (len(weapons) >= 3 or len(confirmed) >= 3 or cells <= set(surveyed))
 
 
 def layout_operator_positions(turn, remembered=()):
@@ -180,7 +183,7 @@ def _breach_cost(turn, wall_free, start, target, remembered):
     return sum(ceil(w.health / 40) for w in hits) if hits else None
 
 
-def scouted_spawn_candidates(turn, settings, remembered=(), pending=(), failed=(), surveyed=()):
+def scouted_spawn_candidates(turn, settings, remembered=(), pending=(), failed=(), surveyed=(), confirmed_sites=()):
     """Rank legal cells using observed layout, including mirror/rotation cases.
 
     Prefer a stationary shot at a visible cannon crew or an inferred common
@@ -190,7 +193,7 @@ def scouted_spawn_candidates(turn, settings, remembered=(), pending=(), failed=(
     summon cells but are ranked last because the spawn would be displaced.
     """
     remembered = tuple(remembered)
-    if not enemy_layout_ready(turn, remembered, surveyed):
+    if not enemy_layout_ready(turn, remembered, surveyed, confirmed_sites):
         return ()
     base = enemy_base_position(turn)
     if base is None:
@@ -259,7 +262,7 @@ def scouted_spawn_candidates(turn, settings, remembered=(), pending=(), failed=(
     return tuple(pos for _, pos in sorted(scored))
 
 
-def scouted_spawn_position(turn, settings, remembered=(), pending=(), failed=(), surveyed=()):
+def scouted_spawn_position(turn, settings, remembered=(), pending=(), failed=(), surveyed=(), confirmed_sites=()):
     """First ranked scouted cell; callers pass pending first-BOSS cells."""
-    candidates = scouted_spawn_candidates(turn, settings, remembered, pending, failed, surveyed)
+    candidates = scouted_spawn_candidates(turn, settings, remembered, pending, failed, surveyed, confirmed_sites)
     return candidates[0] if candidates else None

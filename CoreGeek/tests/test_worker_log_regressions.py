@@ -79,7 +79,7 @@ class WorkerLogRegressionTests(unittest.TestCase):
         else:
             self.fail(f'log1-style supply/clear-site loop: {visited}')
 
-    def test_build_route_never_uses_another_missing_wall_as_a_stand(self):
+    def test_builder_goal_avoids_future_sites_without_blocking_transit(self):
         for mirrored in (False, True):
             raw = drawing_request(mirrored, built=True, round_no=25)
             raw['teamOur']['roles'][2].update(pos=point(10, 5, mirrored).dump(), backpack=['stone']*6)
@@ -88,11 +88,13 @@ class WorkerLogRegressionTests(unittest.TestCase):
             s.run()
             sites = set(s.missing_walls()) | set(s.layout.tower_sites)
             for w in s.turn.workers():
-                self.assertFalse((set(s.route(w).cost) - {w.pos}) & sites)
+                job = s.coordinator.job(w)
+                if job.get('kind', '').startswith('build:') and job.get('moving'):
+                    self.assertNotIn(job['goal'], sites)
             for uid in (501, 504):
                 cmd = plan.commands.get(str(uid), {})
                 if cmd.get('action') == 'move':
-                    self.assertNotIn(Pos.load(cmd['targetPos'][0]), sites)
+                    self.assertNotIn(Pos.load(cmd['targetPos'][0]), s.turn.occupied_cells())
 
     def test_spawn_on_planned_site_can_leave_then_finish_delivery(self):
         raw = log_layout();raw['teamOur']['roles'][2]['pos'] = {'x':31, 'y':7}
@@ -131,12 +133,15 @@ class WorkerLogRegressionTests(unittest.TestCase):
             else:
                 self.fail('two builders failed to restore all 17 walls by night')
 
-    def test_diagnostic_routes_keep_planned_sites_blocked(self):
+    def test_diagnostic_routes_only_block_actual_walls(self):
         raw = log_layout()
+        raw['teamOur']['roles'].append(unit(700, 'wall', 29, 7))
         s, _ = strategy(raw)
         worker = s.turn.workers()[0]
-        reserved = set(s.missing_walls()) | set(s.layout.tower_sites) | {s.layout.operator_pos}
-        self.assertFalse((set(s.coordinator.diagnostic_route(worker).cost)-{worker.pos}) & reserved)
+        route = s.coordinator.diagnostic_route(worker)
+        self.assertNotIn(Pos(29, 7), route.cost)
+        self.assertIn(Pos(30, 7), route.cost)
+        self.assertNotIn(s.layout.operator_pos, route.cost)
         self.assertEqual(s.coordinator.reserved(), s.movement_reserved(worker))
 
     def test_oscillation_is_detected_separately_from_no_movement(self):
@@ -157,13 +162,16 @@ class WorkerLogRegressionTests(unittest.TestCase):
         self.assertNotIn(501, memory.worker_tasks)
 
     def test_clear_site_logs_actual_destination_and_movement_state(self):
-        raw = log_layout();raw['teamOur']['roles'][2]['pos']={'x':31,'y':7}
+        raw = log_layout()
+        raw['teamOur']['roles'] = [r for r in raw['teamOur']['roles'] if r['roleType'] != 'rocket']
+        raw['teamOur']['goldNum'] = 75
+        raw['teamOur']['roles'][2]['pos'] = {'x':32, 'y':10}
         s, plan = strategy(raw); s.run()
         job = s.memory.worker_tasks[501]
         self.assertEqual(job['kind'], 'clear_site')
         self.assertTrue(job['moving'])
         self.assertEqual(job['goal'], Pos.load(plan.commands['501']['targetPos'][0]))
-        self.assertEqual(job['position'], Pos(31,7))
+        self.assertEqual(job['position'], Pos(32,10))
 
     def test_service_log_separates_position_goal_command_and_feedback(self):
         from app.service.turn_service import TurnService

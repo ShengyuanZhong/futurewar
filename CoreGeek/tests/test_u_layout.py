@@ -71,7 +71,6 @@ class ULayoutTests(unittest.TestCase):
                         if action == "move":
                             actor["pos"] = target.dump()
                         elif action == "collect":
-                            self.assertEqual(len(before.weapons()), 3)
                             self.assertEqual(before.zones[target], "stone")
                             actor["backpack"].append("stone")
                             trace.append((number, "stone"))
@@ -92,7 +91,7 @@ class ULayoutTests(unittest.TestCase):
                 self.assertEqual({w.pos for w in final.weapons()}, {point(x, y, mirrored) for x, y in ROCKETS})
                 self.assertEqual(final.gold, 0)
                 self.assertGreaterEqual(sum(kind == "stone" for _, kind in trace), 17)
-                self.assertLess(max(n for n, kind in trace if kind == "rocket"), min(n for n, kind in trace if kind == "stone"))
+                self.assertLess(max(n for n, kind in trace if kind == "rocket"), min(n for n, kind in trace if kind == "wall"))
                 self.assertLess(min(n for n, kind in trace if kind == "stone"), min(n for n, kind in trace if kind == "wall"))
 
     def test_exact_drawing_and_horizontal_mirror_independent_of_team(self):

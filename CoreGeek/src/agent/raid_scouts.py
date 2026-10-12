@@ -112,8 +112,12 @@ class RaidScouts:
         self.state['surveyed_count'] = len(self.state['surveyed'] & cells)
         guns = self.known_weapons()
         self.state['weapons'] = [(w.unit_id,w.kind,w.pos) for w in guns]
+        self.state['weapon_sites'] = sorted(self.memory.enemy_weapon_sites)
+        # Buildings cannot be removed as walls can: confirmed locations remain
+        # useful even after sight is lost or a destroyed cannon is rebuilt.
+        # Keep this separate from live buildings used for obstruction/attacks.
         self.state['layout_ready'] = enemy_layout_ready(self.turn,
-            self.memory.enemy_structures.values(),self.state['surveyed'])
+            self.memory.enemy_structures.values(),self.state['surveyed'],self.memory.enemy_weapon_sites)
 
     def operator_cells(self):
         guns = self.known_weapons()
@@ -127,17 +131,31 @@ class RaidScouts:
         if not cells:
             cells = set(station_footprint(self.base))
         worker_near = bool(worker and any(distance(worker.pos,p) <= SIGHT for p in enemy_weapon_cells(self.turn)))
+        worker_available = bool(worker and len(self.turn.workers()) >= 2
+            and worker.unit_id != self.s.gap_guard.worker_id
+            and not (self.s.day_gate.enabled and worker.unit_id==self.s.day_gate.worker_id))
+        catchers = [u for u in self.turn.enemies if u.health>0 and u.kind in CONTROLLABLE_TYPES]
+        imps = [u for u in self.turn.imps()
+                if u.unit_id != self.s.gap_guard.imp_id
+                and all(distance(u.pos,enemy.pos) >= 3 for enemy in catchers)
+                and any(distance(u.pos,p)<=SIGHT for p in enemy_weapon_cells(self.turn))]
+        # The IMP is already a genuine shared sight source. Do not wait for a
+        # travelling worker when the safe IMP covers the real operator cells.
+        imp_ready = any(all(distance(imp.pos,p)<=SIGHT for p in cells) for imp in imps)
+        observer_ready = bool(worker_available and worker_near or imp_ready)
         uncovered = {p for p in cells if not self.seen(p)}
         base_visible = any(u.kind=='station' and u.health>0 for u in self.turn.enemies)
         reason = ('enemy_base_unconfirmed' if not base_visible else
                   'waiting_for_walls' if not self.state['walls_ready'] else
-                  'no_live_scout' if not worker or len(self.turn.workers()) < 2 or worker.unit_id == self.s.gap_guard.worker_id
-                      or (self.s.day_gate.enabled and worker.unit_id==self.s.day_gate.worker_id) else
-                  'scout_travelling' if not worker_near else
+                  'no_live_scout' if not worker_available and not imps else
+                  'scout_travelling' if not observer_ready else
                   'layout_incomplete' if not self.state['layout_ready'] else
                   'operator_out_of_sight' if uncovered else 'ready')
         self.state.update(operator_cells=sorted(cells),uncovered_operators=sorted(uncovered),
-                          worker_near=worker_near,summon_ready=reason=='ready',readiness_reason=reason)
+                          worker_near=worker_near,imp_ready=imp_ready,
+                          observer_ids=([worker.unit_id] if worker_available and worker_near else [])
+                              + ([imp.unit_id for imp in imps if all(distance(imp.pos,p)<=SIGHT for p in cells)]),
+                          summon_ready=reason=='ready',readiness_reason=reason)
 
     def summon_ready(self):
         return bool(self.active and self.state.get('summon_ready'))
@@ -215,8 +233,20 @@ class RaidScouts:
         reserved.update(p for u in self.memory.enemy_structures.values() if u.health>0
                         for p in self.turn.footprint(u))
         if role.kind==IMP:
-            reserved.update(p for u in self.turn.enemies if u.health>0 and u.kind in CONTROLLABLE_TYPES
-                            for p in u.pos.neighbours())
+            # Keep two cells from catchers along the entire route, not merely
+            # at the final post. A visible enemy can move one cell next turn.
+            catchers = [u for u in self.turn.enemies if u.health>0 and u.kind in CONTROLLABLE_TYPES]
+            risk = min((distance(role.pos,u.pos) for u in catchers),default=10_000)
+            # An enemy may approach an established post, or the IMP may revive
+            # beside one. Allow only an immediate step that strictly increases
+            # the closest-catcher distance: 1 -> 2, then next frame 2 -> 3.
+            # Do not remove building/spawn/lane reservations with this exception.
+            exits = {p for p in role.pos.neighbours()
+                     if risk<3 and min((distance(p,u.pos) for u in catchers),default=10_000)>max(1,risk)}
+            reserved.update(Pos(x,y) for u in catchers
+                for x in range(max(0,u.pos.x-2),min(self.turn.width,u.pos.x+3))
+                for y in range(max(0,u.pos.y-2),min(self.turn.height,u.pos.y+3))
+                if Pos(x,y) not in exits)
         return Routes(self.turn,role,reserved,self.s.danger if role.kind!=IMP else None)
 
     def observe_from(self, role):
@@ -226,9 +256,12 @@ class RaidScouts:
             if role.kind==IMP:
                 enemies = [u for u in self.turn.enemies if u.health>0 and u.kind in CONTROLLABLE_TYPES]
                 risk = min((distance(role.pos,u.pos) for u in enemies),default=10_000)
+                excluded = self.s.movement_reserved(role) | self.spawn_cells() | self.attack_lanes()
+                excluded.update(p for u in self.memory.enemy_structures.values() if u.health>0
+                                for p in self.turn.footprint(u))
                 cells = [p for p in role.pos.neighbours() if self.turn.land(p)
-                         and p not in self.turn.blocked(role) | self.plan.reserved
-                         and min((distance(p,u.pos) for u in enemies),default=10_000)>risk]
+                         and p not in self.turn.blocked(role) | self.plan.reserved | excluded
+                         and min((distance(p,u.pos) for u in enemies),default=10_000)>max(1,risk)]
                 if risk<3 and cells:
                     self.plan.add(role.unit_id,move_command(max(cells,key=lambda p:
                         (min(distance(p,u.pos) for u in enemies),-distance(p,self.preferred(role)),p))))
@@ -275,5 +308,5 @@ class RaidScouts:
 
     def diagnostic(self):
         return {key:self.state.get(key) for key in ('round','worker_id','home_worker_id','worker_status',
-            'walls_ready','surveyed_count','weapon_cells','weapons','layout_ready','operator_cells',
-            'worker_near','uncovered_operators','summon_ready','readiness_reason','posts')}
+            'walls_ready','surveyed_count','weapon_cells','weapons','weapon_sites','layout_ready','operator_cells',
+            'worker_near','imp_ready','observer_ids','uncovered_operators','summon_ready','readiness_reason','posts')}

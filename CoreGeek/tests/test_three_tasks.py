@@ -141,7 +141,8 @@ class ThreeTaskTests(unittest.TestCase):
         s,plan = strategy(raw,memory,Settings(enable_news=False))
         self.assertFalse(s.task(next(u for u in s.turn.controllable() if u.kind=='pioneer')))
         self.assertEqual(finished_count(memory),2)
-        self.assertFalse(s.boss_raid.tasks_finished())
+        self.assertTrue(s.boss_raid.tasks_finished())
+        self.assertTrue(memory.task_schedule['itinerary_closed'])
 
     def test_three_confirmed_coupons_use_different_positions_without_rebuy(self):
         raw,truth = three_task_request(38,near=True)

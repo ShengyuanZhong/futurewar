@@ -1,5 +1,6 @@
 """Deterministic baseline strategy, separated from transport and LLM execution."""
 from collections import Counter
+from dataclasses import replace
 import time
 from .actions import SUMMON_ITEMS, ActionPlan
 from .combat import choose_targets
@@ -46,13 +47,30 @@ class Strategy:
         self.raid_scouts = RaidScouts(self)
 
     def movement_reserved(self, role: Unit | None = None) -> set[Pos]:
-        """Use the same future sites in paths, yields and site clearance."""
+        """Reserve gun slots and actual construction appointments, not an empty wall ring."""
         reserved = set(self.plan.reserved)
+        reserved.update(self.goals)
         reserved.update(self.layout.tower_sites)
-        reserved.update(self.construction_walls())
+        # The pioneer acts first: retain the workers' live construction
+        # appointments from the last frame so it does not enter their targets.
+        workers = {w.unit_id:w for w in self.turn.workers()}
+        for uid, job in self.memory.worker_tasks.items():
+            worker = workers.get(uid)
+            target, kind = job.get('target'),job.get('kind','')
+            if worker is None or job.get('round',0)<self.turn.round_no-1 or not isinstance(target,Pos):
+                continue
+            if ((kind=='build:wall' and 'stone' in worker.backpack and target in self.construction_walls())
+                    or (kind=='build:rocket' and self.plan.gold>=25 and self.plan.tower_count<3
+                        and target in self.layout.tower_sites)):
+                reserved.add(target)
         guard = getattr(self,'gap_guard',None)
-        if role is not None and guard and guard.enter_gap(role):
-            reserved.discard(guard.gap)
+        if role is not None and guard and guard.gap is not None:
+            if guard.enter_gap(role):
+                reserved.discard(guard.gap)
+            elif guard.active_role(role):
+                # The standby IMP must not use the body worker's breach as a
+                # shortcut before the actual takeover condition is observed.
+                reserved.add(guard.gap)
         if (role is None or role.kind != PIONEER) and self.layout.operator_pos is not None:
             reserved.add(self.layout.operator_pos)
         if role is not None and role.unit_id == self.memory.raid_scouts.get('worker_id'):
@@ -129,10 +147,12 @@ class Strategy:
                     continue
                 if (self.turn.day==1 and self.turn.is_day and self.settings.enable_tasks
                         and not self.boss_raid.tasks_finished()):
-                    # Complete both task attempts before shopping, treasure
-                    # trips or other optional pioneer work on the first day.
+                    # Resolve the Task1 -> Task2 -> Task1 itinerary before
+                    # shopping. An unavailable or over-budget task closes
+                    # the itinerary, without inventing a completed attempt.
                     if not self.task(role):
-                        self.move_to_control(role)
+                        if not self.boss_raid.pioneer(role):
+                            self.move_to_control(role)
                     continue
                 # Preserve the opening budget; tasks can earn money without spending it.
                 if self.opening_stage() in ("complete", "unconfigured"):
@@ -294,7 +314,13 @@ class Strategy:
         return "walls"
 
     def clear_build_cell(self, role: Unit) -> bool:
-        sites = set(self.layout.tower_sites) | set(self.construction_walls())
+        # Crossing an empty blueprint cell is legal. Only yield when someone
+        # can actually build here; blanket clearance caused repeated retreats.
+        walls = set(self.construction_walls())
+        sites = self.movement_reserved(role) & (walls | set(self.layout.tower_sites))
+        builders = [w for w in self.turn.workers() if 'stone' in w.backpack]
+        if walls == {role.pos} and any(distance(w.pos, role.pos)<=1 for w in builders):
+            sites.add(role.pos)
         if role.kind != PIONEER and self.layout.operator_pos is not None:
             sites.add(self.layout.operator_pos)
         if role.pos not in sites:
@@ -315,8 +341,12 @@ class Strategy:
         if stage in ("complete", "unconfigured"):
             return False
         if stage == "towers":
-            if not self.build_weapon(role) and self.plan.gold < 25 and self.plan.tower_count < 3:
-                if not self.sell(role):
+            if not self.build_weapon(role):
+                # A teammate may own the remaining build position or this
+                # turn's gold. Start gathering material instead of idling.
+                if self.plan.gold < 25 and self.plan.tower_count < 3 and self.sell(role):
+                    return True
+                if not self.mine(role, need_stone=True):
                     self.mine(role)
             return True
         quota = self.stone_targets().get(role.unit_id, 0)
@@ -632,6 +662,8 @@ class Strategy:
                          self.turn.round_no < agent.self_evolve_abandon_tick else None)
         first_day = self.turn.day==1
         if first_day:
+            if self.memory.task_schedule.get('itinerary_closed'):
+                return False
             attempts = task_attempts(self.memory)
             pending = next(((key,job) for key,job in attempts if not job['finished']),None)
             if pending:
@@ -657,16 +689,46 @@ class Strategy:
                      and (self.turn.day,t.pos.x,t.pos.y) not in self.memory.task_points_attempted
                      and (t.pos.x,t.pos.y)!=cooling_point]
         tasks.sort(key=lambda t: (self.cost(role, self.turn.task_cells(t)), -t.gold - t.score, t.pos))
+        failures = []
         for task in tasks:
             cells = self.turn.task_cells(task)
-            travel = self.cost(role, cells)
+            route = self.route(role)
+            goal = route.nearest(adjacent_cells(self.turn,cells))
+            if goal is None:
+                failures.append('route_blocked')
+                continue
+            travel = route.cost[goal]
             duration = task.timeout if task.timeout > 0 else 15
             control = self.control_position(role)
-            return_trip = distance(task.pos, control) if control else 0
+            if control is None:
+                failures.append('route_blocked')
+                continue
+            moved = replace(role,pos=goal)
+            simulated = replace(self.turn,ours=tuple(moved if u.unit_id==role.unit_id else u for u in self.turn.ours))
+            return_trip = Routes(simulated,moved,self.movement_reserved(role)).cost.get(control)
+            if return_trip is None:
+                failures.append('route_blocked')
+                continue
             wait = max(0,task.cooldown)
             if (task.pos.x,task.pos.y)==cooling_point:
                 wait = max(wait,agent.self_evolve_abandon_tick-self.turn.round_no)
-            if max(travel,wait) + duration + return_trip + self.settings.return_margin > self.turn.daylight_left:
+            if not task.valid and not wait:
+                failures.append('point_unavailable')
+                continue
+            tail = return_trip + self.settings.return_margin
+            if first_day and step == len(TASK_SEQUENCE)-1 and self.settings.enable_boss_raid:
+                # Protect the paid-for raid window when scheduling the third
+                # task; its official cooldown can consume the remaining day.
+                trip = self.boss_raid.shop_trip(role,min(3,self.boss_raid.successful_tasks()+1),start=goal)
+                if trip is not None:
+                    tail = trip[0]
+            required = max(travel,wait) + duration + tail
+            if first_day:
+                self.memory.task_schedule.update(travel_rounds=travel,cooldown=wait,timeout_rounds=duration,
+                    return_rounds=return_trip,tail_rounds=tail,required_rounds=required,
+                    daylight_left=self.turn.daylight_left,point=task.pos)
+            if required > self.turn.daylight_left:
+                failures.append('insufficient_daylight')
                 if first_day:
                     self.memory.task_schedule['status'] = 'insufficient_daylight'
                 continue
@@ -686,6 +748,17 @@ class Strategy:
                 return accepted
             if self.travel(role, cells):
                 return True
+            failures.append('route_blocked')
+        if first_day:
+            if 'route_blocked' in failures:
+                # A temporary occupied route is not a failed task or a reason
+                # to walk home and then reverse direction on the next frame.
+                self.memory.task_schedule['status'] = 'route_blocked'
+                self.plan.used.add(role.unit_id)
+                return True
+            self.memory.task_schedule.update(itinerary_closed=True,closed_round=self.turn.round_no,
+                status='itinerary_closed',close_reason='insufficient_daylight' if 'insufficient_daylight' in failures else 'point_unavailable',
+                unattempted_steps=list(TASK_SEQUENCE[step:]))
         return False
 
     def treasure(self, role: Unit) -> bool:
