@@ -10,7 +10,7 @@ from app.service.llm_service import LLMService
 from app.service.memory import GameMemory
 from app.service.task_service import TaskService
 from app.service.turn_service import Session, TurnService
-from tests.test_summon_control import ORDER, finished_tasks, raid_request
+from tests.test_summon_control import ORDER, finished_tasks, provide_scout, raid_request
 from tests.test_worker_safety import strategy
 
 
@@ -29,6 +29,7 @@ def memory_for(raw, attempted=True, successes=2):
 
 
 def policy_step(raw, memory, settings=None):
+    provide_scout(raw,memory)
     turn = Turn.load(raw)
     memory.observe(turn)
     # Isolate the deployment ledger from the separately tested first-night budget.
@@ -342,7 +343,8 @@ class DualBossTests(unittest.TestCase):
         raw = raid_request(); raw['teamOur']['goldNum'] = 240
         service = TurnService(Settings(enable_news=False,enable_first_night_defense=False))
         key = (raw['teamOur']['teamId'], raw['teamOur']['type'])
-        service.sessions[key] = Session(memory=memory_for(raw))
+        memory = memory_for(raw); provide_scout(raw,memory)
+        service.sessions[key] = Session(memory=memory)
         response = service.decide(copy.deepcopy(raw))
         self.assertEqual(response['roleCommandMap'][str(PIONEER_ID)]['num'], 2)
         next_frame(raw, True, held=2, gold=0)

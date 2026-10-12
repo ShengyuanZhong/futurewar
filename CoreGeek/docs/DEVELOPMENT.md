@@ -1,5 +1,11 @@
 # 开发与维护文档
 
+v1.2.8，2026-10-12：[真实布局侦察与阵型召唤](LAYOUT_SCOUTING.md)将首日视野分为12格武器圈累计扫描/实际三炮确认，以及当前活工人就近、普通共享视野覆盖操炮位的use门。工人墙完立即出发，不等L2火箭或维修包。两任务成功数0／1／2购券与升级采购时点沿用[FIRST_DAY_PLAN.md](FIRST_DAY_PLAN.md)，购买不等视野；实际召唤按观察布局选位并保持首夜视野。已确认部署增加单墙破除后直射可见炮手的分支，合法墙攻击不计作无效绕路。任务prompt、缺口优先、普通升级和经济路径保持。
+
+模块修改入口、函数参数、状态和诊断见[LAYOUT_SCOUTING.md](LAYOUT_SCOUTING.md)，实际验证见[v1.2.8报告](../../reports/VALIDATION-v1.2.8.md)。以下版本更新保留为历史记录，架构主体仍适用；首日条件以当前入口为准。
+
+## 历史开发记录
+
 v1.2.7，2026-10-12：[首日固定流程](FIRST_DAY_PLAN.md)区分接取/结束/成功，先两任务后冻结BOSS数量，再解锁火箭采购；45度机器人射线按对角线格判墙。`TaskService`仅新增结束记录，不改用户任务控制器与prompt。下面保留历史开发记录，当前首日时序以本补充为准。
 
 v1.2.6新增[合法建造、缺口接力与BOSS采购](GAP_DEFENSE.md)。`WallGapDefense`替代并删除`SiteBlockade`，只建合法原墙，工人夜间占缺口、imp接替。`FirstNightDefense`管理首日补给，但BOSS不再依赖物理封墙和补给完成；工人采购先保留BOSS预算。静态建筑记忆和攻击反馈恢复继续保留。
@@ -46,10 +52,11 @@ CoreGeek/
 │   ├── wall_guard.py             # 阈值维修、双人值守与轮流采购
 │   ├── gap_defense.py            # 仅合法墙、工人缺口阻挡和imp死亡接力
 │   ├── combat.py                 # 目标与弹道估值、旧匹配接口
+│   ├── summoning.py              # 实测炮阵/共同操炮格、合法召唤位与八方向开火代价
 │   ├── robot_raider.py           # 第一夜BOSS优先攻击当前炮旁活工人/先锋
 │   ├── robot_combat.py           # 原生机器人射程、目标和墙遮挡
 │   ├── raid_diagnostics.py       # 只读决策采样与前轮位置/HP事实关联
-│   ├── raid_scouts.py            # 首夜双观察者分工、实测准备和imp避捕
+│   ├── raid_scouts.py            # 真实布局扫描、当前视野门和固定侦察身份
 │   ├── first_night_defense.py    # 首日守家供应、预算、回防与内侧巡修
 │   ├── brain.py                  # 白天/夜间策略编排
 │   └── server.py                 # 旧 server 导入兼容

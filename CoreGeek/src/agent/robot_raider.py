@@ -1,6 +1,7 @@
 """First-night BOSS controllers: find cannon operators, then siege their base."""
 import math
 import time
+from dataclasses import replace
 from .grid import Routes
 from .protocol import CONTROLLABLE_TYPES, PIONEER, WORKER, TOWER_TYPES, Pos, distance, move_command
 from .robot_combat import blocking_wall, clear_attack, enemy_at, planning_building_blocker
@@ -163,7 +164,8 @@ class RobotRaider:
         victim = enemy_at(self.turn,target) if action == 'attack' else None
         self.memory.robot_raids[robot.robot_id] = dict(old, round=self.turn.round_no, stage=stage,
             position=robot.pos, target=target, goal=goal, action=action,
-            attack_target_id=victim.unit_id if victim else None, **extra)
+            attack_target_id=victim.unit_id if victim else None,
+            attack_health=victim.health if victim else None, **extra)
         job = self.memory.robot_raids[robot.robot_id]
         job['pursuit_kind'] = extra.get('pursuit_kind', stage)
         if job['pursuit_kind'] == 'controller':
@@ -259,6 +261,33 @@ class RobotRaider:
         return base is not None and self.pursue(robot, points, route, 'base',
                 fallback_reason=fallback,siege_until=focus,pursuit_rounds=0)
 
+    def direct_crew_breach(self, robot, target):
+        """A scouted firing line needs one wall, rather than an extended detour.
+
+        Only the actual currently visible crew qualifies. Removing that one
+        wall must leave a clear range-three shot; no inferred target is fired on.
+        """
+        if not 0 < distance(robot.pos,target.pos) <= 3:
+            return None
+        wall = blocking_wall(self.turn,robot.pos,target.pos)
+        if wall is None or not self.clear_shot(robot,wall.pos):
+            return None
+        old = self.memory.robot_raids.get(robot.robot_id,{})
+        if self.firing_key(wall.pos,robot.pos) in old.get('failed_firing',{}):
+            return None
+        unblocked = replace(self.turn,
+            ours=tuple(u for u in self.turn.ours if u.unit_id != wall.unit_id),
+            enemies=tuple(u for u in self.turn.enemies if u.unit_id != wall.unit_id))
+        remembered = tuple(u for u in self.memory.enemy_structures.values() if u.unit_id != wall.unit_id)
+        if (blocking_wall(unblocked,robot.pos,target.pos) is not None
+                or planning_building_blocker(unblocked,robot.pos,target.pos,remembered) is not None):
+            return None
+        # Do not start a full wall demolition too late to reach the crew.
+        remaining = 130-(self.turn.round_no-1)%130
+        if math.ceil(wall.health/max(1,robot.attack_power))+1 > remaining:
+            return None
+        return wall
+
     def decide(self, robot):
         self.diag.set(robot,called=True)
         if (not self.s.settings.enable_boss_raid or self.turn.day != 1 or self.turn.is_day
@@ -287,8 +316,14 @@ class RobotRaider:
         budget = self.s.settings.boss_controller_max_walk
         consecutive = old.get('round') == self.turn.round_no - 1
         chasing = old.get('pursuit_kind',old.get('stage')) == 'controller'
-        confirmed_attack = (old.get('stage') == 'controller' and old.get('action') == 'attack'
-                            and self.turn.action_results.get(str(robot.robot_id)) is True)
+        previous_target = enemy_at(self.turn,old['target']) if old.get('target') is not None else None
+        progress = (self.turn.action_results.get(str(robot.robot_id)) is True
+                    or (previous_target is not None and old.get('attack_health') is not None
+                        and previous_target.health < old['attack_health']))
+        scouted_raid = bool(self.memory.boss_raid.get('scouted_spawns'))
+        confirmed_attack = (old.get('action')=='attack' and progress
+                            and (old.get('stage')=='controller'
+                                 or (scouted_raid and chasing and old.get('stage')=='breach')))
         effort = old.get('pursuit_rounds',0)+1 if consecutive and chasing and not confirmed_attack else 0
         self.diag.set(robot,controller_budget=budget,pursuit_rounds=effort,
                       controller_budget_remaining=max(0,budget-effort),
@@ -351,6 +386,18 @@ class RobotRaider:
                 return self.pursue(robot,[target.pos],route,'controller',controller_id=target.unit_id,
                     controller_pos=target.pos,controller_health=target.health,last_seen=self.turn.round_no,
                     pursuit_rounds=effort)
+            # Successful wall attacks are work, not four rounds of aimless
+            # chasing. A single blocking wall can take 25 shots at level one.
+            if scouted_raid and not focused and effort < budget:
+                direct_breaches = [(wall.health,target.unit_id != old.get('controller_id'),target.unit_id,target,wall)
+                    for _,target,_ in choices if (wall := self.direct_crew_breach(robot,target)) is not None]
+                if direct_breaches:
+                    _,_,_,target,wall = min(direct_breaches,key=lambda entry:entry[:3])
+                    self.diag.set(robot,selected=entity(target),breach_wall=entity(wall),
+                                  breach_reason='single_wall_before_visible_crew')
+                    return self.issue(robot,'attack',wall.pos,robot.pos,'breach',pursuit_kind='controller',
+                        controller_id=target.unit_id,controller_pos=target.pos,controller_health=target.health,
+                        last_seen=self.turn.round_no,pursuit_rounds=effort)
             # A low-cost opening through a nearby wall can still beat a long detour.
             if not focused and effort<budget:
                 breaches = []

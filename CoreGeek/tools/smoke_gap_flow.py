@@ -67,8 +67,8 @@ def observations():
     role(evening,504)['pos'] = Pos(38,23).dump()
     night = json.loads(json.dumps(evening))
     night.update(roundNo=71,lastRoundRoleActionResults={})
-    night['teamEnemy']['roles'] = [unit(990,'station',33,25),unit(991,'rocket',35,25,health=1000),
-                                 unit(992,'pioneer',36,25,health=500)]
+    night['teamEnemy']['roles'] = [u for u in night['teamEnemy']['roles'] if u['id']!=901]
+    night['teamEnemy']['roles'].append(unit(992,'pioneer',36,25,health=500))
     boss = robot(31035,37,25,health=800,roleType='bossRobot',targetTeam='defender')
     night['teamOur']['summonRobotList'] = [boss]
     night['robot']['roles'] = [boss]

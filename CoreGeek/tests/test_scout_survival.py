@@ -76,7 +76,9 @@ class ScoutSurvivalTests(unittest.TestCase):
 
     def test_dead_enemy_does_not_force_a_safe_observer_to_move(self):
         raw = scout_request(35, enemy_base=Pos(9,22))
-        role(raw, IMP_ID)['pos'] = {'x':8, 'y':24}
+        # The survey is complete; the holding post is outside the construction square.
+        raw['teamEnemy']['roles'] += [unit(901+i,'rocket',8,y) for i,y in enumerate((21,22,23))]
+        role(raw, IMP_ID)['pos'] = {'x':6, 'y':25}
         raw['teamEnemy']['roles'].append(unit(900, 'worker', 8,23, health=0))
         s, plan = self.setup(raw)
         imp = next(iter(s.turn.imps()))

@@ -1,5 +1,13 @@
 # BOSS逐回合诊断日志
 
+v1.2.8，2026-10-12。新增`raid_survey`结构化日志，将累计已扫武器格与当前操炮位视野分开记录。`first_day_policy`新增`scout_ready/summon_window_closed`；用券决定出现`waiting_for_scout:* / using_scouted_order / scout_window_expired`，`boss_raid.scouted_spawns`仅在实际用券反馈确认后记录。当前策略、参数和位置以[布局侦察与阵型召唤](LAYOUT_SCOUTING.md)及[首日流程](FIRST_DAY_PLAN.md)为准，结果见[本地验证报告](../../reports/VALIDATION-v1.2.8.md)。
+
+`raid_survey`重点查看`walls_ready/worker_id/home_worker_id`、`surveyed_count/weapon_cells`、`weapons/layout_ready`、`worker_near/operator_cells/uncovered_operators`、`summon_ready/readiness_reason`及`posts.mode=survey/watch`。基地墙全局可见不是炮阵已知，BOSS位置不能使scan完成。`robot_diagnostic.breach_reason=single_wall_before_visible_crew`表示真实可见炮手前的单墙路径；合法攻击反馈不能证明伤害或击杀。与当前`raid_scout / boss_raid / robot_observation`按回合关联定位。
+
+## v1.2.3–v1.2.7历史记录
+
+下述版本时序用于追溯；固定后排观察、补给完成再派工人与旧财富购券规则不是v1.2.8当前策略。日志字段的现存通用含义可继续参考，当前新增字段以上文及源码为准。
+
 v1.2.7更新：[首日固定流程](FIRST_DAY_PLAN.md)覆盖旧购券条件。必须结束两任务后按成功数定额，升级采购等购券尝试之后；45度机器人射线忽略旁墙擦角。捣乱鬼与缺口职责不变，本页历史时序仅作回溯。
 
 v1.2.6更新：旧临时绕墙、以完整封墙限制BOSS采购及优先扣首夜补给的策略已撤销。当前缺口接力与采购优先级见[GAP_DEFENSE.md](GAP_DEFENSE.md)；本页旧版本记录用于回溯。

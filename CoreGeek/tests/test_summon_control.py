@@ -4,6 +4,7 @@ import unittest
 from agent.actions import ActionPlan
 from agent.combat import choose_targets
 from agent.protocol import Pos, Turn, build_command, distance, move_command
+from agent.summoning import enemy_weapon_cells, layout_operator_positions
 from agent.worker_safety import robot_danger
 from app.config import Settings
 from app.service.memory import GameMemory
@@ -34,6 +35,44 @@ def finished_tasks(successes=1):
     return GameMemory(opening_complete=True,task_points_attempted=points,
                       task_points_finished=points.copy(),
                       task_points_succeeded=set(sorted(points)[:successes]))
+
+
+def provide_scout(raw, memory=None):
+    """Real three-gun observations and an alive, separate worker supplying sight.
+
+    Ledger tests opt in explicitly; night targeting fixtures stay unchanged.
+    """
+    turn = Turn.load(raw)
+    enemy = next(u for u in turn.enemies if u.kind == 'station')
+    right = 2*enemy.pos.x+1 > turn.width-1
+    gun_x = enemy.pos.x+(2 if right else -1)
+    guns = [u for u in turn.enemies if u.health > 0 and u.kind in ('rocket','gatling','railgun')]
+    ring = enemy_weapon_cells(turn)
+    preferred = [Pos(gun_x,enemy.pos.y+dy) for dy in (1,-1,0)]
+    occupied = turn.occupied_cells()
+    for pos in preferred+sorted(ring):
+        if len(guns) >= 3:
+            break
+        if pos not in ring or pos in occupied or not turn.land(pos):
+            continue
+        gun = unit(1990+len(guns),'rocket',pos.x,pos.y,health=1000)
+        raw['teamEnemy']['roles'].append(gun)
+        guns.append(Turn.load(raw).enemies[-1])
+        occupied = Turn.load(raw).occupied_cells()
+    turn = Turn.load(raw)
+    operators = layout_operator_positions(turn)
+    worker = next(u for u in raw['teamOur']['roles'] if u['id'] == 504)
+    occupied = turn.occupied_cells()-{Pos.load(worker['pos'])}
+    preferred_post = Pos(enemy.pos.x+(3 if right else -2),enemy.pos.y-2)
+    posts = [Pos(x,y) for x in range(turn.width) for y in range(turn.height)
+             if turn.land(Pos(x,y)) and Pos(x,y) not in occupied
+             and all(distance(Pos(x,y),p)<=4 for p in operators)
+             and any(distance(Pos(x,y),p)<=4 for p in ring)]
+    assert len(guns) == 3 and posts, 'scout fixture requires three real guns and sight'
+    worker['pos'] = min(posts,key=lambda p:(distance(p,preferred_post),p)).dump()
+    if memory is not None:
+        memory.raid_scouts.update(worker_id=504,home_worker_id=501)
+    return raw
 
 
 class SummonControlTests(unittest.TestCase):
@@ -152,7 +191,8 @@ class SummonControlTests(unittest.TestCase):
     def test_carried_order_summons_in_the_enemy_rear_then_returns(self):
         raw = raid_request(); raw['teamOur']['roles'][1]['backpack'] = [ORDER]
         raw['teamOur']['goldNum'] = 0
-        memory = finished_tasks(); s, plan = strategy(raw, memory); s.run()
+        memory = finished_tasks(); provide_scout(raw,memory)
+        s, plan = strategy(raw, memory); s.run()
         command = plan.commands['502']
         self.assertEqual(command['action'], 'use')
         self.assertEqual(command['name'], ORDER)

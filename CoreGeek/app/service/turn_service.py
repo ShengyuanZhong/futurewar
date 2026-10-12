@@ -111,6 +111,8 @@ class TurnService:
             if memory.raid_scouts:
                 LOGGER.info('raid_scout round=%s state=%s commands=%s', turn.round_no, memory.raid_scouts,
                             {str(uid): plan.commands.get(str(uid)) for uid in memory.raid_scouts.get('posts', {})})
+                LOGGER.info('raid_survey %s',json.dumps(plain(strategy.raid_scouts.diagnostic()),
+                    ensure_ascii=False,separators=(',',':')))
             if turn.day == 1:
                 LOGGER.info('first_day_policy %s',json.dumps(plain(strategy.boss_raid.diagnostic()),
                     ensure_ascii=False,separators=(',',':')))

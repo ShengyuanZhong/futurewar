@@ -1,0 +1,1022 @@
+{
+  "scope": "Synthetic verdicts and LLM answers over a real HTTP process; no sandbox or official match",
+  "requests": 36,
+  "results": [
+    {
+      "case": "none",
+      "outcomes": [
+        false,
+        false
+      ],
+      "round": 1,
+      "status": 200,
+      "elapsed_ms": 110.111,
+      "commands": {
+        "502": {
+          "action": "acceptTask"
+        },
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 7,
+              "y": 8
+            }
+          ]
+        },
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 4,
+              "y": 8
+            }
+          ]
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 37,
+              "y": 22
+            }
+          ]
+        }
+      },
+      "prompt_chars": 0
+    },
+    {
+      "case": "none",
+      "outcomes": [
+        false,
+        false
+      ],
+      "round": 2,
+      "status": 200,
+      "elapsed_ms": 87.45,
+      "commands": {
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      },
+      "prompt_chars": 2458
+    },
+    {
+      "case": "none",
+      "outcomes": [
+        false,
+        false
+      ],
+      "round": 3,
+      "status": 200,
+      "elapsed_ms": 75.949,
+      "commands": {
+        "502": {
+          "action": "submitAnswer",
+          "taskAnswer": "fixture-result-3"
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      },
+      "prompt_chars": 0
+    },
+    {
+      "case": "none",
+      "outcomes": [
+        false,
+        false
+      ],
+      "round": 4,
+      "status": 200,
+      "elapsed_ms": 76.965,
+      "commands": {
+        "502": {
+          "action": "acceptTask"
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      },
+      "prompt_chars": 0
+    },
+    {
+      "case": "none",
+      "outcomes": [
+        false,
+        false
+      ],
+      "round": 5,
+      "status": 200,
+      "elapsed_ms": 76.839,
+      "commands": {
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      },
+      "prompt_chars": 2458
+    },
+    {
+      "case": "none",
+      "outcomes": [
+        false,
+        false
+      ],
+      "round": 6,
+      "status": 200,
+      "elapsed_ms": 82.768,
+      "commands": {
+        "502": {
+          "action": "submitAnswer",
+          "taskAnswer": "fixture-result-6"
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      },
+      "prompt_chars": 0
+    },
+    {
+      "case": "none",
+      "outcomes": [
+        false,
+        false
+      ],
+      "round": 7,
+      "status": 200,
+      "elapsed_ms": 73.549,
+      "commands": {
+        "502": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 6
+            }
+          ]
+        },
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 7
+            }
+          ]
+        }
+      },
+      "prompt_chars": 0
+    },
+    {
+      "case": "none",
+      "outcomes": [
+        false,
+        false
+      ],
+      "round": 8,
+      "status": 200,
+      "elapsed_ms": 66.089,
+      "commands": {
+        "502": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 4,
+              "y": 7
+            }
+          ]
+        },
+        "501": {
+          "action": "buy",
+          "name": "WeaponUpgradeVoucher1",
+          "num": 1
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 36,
+              "y": 21
+            }
+          ]
+        }
+      },
+      "prompt_chars": 0
+    },
+    {
+      "case": "first",
+      "outcomes": [
+        true,
+        false
+      ],
+      "round": 1,
+      "status": 200,
+      "elapsed_ms": 122.119,
+      "commands": {
+        "502": {
+          "action": "acceptTask"
+        },
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 7,
+              "y": 8
+            }
+          ]
+        },
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 4,
+              "y": 8
+            }
+          ]
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 37,
+              "y": 22
+            }
+          ]
+        }
+      },
+      "prompt_chars": 0
+    },
+    {
+      "case": "first",
+      "outcomes": [
+        true,
+        false
+      ],
+      "round": 2,
+      "status": 200,
+      "elapsed_ms": 70.712,
+      "commands": {
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      },
+      "prompt_chars": 2458
+    },
+    {
+      "case": "first",
+      "outcomes": [
+        true,
+        false
+      ],
+      "round": 3,
+      "status": 200,
+      "elapsed_ms": 76.345,
+      "commands": {
+        "502": {
+          "action": "submitAnswer",
+          "taskAnswer": "fixture-result-3"
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      },
+      "prompt_chars": 0
+    },
+    {
+      "case": "first",
+      "outcomes": [
+        true,
+        false
+      ],
+      "round": 4,
+      "status": 200,
+      "elapsed_ms": 77.854,
+      "commands": {
+        "502": {
+          "action": "acceptTask"
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      },
+      "prompt_chars": 0
+    },
+    {
+      "case": "first",
+      "outcomes": [
+        true,
+        false
+      ],
+      "round": 5,
+      "status": 200,
+      "elapsed_ms": 78.396,
+      "commands": {
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      },
+      "prompt_chars": 2458
+    },
+    {
+      "case": "first",
+      "outcomes": [
+        true,
+        false
+      ],
+      "round": 6,
+      "status": 200,
+      "elapsed_ms": 75.886,
+      "commands": {
+        "502": {
+          "action": "submitAnswer",
+          "taskAnswer": "fixture-result-6"
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      },
+      "prompt_chars": 0
+    },
+    {
+      "case": "first",
+      "outcomes": [
+        true,
+        false
+      ],
+      "round": 7,
+      "status": 200,
+      "elapsed_ms": 114.895,
+      "commands": {
+        "502": {
+          "action": "buy",
+          "name": "BossRobotSummonOrder",
+          "num": 1
+        },
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 7
+            }
+          ]
+        }
+      },
+      "prompt_chars": 0
+    },
+    {
+      "case": "first",
+      "outcomes": [
+        true,
+        false
+      ],
+      "round": 8,
+      "status": 200,
+      "elapsed_ms": 126.482,
+      "commands": {
+        "502": {
+          "action": "use",
+          "name": "BossRobotSummonOrder",
+          "targetPos": [
+            {
+              "x": 37,
+              "y": 25
+            }
+          ]
+        },
+        "501": {
+          "action": "buy",
+          "name": "WeaponUpgradeVoucher1",
+          "num": 1
+        }
+      },
+      "prompt_chars": 0
+    },
+    {
+      "case": "first",
+      "outcomes": [
+        true,
+        false
+      ],
+      "round": 9,
+      "status": 200,
+      "elapsed_ms": 82.188,
+      "commands": {
+        "502": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 6
+            }
+          ]
+        },
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 4,
+              "y": 6
+            }
+          ]
+        }
+      },
+      "prompt_chars": 0
+    },
+    {
+      "case": "second",
+      "outcomes": [
+        false,
+        true
+      ],
+      "round": 1,
+      "status": 200,
+      "elapsed_ms": 110.193,
+      "commands": {
+        "502": {
+          "action": "acceptTask"
+        },
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 7,
+              "y": 8
+            }
+          ]
+        },
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 4,
+              "y": 8
+            }
+          ]
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 37,
+              "y": 22
+            }
+          ]
+        }
+      },
+      "prompt_chars": 0
+    },
+    {
+      "case": "second",
+      "outcomes": [
+        false,
+        true
+      ],
+      "round": 2,
+      "status": 200,
+      "elapsed_ms": 71.739,
+      "commands": {
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      },
+      "prompt_chars": 2458
+    },
+    {
+      "case": "second",
+      "outcomes": [
+        false,
+        true
+      ],
+      "round": 3,
+      "status": 200,
+      "elapsed_ms": 77.351,
+      "commands": {
+        "502": {
+          "action": "submitAnswer",
+          "taskAnswer": "fixture-result-3"
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      },
+      "prompt_chars": 0
+    },
+    {
+      "case": "second",
+      "outcomes": [
+        false,
+        true
+      ],
+      "round": 4,
+      "status": 200,
+      "elapsed_ms": 77.872,
+      "commands": {
+        "502": {
+          "action": "acceptTask"
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      },
+      "prompt_chars": 0
+    },
+    {
+      "case": "second",
+      "outcomes": [
+        false,
+        true
+      ],
+      "round": 5,
+      "status": 200,
+      "elapsed_ms": 77.117,
+      "commands": {
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      },
+      "prompt_chars": 2458
+    },
+    {
+      "case": "second",
+      "outcomes": [
+        false,
+        true
+      ],
+      "round": 6,
+      "status": 200,
+      "elapsed_ms": 77.766,
+      "commands": {
+        "502": {
+          "action": "submitAnswer",
+          "taskAnswer": "fixture-result-6"
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      },
+      "prompt_chars": 0
+    },
+    {
+      "case": "second",
+      "outcomes": [
+        false,
+        true
+      ],
+      "round": 7,
+      "status": 200,
+      "elapsed_ms": 118.095,
+      "commands": {
+        "502": {
+          "action": "buy",
+          "name": "BossRobotSummonOrder",
+          "num": 1
+        },
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 7
+            }
+          ]
+        }
+      },
+      "prompt_chars": 0
+    },
+    {
+      "case": "second",
+      "outcomes": [
+        false,
+        true
+      ],
+      "round": 8,
+      "status": 200,
+      "elapsed_ms": 125.583,
+      "commands": {
+        "502": {
+          "action": "use",
+          "name": "BossRobotSummonOrder",
+          "targetPos": [
+            {
+              "x": 37,
+              "y": 25
+            }
+          ]
+        },
+        "501": {
+          "action": "buy",
+          "name": "WeaponUpgradeVoucher1",
+          "num": 1
+        }
+      },
+      "prompt_chars": 0
+    },
+    {
+      "case": "second",
+      "outcomes": [
+        false,
+        true
+      ],
+      "round": 9,
+      "status": 200,
+      "elapsed_ms": 82.951,
+      "commands": {
+        "502": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 6
+            }
+          ]
+        },
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 4,
+              "y": 6
+            }
+          ]
+        }
+      },
+      "prompt_chars": 0
+    },
+    {
+      "case": "both",
+      "outcomes": [
+        true,
+        true
+      ],
+      "round": 1,
+      "status": 200,
+      "elapsed_ms": 112.502,
+      "commands": {
+        "502": {
+          "action": "acceptTask"
+        },
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 7,
+              "y": 8
+            }
+          ]
+        },
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 4,
+              "y": 8
+            }
+          ]
+        },
+        "504": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 37,
+              "y": 22
+            }
+          ]
+        }
+      },
+      "prompt_chars": 0
+    },
+    {
+      "case": "both",
+      "outcomes": [
+        true,
+        true
+      ],
+      "round": 2,
+      "status": 200,
+      "elapsed_ms": 71.152,
+      "commands": {
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      },
+      "prompt_chars": 2458
+    },
+    {
+      "case": "both",
+      "outcomes": [
+        true,
+        true
+      ],
+      "round": 3,
+      "status": 200,
+      "elapsed_ms": 76.519,
+      "commands": {
+        "502": {
+          "action": "submitAnswer",
+          "taskAnswer": "fixture-result-3"
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      },
+      "prompt_chars": 0
+    },
+    {
+      "case": "both",
+      "outcomes": [
+        true,
+        true
+      ],
+      "round": 4,
+      "status": 200,
+      "elapsed_ms": 79.124,
+      "commands": {
+        "502": {
+          "action": "acceptTask"
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      },
+      "prompt_chars": 0
+    },
+    {
+      "case": "both",
+      "outcomes": [
+        true,
+        true
+      ],
+      "round": 5,
+      "status": 200,
+      "elapsed_ms": 75.73,
+      "commands": {
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      },
+      "prompt_chars": 2458
+    },
+    {
+      "case": "both",
+      "outcomes": [
+        true,
+        true
+      ],
+      "round": 6,
+      "status": 200,
+      "elapsed_ms": 84.273,
+      "commands": {
+        "502": {
+          "action": "submitAnswer",
+          "taskAnswer": "fixture-result-6"
+        },
+        "501": {
+          "action": "collect",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 9
+            }
+          ]
+        }
+      },
+      "prompt_chars": 0
+    },
+    {
+      "case": "both",
+      "outcomes": [
+        true,
+        true
+      ],
+      "round": 7,
+      "status": 200,
+      "elapsed_ms": 108.472,
+      "commands": {
+        "502": {
+          "action": "buy",
+          "name": "BossRobotSummonOrder",
+          "num": 2
+        },
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 7
+            }
+          ]
+        }
+      },
+      "prompt_chars": 0
+    },
+    {
+      "case": "both",
+      "outcomes": [
+        true,
+        true
+      ],
+      "round": 8,
+      "status": 200,
+      "elapsed_ms": 156.454,
+      "commands": {
+        "502": {
+          "action": "use",
+          "name": "BossRobotSummonOrder",
+          "targetPos": [
+            {
+              "x": 37,
+              "y": 25
+            }
+          ]
+        },
+        "501": {
+          "action": "buy",
+          "name": "WeaponUpgradeVoucher1",
+          "num": 1
+        }
+      },
+      "prompt_chars": 0
+    },
+    {
+      "case": "both",
+      "outcomes": [
+        true,
+        true
+      ],
+      "round": 9,
+      "status": 200,
+      "elapsed_ms": 112.677,
+      "commands": {
+        "502": {
+          "action": "use",
+          "name": "BossRobotSummonOrder",
+          "targetPos": [
+            {
+              "x": 37,
+              "y": 24
+            }
+          ]
+        },
+        "501": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 4,
+              "y": 6
+            }
+          ]
+        }
+      },
+      "prompt_chars": 0
+    },
+    {
+      "case": "both",
+      "outcomes": [
+        true,
+        true
+      ],
+      "round": 10,
+      "status": 200,
+      "elapsed_ms": 84.123,
+      "commands": {
+        "502": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 3,
+              "y": 6
+            }
+          ]
+        },
+        "501": {
+          "action": "use",
+          "name": "WeaponUpgradeVoucher1",
+          "targetPos": [
+            {
+              "x": 5,
+              "y": 6
+            }
+          ]
+        }
+      },
+      "prompt_chars": 0
+    }
+  ],
+  "bind_verified": true,
+  "bash_executed": false
+}

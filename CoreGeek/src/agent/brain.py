@@ -52,6 +52,12 @@ class Strategy:
             reserved.discard(guard.gap)
         if (role is None or role.kind != PIONEER) and self.layout.operator_pos is not None:
             reserved.add(self.layout.operator_pos)
+        if role is not None and role.unit_id == self.memory.raid_scouts.get('worker_id'):
+            reserved.update(p for u in self.memory.enemy_structures.values() if u.health > 0
+                            for p in self.turn.footprint(u))
+            scouts = getattr(self,'raid_scouts',None)
+            if scouts is not None and scouts.active:
+                reserved.update(scouts.spawn_cells() | scouts.attack_lanes())
         return reserved
 
     def route(self, role: Unit, allowed: set[Pos] | None = None) -> Routes:

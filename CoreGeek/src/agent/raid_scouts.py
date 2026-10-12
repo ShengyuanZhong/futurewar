@@ -1,7 +1,9 @@
-"""Day-one hero observers for a summoned BOSS that supplies no sight."""
-from .protocol import CONTROLLABLE_TYPES, IMP, Pos, distance, move_command, station_footprint
+"""Actual first-day layout survey and continuous hero sight; robots have none."""
+from .protocol import CONTROLLABLE_TYPES, IMP, TOWER_TYPES, Pos, distance, move_command, station_footprint
 from .grid import Routes
-from .summoning import enemy_base_position
+from .worker_safety import wall_shelters
+from .summoning import (enemy_base_position, enemy_weapon_cells, enemy_layout_weapons,
+                       enemy_layout_ready, layout_operator_positions)
 
 
 SIGHT = 4
@@ -17,51 +19,56 @@ class RaidScouts:
         if alive_boss:
             self.state['seen_boss'] = True
         enemy = next((u for u in self.turn.enemies if u.kind == 'station'), None)
+        no_orders = (self.memory.boss_raid.get('order_decision_round') is not None
+                     and self.memory.boss_raid.get('target_count') == 0)
+        pending_raid = (self.memory.boss_raid.get('deployed_count',0) > 0
+                        or self.memory.boss_raid.get('status') in ('summon_pending','deployed'))
         self.active = (self.s.settings.enable_boss_raid and self.turn.day == 1
-                       and self.base is not None and not self.state.get('finished')
+                       and self.base is not None and not self.state.get('finished') and not no_orders
+                       and (not self.memory.boss_raid.get('summon_window_closed') or alive_boss or pending_raid)
                        and not (enemy and enemy.health <= 0)
                        and (self.turn.is_day or alive_boss or
-                            (not self.state.get('seen_boss') and self.memory.boss_raid.get('status')
-                             in ('summon_pending', 'deployed'))))
+                            (not self.state.get('seen_boss') and pending_raid)))
         if not self.active:
             finished = (self.turn.day == 1 and self.s.settings.enable_boss_raid
-                        and (self.state.get('finished') or (self.state.get('seen_boss') and not alive_boss)
+                        and (self.state.get('finished') or no_orders
+                             or (self.state.get('seen_boss') and not alive_boss)
                              or (enemy and enemy.health <= 0)))
             self.release(finished)
             return
-        self.state['base'] = self.base
-        self.state['round'] = self.turn.round_no
+        if self.state.get('base') not in (None, self.base):
+            self.state.pop('surveyed', None)
+            self.state.pop('posts', None)
+        self.state.update(base=self.base, round=self.turn.round_no)
         live = {u.unit_id for u in self.turn.controllable()}
         self.state['posts'] = {uid:job for uid,job in self.state.get('posts', {}).items() if uid in live}
         self.state['walls_ready'] = self.walls_ready()
+        self.update_survey()
         workers = self.turn.workers()
         self.state['worker_status'] = ('assigned' if self.state.get('worker_id') is not None else
                                       'waiting_for_walls' if not self.state['walls_ready'] else
                                       'not_enough_workers' if len(workers) < 2 else 'waiting_for_route')
-        # Assign only once, and never replace a dead observer with the sole home worker.
+        # Real wall completion is enough: L2/repair procurement cannot delay sight.
+        # Never take the home/gap worker, or replace a dead scout with the sole guard.
         if (self.state.get('worker_id') is None and len(workers) >= 2
-                and self.state['walls_ready'] and self.turn.is_day
-                and (not self.s.first_defense.enabled or self.s.first_defense.prepared()
-                     or (self.s.gap_guard.gaps and self.s.gap_guard.other_walls_ready()
-                         and self.s.gap_guard.worker_id is not None))):
+                and self.state['walls_ready'] and self.turn.is_day):
             candidates = [w for w in workers if w.unit_id not in
                           (self.s.gap_guard.worker_id,self.s.first_defense.worker_id)]
-            if candidates:
-                choices = []
-                for worker in candidates:
-                    post = self.post(worker)
-                    if post is not None:
-                        cost = self.s.route(worker).cost[post]
-                        # A new mission must reach the observation area by the first night.
-                        if cost <= self.turn.daylight_left:
-                            choices.append((cost, worker.unit_id))
-                if choices:
-                    self.state['worker_id'] = min(choices)[1]
-                    self.state['home_worker_id'] = next(w.unit_id for w in workers
-                                                       if w.unit_id != self.state['worker_id'])
-                    self.state['worker_status'] = 'assigned'
-                else:
-                    self.state['worker_status'] = 'unreachable_or_too_late'
+            choices = []
+            for worker in candidates:
+                post = self.post(worker)
+                if post is not None:
+                    cost = self.scout_route(worker).cost[post]
+                    if cost <= self.turn.daylight_left:
+                        choices.append((cost,worker.unit_id))
+            if choices:
+                self.state['worker_id'] = min(choices)[1]
+                self.state['home_worker_id'] = next(w.unit_id for w in workers
+                                                   if w.unit_id != self.state['worker_id'])
+                self.state['worker_status'] = 'assigned'
+            else:
+                self.state['worker_status'] = 'unreachable_or_too_late'
+        self.refresh_readiness()
 
     def release(self, finished=False):
         for uid, job in list(self.memory.worker_tasks.items()):
@@ -69,14 +76,14 @@ class RaidScouts:
                 self.memory.worker_tasks.pop(uid)
         self.state.clear()
         if finished:
-            self.state.update(finished=True, round=self.turn.round_no)
+            self.state.update(finished=True,round=self.turn.round_no)
 
     def walls_ready(self):
         if self.s.gap_guard.gaps:
             return self.s.gap_guard.other_walls_ready()
         if self.s.first_defense.enabled:
             return self.s.first_defense.closed()
-        cells = self.s.settings.build_cells(self.turn, 'wall')
+        cells = self.s.settings.build_cells(self.turn,'wall')
         return bool(cells) and len(self.turn.weapons()) >= 3 and not self.s.construction_walls()
 
     def is_worker(self, role):
@@ -84,74 +91,133 @@ class RaidScouts:
                 and len(self.turn.workers()) >= 2 and role.unit_id != self.s.gap_guard.worker_id
                 and (not self.turn.is_day or self.state['walls_ready']))
 
+    def known_weapons(self):
+        return enemy_layout_weapons(self.turn,self.memory.enemy_structures.values())
+
+    def seen(self, cell):
+        # Do not use global enemy base/wall visibility or any summoned robot.
+        return any(u.health > 0 and u.kind in CONTROLLABLE_TYPES + TOWER_TYPES + ('station','wall')
+                   and distance(u.pos,cell) <= SIGHT
+                   for u in self.turn.ours)
+
+    def update_survey(self):
+        cells = enemy_weapon_cells(self.turn)
+        self.state.setdefault('surveyed',set()).update(p for p in cells if self.seen(p))
+        self.state['weapon_cells'] = len(cells)
+        self.state['surveyed_count'] = len(self.state['surveyed'] & cells)
+        guns = self.known_weapons()
+        self.state['weapons'] = [(w.unit_id,w.kind,w.pos) for w in guns]
+        self.state['layout_ready'] = enemy_layout_ready(self.turn,
+            self.memory.enemy_structures.values(),self.state['surveyed'])
+
+    def operator_cells(self):
+        guns = self.known_weapons()
+        visible = {u.pos for u in self.turn.enemies if u.health > 0 and u.kind in ('worker','pioneer')
+                   and any(distance(u.pos,w.pos) <= 1 for w in guns)}
+        return visible | set(layout_operator_positions(self.turn,self.memory.enemy_structures.values()))
+
+    def refresh_readiness(self):
+        worker = next((w for w in self.turn.workers() if w.unit_id == self.state.get('worker_id')),None)
+        cells = self.operator_cells()
+        if not cells:
+            cells = set(station_footprint(self.base))
+        worker_near = bool(worker and any(distance(worker.pos,p) <= SIGHT for p in enemy_weapon_cells(self.turn)))
+        uncovered = {p for p in cells if not self.seen(p)}
+        base_visible = any(u.kind=='station' and u.health>0 for u in self.turn.enemies)
+        reason = ('enemy_base_unconfirmed' if not base_visible else
+                  'waiting_for_walls' if not self.state['walls_ready'] else
+                  'no_live_scout' if not worker or len(self.turn.workers()) < 2 or worker.unit_id == self.s.gap_guard.worker_id else
+                  'scout_travelling' if not worker_near else
+                  'layout_incomplete' if not self.state['layout_ready'] else
+                  'operator_out_of_sight' if uncovered else 'ready')
+        self.state.update(operator_cells=sorted(cells),uncovered_operators=sorted(uncovered),
+                          worker_near=worker_near,summon_ready=reason=='ready',readiness_reason=reason)
+
+    def summon_ready(self):
+        return bool(self.active and self.state.get('summon_ready'))
+
     def watch_cells(self):
-        right = 2*self.base.x + 1 > self.turn.width - 1
-        gun_x = self.base.x + (2 if right else -1)
-        guns = {Pos(gun_x, self.base.y+dy) for dy in (-1, 0, 1)}
-        # Template cells guide positioning only; no hidden enemies are invented.
-        guns.update(w.pos for w in self.turn.enemies if w.health > 0
-                    and w.kind in ('rocket', 'gatling', 'railgun'))
-        footprint = set(station_footprint(self.base))
-        # Logs show opponents placing guns on the front side too. This local
-        # observation neighbourhood is a heuristic, not a construction-zone rule.
-        cells = {Pos(x, y) for x in range(self.base.x-2, self.base.x+4)
-                 for y in range(self.base.y-3, self.base.y+3)}
-        cells.update(p for gun in guns for p in gun.neighbours())
-        return {p for p in cells if self.turn.in_bounds(p) and p not in footprint}
+        if not self.state.get('layout_ready'):
+            # Move around the real build ring until all guns, or all empty sites, are known.
+            return set(enemy_weapon_cells(self.turn))-self.state.get('surveyed',set())
+        return self.operator_cells() or set(station_footprint(self.base))
 
     def preferred(self, role):
-        right = 2*self.base.x + 1 > self.turn.width - 1
-        return Pos(self.base.x + (5 if right else -4), self.base.y + (2 if role.kind == IMP else -2))
+        # Historical rear bias is only a tie-breaker; layouts can be on any side.
+        right = 2*self.base.x + 1 > self.turn.width-1
+        return Pos(self.base.x+(5 if right else -4),self.base.y+(2 if role.kind==IMP else -2))
+
+    def spawn_cells(self):
+        cells = set(self.memory.pending_summon_positions) | set(self.plan.summon_positions)
+        cells.update(self.memory.boss_raid.get('spawns',()))
+        if self.memory.boss_raid.get('spawn') is not None:
+            cells.add(self.memory.boss_raid['spawn'])
+        return cells
+
+    def attack_lanes(self):
+        targets = self.operator_cells()
+        if not targets:
+            return set()
+        origins = self.spawn_cells() | {r.pos for r in self.turn.summon_robots if r.health>0}
+        lanes = set()
+        for origin in origins:
+            for target in targets:
+                for x in range(min(origin.x,target.x),max(origin.x,target.x)+1):
+                    for y in range(min(origin.y,target.y),max(origin.y,target.y)+1):
+                        p = Pos(x,y)
+                        if p not in (origin,target) and wall_shelters(origin,target,(p,)):
+                            lanes.add(p)
+        return lanes
 
     def post(self, role):
-        right = 2*self.base.x + 1 > self.turn.width - 1
-        preferred = self.preferred(role)
         targets = self.watch_cells()
-        old = self.state.get('posts', {}).get(role.unit_id, {}).get('goal')
-        claimed = {job['goal'] for uid, job in self.state.get('posts', {}).items() if uid != role.unit_id}
-        spawn_x = self.base.x + (4 if right else -3)
-        excluded = {Pos(spawn_x, self.base.y), Pos(spawn_x, self.base.y-1)}
-        excluded.update(self.memory.pending_summon_positions)
-        excluded.update(self.memory.boss_raid.get('spawns', ()))
-        if self.memory.boss_raid.get('spawn') is not None:
-            excluded.add(self.memory.boss_raid['spawn'])
+        old_job = self.state.get('posts',{}).get(role.unit_id,{})
+        old = old_job.get('goal')
+        mode = 'watch' if self.state.get('layout_ready') else 'survey'
+        claimed = {job['goal'] for uid,job in self.state.get('posts',{}).items() if uid != role.unit_id}
+        excluded = self.spawn_cells() | self.attack_lanes()
         route = self.scout_route(role)
         catchers = [u for u in self.turn.enemies if u.health>0 and u.kind in CONTROLLABLE_TYPES]
         options = []
-        upper = min(self.turn.height-1, self.base.y+2)
-        lower = max(0, self.base.y-2)
-        # Separate upper/lower sectors also keep observers out of the BOSS's forward lane.
         for p in route.cost:
-            if (p in excluded or p in claimed or p in self.plan.reserved or not self.turn.land(p)
-                    or not (p.x > self.base.x+1 if right else p.x < self.base.x)
-                    or not (p.y >= upper if role.kind == IMP else p.y <= lower)
-                    or (role.kind != IMP and self.turn.is_day and route.cost[p] > self.turn.daylight_left)):
+            if p in excluded or p in claimed or p in self.plan.reserved or not self.turn.land(p):
                 continue
-            coverage = sum(distance(p, target) <= SIGHT for target in targets)
+            # Observe from outside the enemy construction square: do not stand
+            # in the cannon crew's gap or block the planned BOSS firing lane.
+            if min(distance(p,cell) for cell in station_footprint(self.base)) <= 2:
+                continue
+            if role.kind != IMP and self.turn.is_day and route.cost[p] > self.turn.daylight_left:
+                continue
+            coverage = sum(distance(p,target) <= SIGHT for target in targets)
             catch_distance = min((distance(p,u.pos) for u in catchers),default=10_000)
-            if role.kind == IMP and catch_distance<=1:
+            if not coverage or (role.kind==IMP and catch_distance<=1):
                 continue
-            if coverage:
-                options.append((role.kind == IMP and catch_distance<3,
-                                -coverage, self.s.danger.get(p, 0), p != old,
-                                distance(p, preferred), route.cost[p], p))
+            # Keep a travelling scan goal while it can still reveal unseen cells.
+            # At a holding post use actual current coverage, not a future move.
+            if (p == old and role.pos != p and old_job.get('mode')==mode
+                    and (role.kind != IMP or catch_distance >= 3)):
+                return p
+            options.append((role.kind==IMP and catch_distance<3,-coverage,
+                            self.s.danger.get(p,0),p!=old,p!=role.pos,
+                            route.cost[p],distance(p,self.preferred(role)),p))
         return min(options)[-1] if options else None
 
     def scout_route(self, role):
-        if role.kind != IMP:
-            return self.s.route(role)
         reserved = self.s.movement_reserved(role)
-        reserved.update(p for u in self.turn.enemies if u.health>0 and u.kind in CONTROLLABLE_TYPES
-                        for p in u.pos.neighbours())
-        return Routes(self.turn,role,reserved)
+        reserved.update(self.spawn_cells() | self.attack_lanes())
+        # Previously seen hidden weapons still block paths until real sight clears them.
+        reserved.update(p for u in self.memory.enemy_structures.values() if u.health>0
+                        for p in self.turn.footprint(u))
+        if role.kind==IMP:
+            reserved.update(p for u in self.turn.enemies if u.health>0 and u.kind in CONTROLLABLE_TYPES
+                            for p in u.pos.neighbours())
+        return Routes(self.turn,role,reserved,self.s.danger if role.kind!=IMP else None)
 
     def observe_from(self, role):
         post = self.post(role)
         if post is None:
-            self.state.setdefault('posts', {})[role.unit_id] = dict(goal=None, status='unreachable',
-                                                                  round=self.turn.round_no)
-            # Do not fall through to a distant mine while a first-night sight mission is active.
-            if role.kind == IMP:
+            self.state.setdefault('posts',{})[role.unit_id] = dict(goal=None,status='unreachable',round=self.turn.round_no)
+            if role.kind==IMP:
                 enemies = [u for u in self.turn.enemies if u.health>0 and u.kind in CONTROLLABLE_TYPES]
                 risk = min((distance(role.pos,u.pos) for u in enemies),default=10_000)
                 cells = [p for p in role.pos.neighbours() if self.turn.land(p)
@@ -163,25 +229,28 @@ class RaidScouts:
             self.plan.used.add(role.unit_id)
             return True
         route = self.scout_route(role)
-        self.state.setdefault('posts', {})[role.unit_id] = dict(goal=post,
-            status='holding' if post == role.pos else 'travelling', round=self.turn.round_no,
-            steps=route.cost[post], ready_by_night=route.cost[post] <= self.turn.daylight_left if self.turn.is_day else None,
-            coverage=sum(distance(post, p) <= SIGHT for p in self.watch_cells()))
-        if role.kind == IMP:
-            self.memory.imp_tasks.pop(role.unit_id, None)
-            if post == role.pos:
+        self.state.setdefault('posts',{})[role.unit_id] = dict(goal=post,
+            status='holding' if post==role.pos else 'travelling',round=self.turn.round_no,
+            mode='watch' if self.state.get('layout_ready') else 'survey',
+            steps=route.cost[post],ready_by_night=route.cost[post]<=self.turn.daylight_left if self.turn.is_day else None,
+            coverage=sum(distance(post,p)<=SIGHT for p in self.watch_cells()))
+        if role.kind==IMP:
+            self.memory.imp_tasks.pop(role.unit_id,None)
+            if post==role.pos:
                 self.plan.used.add(role.unit_id)
                 return True
             step = route.step({post})
             if step is not None:
-                self.plan.add(role.unit_id, move_command(step))
+                self.plan.add(role.unit_id,move_command(step))
             return True
-        self.s.coordinator.job(role).pop('yield_until', None)
-        if post == role.pos:
-            self.s.coordinator.assign(role, 'raid_scout', self.base, post)
+        self.s.coordinator.job(role).pop('yield_until',None)
+        if post==role.pos:
+            self.s.coordinator.assign(role,'raid_scout',self.base,post)
             self.plan.used.add(role.unit_id)
             return True
-        self.s.coordinator.move_to(role, {post}, 'raid_scout', self.base, allow_risk=True)
+        self.s.coordinator.move_to(role,{post},'raid_scout',self.base,allow_risk=True)
+        # No fallback mining can interrupt an active view mission.
+        self.plan.used.add(role.unit_id)
         return True
 
     def imp(self, role):
@@ -190,9 +259,14 @@ class RaidScouts:
     def worker(self, role):
         if not self.active or role.unit_id != self.state.get('worker_id'):
             return False
-        if (len(self.turn.workers()) < 2 or role.unit_id == self.s.gap_guard.worker_id
+        if (len(self.turn.workers())<2 or role.unit_id==self.s.gap_guard.worker_id
                 or (self.turn.is_day and not self.state['walls_ready'])):
-            self.state.get('posts', {}).pop(role.unit_id, None)
-            self.state['worker_status'] = 'home_defense' if len(self.turn.workers()) < 2 else 'paused_for_walls_or_gap'
+            self.state.get('posts',{}).pop(role.unit_id,None)
+            self.state['worker_status'] = 'home_defense' if len(self.turn.workers())<2 else 'paused_for_walls_or_gap'
             return False
         return self.observe_from(role)
+
+    def diagnostic(self):
+        return {key:self.state.get(key) for key in ('round','worker_id','home_worker_id','worker_status',
+            'walls_ready','surveyed_count','weapon_cells','weapons','layout_ready','operator_cells',
+            'worker_near','uncovered_operators','summon_ready','readiness_reason','posts')}

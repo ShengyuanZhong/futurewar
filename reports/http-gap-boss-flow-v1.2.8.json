@@ -1,0 +1,4238 @@
+{
+  "scope": "Synthetic HTTP observations, not an official match simulation",
+  "results": [
+    {
+      "stage": "accept_first",
+      "round": 1,
+      "status": 200,
+      "elapsed_ms": 111.153,
+      "response": {
+        "roleCommandMap": {
+          "502": {
+            "action": "acceptTask"
+          },
+          "505": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 7,
+                "y": 8
+              }
+            ]
+          },
+          "501": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 4,
+                "y": 8
+              }
+            ]
+          },
+          "504": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 37,
+                "y": 22
+              }
+            ]
+          }
+        },
+        "prompt": "",
+        "executeCmd": ""
+      }
+    },
+    {
+      "stage": "prompt_first",
+      "round": 2,
+      "status": 200,
+      "elapsed_ms": 90.324,
+      "response": {
+        "roleCommandMap": {
+          "505": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 7,
+                "y": 8
+              }
+            ]
+          },
+          "501": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 4,
+                "y": 8
+              }
+            ]
+          },
+          "504": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 37,
+                "y": 22
+              }
+            ]
+          }
+        },
+        "prompt": "# 角色\n你是一名在隔离沙盒中工作的任务 Agent。你需要通过 shell/python 探索并完成给定任务，最后输出任务书要求的最终答案。\n\n# 任务描述\nLocal first fixture task.\n\n# 历史交互记录\n（暂无历史）\n\n# 沙盒能力说明\n- 沙盒可执行常见 shell 指令与 python3，无外网，可访问沙盒内 localhost 提供的 HTTP 服务。\n- 每轮只能请求一条命令，结果下一轮以 `cmd_result:` 返回；输出可能被截断，用 `head/tail/grep` 精确定位。\n- 命令结果与已读文件会保留在历史中，不要重复执行已知结果命令、不要整篇重读已读文件（可用 `grep -n` 提取小节）。\n\n# 回合预算（关键约束）\n- 任务限时约 12 回合：已用 1，剩余约 11。\n- 每轮一条命令且结果次轮返回（约 2 回合/条），剩余约 11 回合最多约 5 条命令；用 `&&`/shell 变量/内联脚本合并操作，命令越少越早提交。\n\n# 行动准则\n0. 文件读取：任务书未给出目标文件确切目录时，一律“find 定位 + cat 读取”，禁止凭文件名猜绝对路径、禁止全盘 `find /`（会超时）：\n     f=$(find /tmp /var/tmp /root /home /workspace -maxdepth 8 -type f -iname \"目标文件\" 2>/dev/null | head -1); [ -n \"$f\" ] && echo \"== $f ==\" && cat \"$f\"\n当前阶段：阅读理解。按顺序推进：\n1. 首条命令用“find 定位 + cat 读取”一步读出任务书（`==` 后为真实路径，后续可直接 `cat` 该路径）：\n     f=$(find /tmp /var/tmp /root /home /workspace -maxdepth 6 -name \"task_*.md\" 2>/dev/null | head -1); echo \"== $f ==\"; cat \"$f\"\n   （`==` 后为空则用 `-maxdepth 8 -type f` 重新定位；读完后明确任务目标、接口、答案提交格式。）\n2. 探测环境 → 获取资料/调用接口 → 计算汇总 → 得到最终答案。\n   - HTTP 接口：首次成功前直接输出**完整原始响应体**，不要接 `python3 -c` 过滤（会把 4xx 错误滤成 0 条，浪费两轮）。\n   - 4xx 时以 message 为准立即修正重试：`Missing required parameter: X` → 参数名用 `X`；`Missing 'Authorization' header. Expected format: ...` → 按该格式改认证头；禁止原样重发。\n   - 用 `python3 -c` 处理数据时保留关键输出：总数、首个样本、异常/错误字段。\n   - 解析 JSON 前先输出结构，确认列表与对象类型；仅对列表中的对象调用 `.get`，可用 `isinstance(records, list)` 验证。\n   - 多行 Python 优先使用带引号的 heredoc 写入脚本；注意 heredoc 会占用 stdin，若还要解析 curl 输出，先存文件再读取。\n   - 提交前核对数字/字符串类型，上一任务的 token 或统计值只能作格式参考，不能复用原值。\n   - 工程修复/部署类（含 check 脚本）：读 `spec.md` → 跑 `./check` → 若 exitCode 126（CRLF/权限），先 `sed -i 's/\\r$//' <脚本>` 再跑 → 通过后提交任务书要求的签名 token。\n3. 一旦确认最终答案必须立即输出 final_answer；不要重复验证、不要重读已读文件、不要追加探测。\n4. 修复类任务每次改文件后，下一回合立即复跑 `./check` 确认；输出“全部通过”或 `TOKEN:` 后立即提交。剩余回合不足 3 时禁止再做无验证输出的操作。\n5. 执行出错优先照做自动注入的 `api_diag:` 指令；没有则读错误信息针对性修正，不要盲目整体重试。\n6. 剩余回合 ≤2 且已有关键数据时，直接提交当前最佳答案——完成并提交优于超时无结果。\n\n# 输出协议（只能返回下面两种 JSON 之一，禁止任何其他文字）\nA) 需要执行命令：{\"action\": \"execute_command\", \"command\": \"<shell/python 指令>\"}\nB) 已能确定答案：{\"action\": \"final_answer\", \"answer\": \"<任务要求的答案字符串>\"}\n\n# 提交自检（输出 final_answer 之前逐项核对）\n1. 答案只能来自任务书与 API/命令的真实计算结果，严禁编造、猜测、估算；数据不足宁可先补查再提交。\n2. 提交形式与任务书【提交形式】完全一致：字段名、顺序、嵌套、类型逐一比对，数字保持数字（0 不能写 \"0\"）；名称类字段（如 oldest_era）提交对应名字而非数值。\n3. 若要求“全部/所有”，必须先遍历全量数据（注意分页、limit）再统计，禁止拿部分数据充当全部。\n4. 提交前再次对照任务书【提交形式】原文确认；不一致第一时间修正。\n\n# 格式硬性要求\n- 输出必须是可被 json.loads 一次解析成功的单个 JSON 对象；不要代码块、解释、分析或 markdown。\n- 禁止改写题目要求的 key、枚举值、字符串内容；答错比答慢更不可接受。\n- 每条命令最长约 15 秒，优先用 `&&` 串联减少命令数。",
+        "executeCmd": ""
+      }
+    },
+    {
+      "stage": "submit_first",
+      "round": 3,
+      "status": 200,
+      "elapsed_ms": 92.182,
+      "response": {
+        "roleCommandMap": {
+          "502": {
+            "action": "submitAnswer",
+            "taskAnswer": "first-fixture-result"
+          },
+          "505": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 7,
+                "y": 8
+              }
+            ]
+          },
+          "501": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 4,
+                "y": 8
+              }
+            ]
+          },
+          "504": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 37,
+                "y": 22
+              }
+            ]
+          }
+        },
+        "prompt": "",
+        "executeCmd": ""
+      }
+    },
+    {
+      "stage": "accept_second",
+      "round": 4,
+      "status": 200,
+      "elapsed_ms": 75.426,
+      "response": {
+        "roleCommandMap": {
+          "502": {
+            "action": "acceptTask"
+          },
+          "505": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 7,
+                "y": 8
+              }
+            ]
+          },
+          "501": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 4,
+                "y": 8
+              }
+            ]
+          },
+          "504": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 37,
+                "y": 22
+              }
+            ]
+          }
+        },
+        "prompt": "",
+        "executeCmd": ""
+      }
+    },
+    {
+      "stage": "prompt_second",
+      "round": 5,
+      "status": 200,
+      "elapsed_ms": 65.859,
+      "response": {
+        "roleCommandMap": {
+          "505": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 7,
+                "y": 8
+              }
+            ]
+          },
+          "501": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 4,
+                "y": 8
+              }
+            ]
+          },
+          "504": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 37,
+                "y": 22
+              }
+            ]
+          }
+        },
+        "prompt": "# 角色\n你是一名在隔离沙盒中工作的任务 Agent。你需要通过 shell/python 探索并完成给定任务，最后输出任务书要求的最终答案。\n\n# 任务描述\nLocal second fixture task.\n\n# 历史交互记录\n（暂无历史）\n\n# 沙盒能力说明\n- 沙盒可执行常见 shell 指令与 python3，无外网，可访问沙盒内 localhost 提供的 HTTP 服务。\n- 每轮只能请求一条命令，结果下一轮以 `cmd_result:` 返回；输出可能被截断，用 `head/tail/grep` 精确定位。\n- 命令结果与已读文件会保留在历史中，不要重复执行已知结果命令、不要整篇重读已读文件（可用 `grep -n` 提取小节）。\n\n# 回合预算（关键约束）\n- 任务限时约 12 回合：已用 1，剩余约 11。\n- 每轮一条命令且结果次轮返回（约 2 回合/条），剩余约 11 回合最多约 5 条命令；用 `&&`/shell 变量/内联脚本合并操作，命令越少越早提交。\n\n# 行动准则\n0. 文件读取：任务书未给出目标文件确切目录时，一律“find 定位 + cat 读取”，禁止凭文件名猜绝对路径、禁止全盘 `find /`（会超时）：\n     f=$(find /tmp /var/tmp /root /home /workspace -maxdepth 8 -type f -iname \"目标文件\" 2>/dev/null | head -1); [ -n \"$f\" ] && echo \"== $f ==\" && cat \"$f\"\n当前阶段：阅读理解。按顺序推进：\n1. 首条命令用“find 定位 + cat 读取”一步读出任务书（`==` 后为真实路径，后续可直接 `cat` 该路径）：\n     f=$(find /tmp /var/tmp /root /home /workspace -maxdepth 6 -name \"task_*.md\" 2>/dev/null | head -1); echo \"== $f ==\"; cat \"$f\"\n   （`==` 后为空则用 `-maxdepth 8 -type f` 重新定位；读完后明确任务目标、接口、答案提交格式。）\n2. 探测环境 → 获取资料/调用接口 → 计算汇总 → 得到最终答案。\n   - HTTP 接口：首次成功前直接输出**完整原始响应体**，不要接 `python3 -c` 过滤（会把 4xx 错误滤成 0 条，浪费两轮）。\n   - 4xx 时以 message 为准立即修正重试：`Missing required parameter: X` → 参数名用 `X`；`Missing 'Authorization' header. Expected format: ...` → 按该格式改认证头；禁止原样重发。\n   - 用 `python3 -c` 处理数据时保留关键输出：总数、首个样本、异常/错误字段。\n   - 解析 JSON 前先输出结构，确认列表与对象类型；仅对列表中的对象调用 `.get`，可用 `isinstance(records, list)` 验证。\n   - 多行 Python 优先使用带引号的 heredoc 写入脚本；注意 heredoc 会占用 stdin，若还要解析 curl 输出，先存文件再读取。\n   - 提交前核对数字/字符串类型，上一任务的 token 或统计值只能作格式参考，不能复用原值。\n   - 工程修复/部署类（含 check 脚本）：读 `spec.md` → 跑 `./check` → 若 exitCode 126（CRLF/权限），先 `sed -i 's/\\r$//' <脚本>` 再跑 → 通过后提交任务书要求的签名 token。\n3. 一旦确认最终答案必须立即输出 final_answer；不要重复验证、不要重读已读文件、不要追加探测。\n4. 修复类任务每次改文件后，下一回合立即复跑 `./check` 确认；输出“全部通过”或 `TOKEN:` 后立即提交。剩余回合不足 3 时禁止再做无验证输出的操作。\n5. 执行出错优先照做自动注入的 `api_diag:` 指令；没有则读错误信息针对性修正，不要盲目整体重试。\n6. 剩余回合 ≤2 且已有关键数据时，直接提交当前最佳答案——完成并提交优于超时无结果。\n\n# 输出协议（只能返回下面两种 JSON 之一，禁止任何其他文字）\nA) 需要执行命令：{\"action\": \"execute_command\", \"command\": \"<shell/python 指令>\"}\nB) 已能确定答案：{\"action\": \"final_answer\", \"answer\": \"<任务要求的答案字符串>\"}\n\n# 提交自检（输出 final_answer 之前逐项核对）\n1. 答案只能来自任务书与 API/命令的真实计算结果，严禁编造、猜测、估算；数据不足宁可先补查再提交。\n2. 提交形式与任务书【提交形式】完全一致：字段名、顺序、嵌套、类型逐一比对，数字保持数字（0 不能写 \"0\"）；名称类字段（如 oldest_era）提交对应名字而非数值。\n3. 若要求“全部/所有”，必须先遍历全量数据（注意分页、limit）再统计，禁止拿部分数据充当全部。\n4. 提交前再次对照任务书【提交形式】原文确认；不一致第一时间修正。\n\n# 格式硬性要求\n- 输出必须是可被 json.loads 一次解析成功的单个 JSON 对象；不要代码块、解释、分析或 markdown。\n- 禁止改写题目要求的 key、枚举值、字符串内容；答错比答慢更不可接受。\n- 每条命令最长约 15 秒，优先用 `&&` 串联减少命令数。",
+        "executeCmd": ""
+      }
+    },
+    {
+      "stage": "submit_second",
+      "round": 6,
+      "status": 200,
+      "elapsed_ms": 93.825,
+      "response": {
+        "roleCommandMap": {
+          "502": {
+            "action": "submitAnswer",
+            "taskAnswer": "second-fixture-result"
+          },
+          "505": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 7,
+                "y": 8
+              }
+            ]
+          },
+          "501": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 4,
+                "y": 8
+              }
+            ]
+          },
+          "504": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 37,
+                "y": 22
+              }
+            ]
+          }
+        },
+        "prompt": "",
+        "executeCmd": ""
+      }
+    },
+    {
+      "stage": "buy",
+      "round": 7,
+      "status": 200,
+      "elapsed_ms": 116.505,
+      "response": {
+        "roleCommandMap": {
+          "502": {
+            "action": "buy",
+            "name": "BossRobotSummonOrder",
+            "num": 1
+          },
+          "505": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 7,
+                "y": 8
+              }
+            ]
+          },
+          "501": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 4,
+                "y": 8
+              }
+            ]
+          },
+          "504": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 37,
+                "y": 22
+              }
+            ]
+          }
+        },
+        "prompt": "",
+        "executeCmd": ""
+      }
+    },
+    {
+      "stage": "use",
+      "round": 8,
+      "status": 200,
+      "elapsed_ms": 123.408,
+      "response": {
+        "roleCommandMap": {
+          "502": {
+            "action": "use",
+            "name": "BossRobotSummonOrder",
+            "targetPos": [
+              {
+                "x": 37,
+                "y": 25
+              }
+            ]
+          },
+          "505": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 7,
+                "y": 8
+              }
+            ]
+          },
+          "501": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 4,
+                "y": 8
+              }
+            ]
+          },
+          "504": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 37,
+                "y": 22
+              }
+            ]
+          }
+        },
+        "prompt": "",
+        "executeCmd": ""
+      }
+    },
+    {
+      "stage": "evening",
+      "round": 70,
+      "status": 200,
+      "elapsed_ms": 73.539,
+      "response": {
+        "roleCommandMap": {
+          "505": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 7,
+                "y": 8
+              }
+            ]
+          },
+          "504": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 37,
+                "y": 22
+              }
+            ]
+          }
+        },
+        "prompt": "",
+        "executeCmd": ""
+      }
+    },
+    {
+      "stage": "worker",
+      "round": 71,
+      "status": 200,
+      "elapsed_ms": 76.402,
+      "response": {
+        "roleCommandMap": {
+          "501": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 9,
+                "y": 7
+              }
+            ]
+          },
+          "504": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 37,
+                "y": 22
+              }
+            ]
+          },
+          "31035": {
+            "action": "attack",
+            "targetPos": [
+              {
+                "x": 36,
+                "y": 25
+              }
+            ]
+          }
+        },
+        "prompt": "",
+        "executeCmd": ""
+      }
+    },
+    {
+      "stage": "imp",
+      "round": 72,
+      "status": 200,
+      "elapsed_ms": 51.337,
+      "response": {
+        "roleCommandMap": {
+          "505": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 9,
+                "y": 7
+              }
+            ]
+          },
+          "504": {
+            "action": "move",
+            "targetPos": [
+              {
+                "x": 37,
+                "y": 22
+              }
+            ]
+          },
+          "31035": {
+            "action": "attack",
+            "targetPos": [
+              {
+                "x": 36,
+                "y": 25
+              }
+            ]
+          }
+        },
+        "prompt": "",
+        "executeCmd": ""
+      }
+    }
+  ],
+  "diagnostics": [
+    {
+      "log_type": "gap_defense",
+      "data": {
+        "gaps": {
+          "Pos(x=9, y=7)": {
+            "first_seen": 1,
+            "enemy_id": 901,
+            "last_seen": 1
+          }
+        },
+        "round": 1,
+        "gap": {
+          "x": 9,
+          "y": 7
+        },
+        "worker_id": 501,
+        "imp_id": 505,
+        "imp_status": "standby",
+        "posts": {
+          "505": {
+            "x": 7,
+            "y": 8
+          }
+        },
+        "other_walls_ready": true,
+        "worker_alive": true,
+        "imp_alive": true
+      }
+    },
+    {
+      "log_type": "first_day_policy",
+      "data": {
+        "round": 1,
+        "is_day": true,
+        "attempted_tasks": 0,
+        "finished_tasks": 0,
+        "successful_tasks": 0,
+        "active_task": false,
+        "target_orders": null,
+        "decision_round": null,
+        "purchase_attempt_round": null,
+        "purchase_stage_done": false,
+        "weapon_upgrades_ready": false,
+        "boss_budget": 240,
+        "summon_window_closed": false,
+        "scout_ready": true,
+        "last_pioneer_decision": {
+          "round": 1,
+          "gold": 20,
+          "available_gold": 20,
+          "price": 120,
+          "held": 0,
+          "acquired": 0,
+          "deployed": 0,
+          "purchase_closed": false,
+          "missing_walls": 1,
+          "reason": "waiting_for_two_tasks"
+        }
+      }
+    },
+    {
+      "log_type": "defense_diagnostic",
+      "data": {
+        "worker_id": 501,
+        "permanent_plan": [
+          {
+            "x": 6,
+            "y": 9
+          },
+          {
+            "x": 7,
+            "y": 9
+          },
+          {
+            "x": 8,
+            "y": 9
+          },
+          {
+            "x": 9,
+            "y": 9
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 7,
+            "y": 4
+          },
+          {
+            "x": 8,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 5
+          },
+          {
+            "x": 9,
+            "y": 6
+          },
+          {
+            "x": 9,
+            "y": 7
+          },
+          {
+            "x": 9,
+            "y": 8
+          }
+        ],
+        "round": 1,
+        "enabled": true,
+        "status": "bounded_mining",
+        "closed": false,
+        "construction_ready": true,
+        "prepared": false,
+        "reserve_gold": 100,
+        "weapon_ready": false,
+        "stock_target": 5,
+        "stock_held": 5,
+        "station": {
+          "id": 503,
+          "pos": {
+            "x": 6,
+            "y": 7
+          },
+          "hp": 1500,
+          "level": 1
+        },
+        "walls": [
+          {
+            "id": 701,
+            "pos": {
+              "x": 6,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 702,
+            "pos": {
+              "x": 6,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 703,
+            "pos": {
+              "x": 7,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 704,
+            "pos": {
+              "x": 7,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 705,
+            "pos": {
+              "x": 8,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 706,
+            "pos": {
+              "x": 8,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 707,
+            "pos": {
+              "x": 9,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 708,
+            "pos": {
+              "x": 9,
+              "y": 5
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 709,
+            "pos": {
+              "x": 9,
+              "y": 6
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 711,
+            "pos": {
+              "x": 9,
+              "y": 8
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 712,
+            "pos": {
+              "x": 9,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          }
+        ],
+        "guard": {
+          "id": 501,
+          "pos": {
+            "x": 3,
+            "y": 7
+          },
+          "hp": 500,
+          "level": 0
+        },
+        "walls_count": 11,
+        "walls_omitted": 0,
+        "permanent_missing": [
+          {
+            "x": 9,
+            "y": 7
+          }
+        ],
+        "permanent_missing_count": 1,
+        "occupied_gaps": [
+          {
+            "x": 9,
+            "y": 7
+          }
+        ]
+      }
+    },
+    {
+      "log_type": "gap_defense",
+      "data": {
+        "gaps": {
+          "Pos(x=9, y=7)": {
+            "first_seen": 1,
+            "enemy_id": 901,
+            "last_seen": 2
+          }
+        },
+        "round": 2,
+        "gap": {
+          "x": 9,
+          "y": 7
+        },
+        "worker_id": 501,
+        "imp_id": 505,
+        "imp_status": "standby",
+        "posts": {
+          "505": {
+            "x": 7,
+            "y": 8
+          }
+        },
+        "other_walls_ready": true,
+        "worker_alive": true,
+        "imp_alive": true
+      }
+    },
+    {
+      "log_type": "first_day_policy",
+      "data": {
+        "round": 2,
+        "is_day": true,
+        "attempted_tasks": 1,
+        "finished_tasks": 0,
+        "successful_tasks": 0,
+        "active_task": true,
+        "target_orders": null,
+        "decision_round": null,
+        "purchase_attempt_round": null,
+        "purchase_stage_done": false,
+        "weapon_upgrades_ready": false,
+        "boss_budget": 240,
+        "summon_window_closed": false,
+        "scout_ready": true,
+        "last_pioneer_decision": {
+          "round": 1,
+          "gold": 20,
+          "available_gold": 20,
+          "price": 120,
+          "held": 0,
+          "acquired": 0,
+          "deployed": 0,
+          "purchase_closed": false,
+          "missing_walls": 1,
+          "reason": "waiting_for_two_tasks"
+        }
+      }
+    },
+    {
+      "log_type": "defense_diagnostic",
+      "data": {
+        "worker_id": 501,
+        "permanent_plan": [
+          {
+            "x": 6,
+            "y": 9
+          },
+          {
+            "x": 7,
+            "y": 9
+          },
+          {
+            "x": 8,
+            "y": 9
+          },
+          {
+            "x": 9,
+            "y": 9
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 7,
+            "y": 4
+          },
+          {
+            "x": 8,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 5
+          },
+          {
+            "x": 9,
+            "y": 6
+          },
+          {
+            "x": 9,
+            "y": 7
+          },
+          {
+            "x": 9,
+            "y": 8
+          }
+        ],
+        "round": 2,
+        "enabled": true,
+        "status": "bounded_mining",
+        "closed": false,
+        "construction_ready": true,
+        "prepared": false,
+        "reserve_gold": 100,
+        "weapon_ready": false,
+        "stock_target": 5,
+        "stock_held": 5,
+        "station": {
+          "id": 503,
+          "pos": {
+            "x": 6,
+            "y": 7
+          },
+          "hp": 1500,
+          "level": 1
+        },
+        "walls": [
+          {
+            "id": 701,
+            "pos": {
+              "x": 6,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 702,
+            "pos": {
+              "x": 6,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 703,
+            "pos": {
+              "x": 7,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 704,
+            "pos": {
+              "x": 7,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 705,
+            "pos": {
+              "x": 8,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 706,
+            "pos": {
+              "x": 8,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 707,
+            "pos": {
+              "x": 9,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 708,
+            "pos": {
+              "x": 9,
+              "y": 5
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 709,
+            "pos": {
+              "x": 9,
+              "y": 6
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 711,
+            "pos": {
+              "x": 9,
+              "y": 8
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 712,
+            "pos": {
+              "x": 9,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          }
+        ],
+        "guard": {
+          "id": 501,
+          "pos": {
+            "x": 3,
+            "y": 7
+          },
+          "hp": 500,
+          "level": 0
+        },
+        "walls_count": 11,
+        "walls_omitted": 0,
+        "permanent_missing": [
+          {
+            "x": 9,
+            "y": 7
+          }
+        ],
+        "permanent_missing_count": 1,
+        "occupied_gaps": [
+          {
+            "x": 9,
+            "y": 7
+          }
+        ]
+      }
+    },
+    {
+      "log_type": "gap_defense",
+      "data": {
+        "gaps": {
+          "Pos(x=9, y=7)": {
+            "first_seen": 1,
+            "enemy_id": 901,
+            "last_seen": 3
+          }
+        },
+        "round": 3,
+        "gap": {
+          "x": 9,
+          "y": 7
+        },
+        "worker_id": 501,
+        "imp_id": 505,
+        "imp_status": "standby",
+        "posts": {
+          "505": {
+            "x": 7,
+            "y": 8
+          }
+        },
+        "other_walls_ready": true,
+        "worker_alive": true,
+        "imp_alive": true
+      }
+    },
+    {
+      "log_type": "first_day_policy",
+      "data": {
+        "round": 3,
+        "is_day": true,
+        "attempted_tasks": 1,
+        "finished_tasks": 0,
+        "successful_tasks": 0,
+        "active_task": true,
+        "target_orders": null,
+        "decision_round": null,
+        "purchase_attempt_round": null,
+        "purchase_stage_done": false,
+        "weapon_upgrades_ready": false,
+        "boss_budget": 240,
+        "summon_window_closed": false,
+        "scout_ready": true,
+        "last_pioneer_decision": {
+          "round": 1,
+          "gold": 20,
+          "available_gold": 20,
+          "price": 120,
+          "held": 0,
+          "acquired": 0,
+          "deployed": 0,
+          "purchase_closed": false,
+          "missing_walls": 1,
+          "reason": "waiting_for_two_tasks"
+        }
+      }
+    },
+    {
+      "log_type": "defense_diagnostic",
+      "data": {
+        "worker_id": 501,
+        "permanent_plan": [
+          {
+            "x": 6,
+            "y": 9
+          },
+          {
+            "x": 7,
+            "y": 9
+          },
+          {
+            "x": 8,
+            "y": 9
+          },
+          {
+            "x": 9,
+            "y": 9
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 7,
+            "y": 4
+          },
+          {
+            "x": 8,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 5
+          },
+          {
+            "x": 9,
+            "y": 6
+          },
+          {
+            "x": 9,
+            "y": 7
+          },
+          {
+            "x": 9,
+            "y": 8
+          }
+        ],
+        "round": 3,
+        "enabled": true,
+        "status": "bounded_mining",
+        "closed": false,
+        "construction_ready": true,
+        "prepared": false,
+        "reserve_gold": 100,
+        "weapon_ready": false,
+        "stock_target": 5,
+        "stock_held": 5,
+        "station": {
+          "id": 503,
+          "pos": {
+            "x": 6,
+            "y": 7
+          },
+          "hp": 1500,
+          "level": 1
+        },
+        "walls": [
+          {
+            "id": 701,
+            "pos": {
+              "x": 6,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 702,
+            "pos": {
+              "x": 6,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 703,
+            "pos": {
+              "x": 7,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 704,
+            "pos": {
+              "x": 7,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 705,
+            "pos": {
+              "x": 8,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 706,
+            "pos": {
+              "x": 8,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 707,
+            "pos": {
+              "x": 9,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 708,
+            "pos": {
+              "x": 9,
+              "y": 5
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 709,
+            "pos": {
+              "x": 9,
+              "y": 6
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 711,
+            "pos": {
+              "x": 9,
+              "y": 8
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 712,
+            "pos": {
+              "x": 9,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          }
+        ],
+        "guard": {
+          "id": 501,
+          "pos": {
+            "x": 3,
+            "y": 7
+          },
+          "hp": 500,
+          "level": 0
+        },
+        "walls_count": 11,
+        "walls_omitted": 0,
+        "permanent_missing": [
+          {
+            "x": 9,
+            "y": 7
+          }
+        ],
+        "permanent_missing_count": 1,
+        "occupied_gaps": [
+          {
+            "x": 9,
+            "y": 7
+          }
+        ]
+      }
+    },
+    {
+      "log_type": "gap_defense",
+      "data": {
+        "gaps": {
+          "Pos(x=9, y=7)": {
+            "first_seen": 1,
+            "enemy_id": 901,
+            "last_seen": 4
+          }
+        },
+        "round": 4,
+        "gap": {
+          "x": 9,
+          "y": 7
+        },
+        "worker_id": 501,
+        "imp_id": 505,
+        "imp_status": "standby",
+        "posts": {
+          "505": {
+            "x": 7,
+            "y": 8
+          }
+        },
+        "other_walls_ready": true,
+        "worker_alive": true,
+        "imp_alive": true
+      }
+    },
+    {
+      "log_type": "first_day_policy",
+      "data": {
+        "round": 4,
+        "is_day": true,
+        "attempted_tasks": 1,
+        "finished_tasks": 1,
+        "successful_tasks": 1,
+        "active_task": false,
+        "target_orders": null,
+        "decision_round": null,
+        "purchase_attempt_round": null,
+        "purchase_stage_done": false,
+        "weapon_upgrades_ready": false,
+        "boss_budget": 240,
+        "summon_window_closed": false,
+        "scout_ready": true,
+        "last_pioneer_decision": {
+          "round": 4,
+          "gold": 120,
+          "available_gold": 120,
+          "price": 120,
+          "held": 0,
+          "acquired": 0,
+          "deployed": 0,
+          "purchase_closed": false,
+          "missing_walls": 1,
+          "reason": "waiting_for_two_tasks"
+        }
+      }
+    },
+    {
+      "log_type": "defense_diagnostic",
+      "data": {
+        "worker_id": 501,
+        "permanent_plan": [
+          {
+            "x": 6,
+            "y": 9
+          },
+          {
+            "x": 7,
+            "y": 9
+          },
+          {
+            "x": 8,
+            "y": 9
+          },
+          {
+            "x": 9,
+            "y": 9
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 7,
+            "y": 4
+          },
+          {
+            "x": 8,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 5
+          },
+          {
+            "x": 9,
+            "y": 6
+          },
+          {
+            "x": 9,
+            "y": 7
+          },
+          {
+            "x": 9,
+            "y": 8
+          }
+        ],
+        "round": 4,
+        "enabled": true,
+        "status": "bounded_mining",
+        "closed": false,
+        "construction_ready": true,
+        "prepared": false,
+        "reserve_gold": 100,
+        "weapon_ready": false,
+        "stock_target": 5,
+        "stock_held": 5,
+        "station": {
+          "id": 503,
+          "pos": {
+            "x": 6,
+            "y": 7
+          },
+          "hp": 1500,
+          "level": 1
+        },
+        "walls": [
+          {
+            "id": 701,
+            "pos": {
+              "x": 6,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 702,
+            "pos": {
+              "x": 6,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 703,
+            "pos": {
+              "x": 7,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 704,
+            "pos": {
+              "x": 7,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 705,
+            "pos": {
+              "x": 8,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 706,
+            "pos": {
+              "x": 8,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 707,
+            "pos": {
+              "x": 9,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 708,
+            "pos": {
+              "x": 9,
+              "y": 5
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 709,
+            "pos": {
+              "x": 9,
+              "y": 6
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 711,
+            "pos": {
+              "x": 9,
+              "y": 8
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 712,
+            "pos": {
+              "x": 9,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          }
+        ],
+        "guard": {
+          "id": 501,
+          "pos": {
+            "x": 3,
+            "y": 7
+          },
+          "hp": 500,
+          "level": 0
+        },
+        "walls_count": 11,
+        "walls_omitted": 0,
+        "permanent_missing": [
+          {
+            "x": 9,
+            "y": 7
+          }
+        ],
+        "permanent_missing_count": 1,
+        "occupied_gaps": [
+          {
+            "x": 9,
+            "y": 7
+          }
+        ]
+      }
+    },
+    {
+      "log_type": "gap_defense",
+      "data": {
+        "gaps": {
+          "Pos(x=9, y=7)": {
+            "first_seen": 1,
+            "enemy_id": 901,
+            "last_seen": 5
+          }
+        },
+        "round": 5,
+        "gap": {
+          "x": 9,
+          "y": 7
+        },
+        "worker_id": 501,
+        "imp_id": 505,
+        "imp_status": "standby",
+        "posts": {
+          "505": {
+            "x": 7,
+            "y": 8
+          }
+        },
+        "other_walls_ready": true,
+        "worker_alive": true,
+        "imp_alive": true
+      }
+    },
+    {
+      "log_type": "first_day_policy",
+      "data": {
+        "round": 5,
+        "is_day": true,
+        "attempted_tasks": 2,
+        "finished_tasks": 1,
+        "successful_tasks": 1,
+        "active_task": true,
+        "target_orders": null,
+        "decision_round": null,
+        "purchase_attempt_round": null,
+        "purchase_stage_done": false,
+        "weapon_upgrades_ready": false,
+        "boss_budget": 240,
+        "summon_window_closed": false,
+        "scout_ready": true,
+        "last_pioneer_decision": {
+          "round": 4,
+          "gold": 120,
+          "available_gold": 120,
+          "price": 120,
+          "held": 0,
+          "acquired": 0,
+          "deployed": 0,
+          "purchase_closed": false,
+          "missing_walls": 1,
+          "reason": "waiting_for_two_tasks"
+        }
+      }
+    },
+    {
+      "log_type": "defense_diagnostic",
+      "data": {
+        "worker_id": 501,
+        "permanent_plan": [
+          {
+            "x": 6,
+            "y": 9
+          },
+          {
+            "x": 7,
+            "y": 9
+          },
+          {
+            "x": 8,
+            "y": 9
+          },
+          {
+            "x": 9,
+            "y": 9
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 7,
+            "y": 4
+          },
+          {
+            "x": 8,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 5
+          },
+          {
+            "x": 9,
+            "y": 6
+          },
+          {
+            "x": 9,
+            "y": 7
+          },
+          {
+            "x": 9,
+            "y": 8
+          }
+        ],
+        "round": 5,
+        "enabled": true,
+        "status": "bounded_mining",
+        "closed": false,
+        "construction_ready": true,
+        "prepared": false,
+        "reserve_gold": 100,
+        "weapon_ready": false,
+        "stock_target": 5,
+        "stock_held": 5,
+        "station": {
+          "id": 503,
+          "pos": {
+            "x": 6,
+            "y": 7
+          },
+          "hp": 1500,
+          "level": 1
+        },
+        "walls": [
+          {
+            "id": 701,
+            "pos": {
+              "x": 6,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 702,
+            "pos": {
+              "x": 6,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 703,
+            "pos": {
+              "x": 7,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 704,
+            "pos": {
+              "x": 7,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 705,
+            "pos": {
+              "x": 8,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 706,
+            "pos": {
+              "x": 8,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 707,
+            "pos": {
+              "x": 9,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 708,
+            "pos": {
+              "x": 9,
+              "y": 5
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 709,
+            "pos": {
+              "x": 9,
+              "y": 6
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 711,
+            "pos": {
+              "x": 9,
+              "y": 8
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 712,
+            "pos": {
+              "x": 9,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          }
+        ],
+        "guard": {
+          "id": 501,
+          "pos": {
+            "x": 3,
+            "y": 7
+          },
+          "hp": 500,
+          "level": 0
+        },
+        "walls_count": 11,
+        "walls_omitted": 0,
+        "permanent_missing": [
+          {
+            "x": 9,
+            "y": 7
+          }
+        ],
+        "permanent_missing_count": 1,
+        "occupied_gaps": [
+          {
+            "x": 9,
+            "y": 7
+          }
+        ]
+      }
+    },
+    {
+      "log_type": "gap_defense",
+      "data": {
+        "gaps": {
+          "Pos(x=9, y=7)": {
+            "first_seen": 1,
+            "enemy_id": 901,
+            "last_seen": 6
+          }
+        },
+        "round": 6,
+        "gap": {
+          "x": 9,
+          "y": 7
+        },
+        "worker_id": 501,
+        "imp_id": 505,
+        "imp_status": "standby",
+        "posts": {
+          "505": {
+            "x": 7,
+            "y": 8
+          }
+        },
+        "other_walls_ready": true,
+        "worker_alive": true,
+        "imp_alive": true
+      }
+    },
+    {
+      "log_type": "first_day_policy",
+      "data": {
+        "round": 6,
+        "is_day": true,
+        "attempted_tasks": 2,
+        "finished_tasks": 1,
+        "successful_tasks": 1,
+        "active_task": true,
+        "target_orders": null,
+        "decision_round": null,
+        "purchase_attempt_round": null,
+        "purchase_stage_done": false,
+        "weapon_upgrades_ready": false,
+        "boss_budget": 240,
+        "summon_window_closed": false,
+        "scout_ready": true,
+        "last_pioneer_decision": {
+          "round": 4,
+          "gold": 120,
+          "available_gold": 120,
+          "price": 120,
+          "held": 0,
+          "acquired": 0,
+          "deployed": 0,
+          "purchase_closed": false,
+          "missing_walls": 1,
+          "reason": "waiting_for_two_tasks"
+        }
+      }
+    },
+    {
+      "log_type": "defense_diagnostic",
+      "data": {
+        "worker_id": 501,
+        "permanent_plan": [
+          {
+            "x": 6,
+            "y": 9
+          },
+          {
+            "x": 7,
+            "y": 9
+          },
+          {
+            "x": 8,
+            "y": 9
+          },
+          {
+            "x": 9,
+            "y": 9
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 7,
+            "y": 4
+          },
+          {
+            "x": 8,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 5
+          },
+          {
+            "x": 9,
+            "y": 6
+          },
+          {
+            "x": 9,
+            "y": 7
+          },
+          {
+            "x": 9,
+            "y": 8
+          }
+        ],
+        "round": 6,
+        "enabled": true,
+        "status": "bounded_mining",
+        "closed": false,
+        "construction_ready": true,
+        "prepared": false,
+        "reserve_gold": 100,
+        "weapon_ready": false,
+        "stock_target": 5,
+        "stock_held": 5,
+        "station": {
+          "id": 503,
+          "pos": {
+            "x": 6,
+            "y": 7
+          },
+          "hp": 1500,
+          "level": 1
+        },
+        "walls": [
+          {
+            "id": 701,
+            "pos": {
+              "x": 6,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 702,
+            "pos": {
+              "x": 6,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 703,
+            "pos": {
+              "x": 7,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 704,
+            "pos": {
+              "x": 7,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 705,
+            "pos": {
+              "x": 8,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 706,
+            "pos": {
+              "x": 8,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 707,
+            "pos": {
+              "x": 9,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 708,
+            "pos": {
+              "x": 9,
+              "y": 5
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 709,
+            "pos": {
+              "x": 9,
+              "y": 6
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 711,
+            "pos": {
+              "x": 9,
+              "y": 8
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 712,
+            "pos": {
+              "x": 9,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          }
+        ],
+        "guard": {
+          "id": 501,
+          "pos": {
+            "x": 3,
+            "y": 7
+          },
+          "hp": 500,
+          "level": 0
+        },
+        "walls_count": 11,
+        "walls_omitted": 0,
+        "permanent_missing": [
+          {
+            "x": 9,
+            "y": 7
+          }
+        ],
+        "permanent_missing_count": 1,
+        "occupied_gaps": [
+          {
+            "x": 9,
+            "y": 7
+          }
+        ]
+      }
+    },
+    {
+      "log_type": "gap_defense",
+      "data": {
+        "gaps": {
+          "Pos(x=9, y=7)": {
+            "first_seen": 1,
+            "enemy_id": 901,
+            "last_seen": 7
+          }
+        },
+        "round": 7,
+        "gap": {
+          "x": 9,
+          "y": 7
+        },
+        "worker_id": 501,
+        "imp_id": 505,
+        "imp_status": "standby",
+        "posts": {
+          "505": {
+            "x": 7,
+            "y": 8
+          }
+        },
+        "other_walls_ready": true,
+        "worker_alive": true,
+        "imp_alive": true
+      }
+    },
+    {
+      "log_type": "first_day_policy",
+      "data": {
+        "round": 7,
+        "is_day": true,
+        "attempted_tasks": 2,
+        "finished_tasks": 2,
+        "successful_tasks": 1,
+        "active_task": false,
+        "target_orders": 1,
+        "decision_round": 7,
+        "purchase_attempt_round": 7,
+        "purchase_stage_done": false,
+        "weapon_upgrades_ready": true,
+        "boss_budget": 0,
+        "summon_window_closed": false,
+        "scout_ready": true,
+        "last_pioneer_decision": {
+          "round": 7,
+          "gold": 120,
+          "available_gold": 120,
+          "price": 120,
+          "held": 0,
+          "acquired": 0,
+          "deployed": 0,
+          "purchase_closed": false,
+          "missing_walls": 1,
+          "reason": "purchasing_order",
+          "buy_num": 1,
+          "target_count": 1
+        }
+      }
+    },
+    {
+      "log_type": "defense_diagnostic",
+      "data": {
+        "worker_id": 501,
+        "permanent_plan": [
+          {
+            "x": 6,
+            "y": 9
+          },
+          {
+            "x": 7,
+            "y": 9
+          },
+          {
+            "x": 8,
+            "y": 9
+          },
+          {
+            "x": 9,
+            "y": 9
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 7,
+            "y": 4
+          },
+          {
+            "x": 8,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 5
+          },
+          {
+            "x": 9,
+            "y": 6
+          },
+          {
+            "x": 9,
+            "y": 7
+          },
+          {
+            "x": 9,
+            "y": 8
+          }
+        ],
+        "round": 7,
+        "enabled": true,
+        "status": "bounded_mining",
+        "closed": false,
+        "construction_ready": true,
+        "prepared": false,
+        "reserve_gold": 100,
+        "weapon_ready": false,
+        "stock_target": 5,
+        "stock_held": 5,
+        "station": {
+          "id": 503,
+          "pos": {
+            "x": 6,
+            "y": 7
+          },
+          "hp": 1500,
+          "level": 1
+        },
+        "walls": [
+          {
+            "id": 701,
+            "pos": {
+              "x": 6,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 702,
+            "pos": {
+              "x": 6,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 703,
+            "pos": {
+              "x": 7,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 704,
+            "pos": {
+              "x": 7,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 705,
+            "pos": {
+              "x": 8,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 706,
+            "pos": {
+              "x": 8,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 707,
+            "pos": {
+              "x": 9,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 708,
+            "pos": {
+              "x": 9,
+              "y": 5
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 709,
+            "pos": {
+              "x": 9,
+              "y": 6
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 711,
+            "pos": {
+              "x": 9,
+              "y": 8
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 712,
+            "pos": {
+              "x": 9,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          }
+        ],
+        "guard": {
+          "id": 501,
+          "pos": {
+            "x": 3,
+            "y": 7
+          },
+          "hp": 500,
+          "level": 0
+        },
+        "walls_count": 11,
+        "walls_omitted": 0,
+        "permanent_missing": [
+          {
+            "x": 9,
+            "y": 7
+          }
+        ],
+        "permanent_missing_count": 1,
+        "occupied_gaps": [
+          {
+            "x": 9,
+            "y": 7
+          }
+        ]
+      }
+    },
+    {
+      "log_type": "gap_defense",
+      "data": {
+        "gaps": {
+          "Pos(x=9, y=7)": {
+            "first_seen": 1,
+            "enemy_id": 901,
+            "last_seen": 8
+          }
+        },
+        "round": 8,
+        "gap": {
+          "x": 9,
+          "y": 7
+        },
+        "worker_id": 501,
+        "imp_id": 505,
+        "imp_status": "standby",
+        "posts": {
+          "505": {
+            "x": 7,
+            "y": 8
+          }
+        },
+        "other_walls_ready": true,
+        "worker_alive": true,
+        "imp_alive": true
+      }
+    },
+    {
+      "log_type": "first_day_policy",
+      "data": {
+        "round": 8,
+        "is_day": true,
+        "attempted_tasks": 2,
+        "finished_tasks": 2,
+        "successful_tasks": 1,
+        "active_task": false,
+        "target_orders": 1,
+        "decision_round": 7,
+        "purchase_attempt_round": 7,
+        "purchase_stage_done": true,
+        "weapon_upgrades_ready": true,
+        "boss_budget": 0,
+        "summon_window_closed": false,
+        "scout_ready": true,
+        "last_pioneer_decision": {
+          "round": 8,
+          "gold": 0,
+          "available_gold": 0,
+          "price": 120,
+          "held": 1,
+          "acquired": 1,
+          "deployed": 0,
+          "purchase_closed": false,
+          "missing_walls": 1,
+          "reason": "using_scouted_order",
+          "buy_num": 0,
+          "target_count": 1,
+          "spawn": {
+            "x": 37,
+            "y": 25
+          },
+          "layout_weapons": [
+            [
+              1991,
+              "rocket",
+              {
+                "x": 35,
+                "y": 24
+              }
+            ],
+            [
+              1992,
+              "rocket",
+              {
+                "x": 35,
+                "y": 25
+              }
+            ],
+            [
+              1990,
+              "rocket",
+              {
+                "x": 35,
+                "y": 26
+              }
+            ]
+          ],
+          "operator_cells": [
+            {
+              "x": 36,
+              "y": 25
+            }
+          ]
+        }
+      }
+    },
+    {
+      "log_type": "defense_diagnostic",
+      "data": {
+        "worker_id": 501,
+        "permanent_plan": [
+          {
+            "x": 6,
+            "y": 9
+          },
+          {
+            "x": 7,
+            "y": 9
+          },
+          {
+            "x": 8,
+            "y": 9
+          },
+          {
+            "x": 9,
+            "y": 9
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 7,
+            "y": 4
+          },
+          {
+            "x": 8,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 5
+          },
+          {
+            "x": 9,
+            "y": 6
+          },
+          {
+            "x": 9,
+            "y": 7
+          },
+          {
+            "x": 9,
+            "y": 8
+          }
+        ],
+        "round": 8,
+        "enabled": true,
+        "status": "bounded_mining",
+        "closed": false,
+        "construction_ready": true,
+        "prepared": false,
+        "reserve_gold": 100,
+        "weapon_ready": false,
+        "stock_target": 5,
+        "stock_held": 5,
+        "station": {
+          "id": 503,
+          "pos": {
+            "x": 6,
+            "y": 7
+          },
+          "hp": 1500,
+          "level": 1
+        },
+        "walls": [
+          {
+            "id": 701,
+            "pos": {
+              "x": 6,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 702,
+            "pos": {
+              "x": 6,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 703,
+            "pos": {
+              "x": 7,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 704,
+            "pos": {
+              "x": 7,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 705,
+            "pos": {
+              "x": 8,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 706,
+            "pos": {
+              "x": 8,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 707,
+            "pos": {
+              "x": 9,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 708,
+            "pos": {
+              "x": 9,
+              "y": 5
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 709,
+            "pos": {
+              "x": 9,
+              "y": 6
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 711,
+            "pos": {
+              "x": 9,
+              "y": 8
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 712,
+            "pos": {
+              "x": 9,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          }
+        ],
+        "guard": {
+          "id": 501,
+          "pos": {
+            "x": 3,
+            "y": 7
+          },
+          "hp": 500,
+          "level": 0
+        },
+        "walls_count": 11,
+        "walls_omitted": 0,
+        "permanent_missing": [
+          {
+            "x": 9,
+            "y": 7
+          }
+        ],
+        "permanent_missing_count": 1,
+        "occupied_gaps": [
+          {
+            "x": 9,
+            "y": 7
+          }
+        ]
+      }
+    },
+    {
+      "log_type": "gap_defense",
+      "data": {
+        "gaps": {
+          "Pos(x=9, y=7)": {
+            "first_seen": 1,
+            "enemy_id": 901,
+            "last_seen": 70
+          }
+        },
+        "round": 70,
+        "gap": {
+          "x": 9,
+          "y": 7
+        },
+        "worker_id": 501,
+        "imp_id": 505,
+        "imp_status": "standby",
+        "posts": {
+          "505": {
+            "x": 7,
+            "y": 8
+          },
+          "501": {
+            "x": 8,
+            "y": 7
+          }
+        },
+        "other_walls_ready": true,
+        "worker_alive": true,
+        "imp_alive": true
+      }
+    },
+    {
+      "log_type": "first_day_policy",
+      "data": {
+        "round": 70,
+        "is_day": true,
+        "attempted_tasks": 2,
+        "finished_tasks": 2,
+        "successful_tasks": 1,
+        "active_task": false,
+        "target_orders": 1,
+        "decision_round": 7,
+        "purchase_attempt_round": 7,
+        "purchase_stage_done": true,
+        "weapon_upgrades_ready": true,
+        "boss_budget": 0,
+        "summon_window_closed": false,
+        "scout_ready": true,
+        "last_pioneer_decision": {
+          "round": 70,
+          "gold": 0,
+          "available_gold": 0,
+          "price": 120,
+          "held": 0,
+          "acquired": 1,
+          "deployed": 1,
+          "purchase_closed": false,
+          "missing_walls": 1,
+          "reason": "no_feasible_purchase_or_use"
+        }
+      }
+    },
+    {
+      "log_type": "defense_diagnostic",
+      "data": {
+        "worker_id": 501,
+        "permanent_plan": [
+          {
+            "x": 6,
+            "y": 9
+          },
+          {
+            "x": 7,
+            "y": 9
+          },
+          {
+            "x": 8,
+            "y": 9
+          },
+          {
+            "x": 9,
+            "y": 9
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 7,
+            "y": 4
+          },
+          {
+            "x": 8,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 5
+          },
+          {
+            "x": 9,
+            "y": 6
+          },
+          {
+            "x": 9,
+            "y": 7
+          },
+          {
+            "x": 9,
+            "y": 8
+          }
+        ],
+        "round": 70,
+        "enabled": true,
+        "status": "bounded_mining",
+        "closed": false,
+        "construction_ready": true,
+        "prepared": false,
+        "reserve_gold": 150,
+        "weapon_ready": false,
+        "stock_target": 5,
+        "stock_held": 0,
+        "station": {
+          "id": 503,
+          "pos": {
+            "x": 6,
+            "y": 7
+          },
+          "hp": 1500,
+          "level": 1
+        },
+        "walls": [
+          {
+            "id": 701,
+            "pos": {
+              "x": 6,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 702,
+            "pos": {
+              "x": 6,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 703,
+            "pos": {
+              "x": 7,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 704,
+            "pos": {
+              "x": 7,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 705,
+            "pos": {
+              "x": 8,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 706,
+            "pos": {
+              "x": 8,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 707,
+            "pos": {
+              "x": 9,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 708,
+            "pos": {
+              "x": 9,
+              "y": 5
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 709,
+            "pos": {
+              "x": 9,
+              "y": 6
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 711,
+            "pos": {
+              "x": 9,
+              "y": 8
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 712,
+            "pos": {
+              "x": 9,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          }
+        ],
+        "guard": {
+          "id": 501,
+          "pos": {
+            "x": 8,
+            "y": 7
+          },
+          "hp": 500,
+          "level": 0
+        },
+        "walls_count": 11,
+        "walls_omitted": 0,
+        "permanent_missing": [
+          {
+            "x": 9,
+            "y": 7
+          }
+        ],
+        "permanent_missing_count": 1,
+        "occupied_gaps": [
+          {
+            "x": 9,
+            "y": 7
+          }
+        ]
+      }
+    },
+    {
+      "log_type": "gap_defense",
+      "data": {
+        "gaps": {
+          "Pos(x=9, y=7)": {
+            "first_seen": 1,
+            "enemy_id": 901,
+            "last_seen": 70
+          }
+        },
+        "round": 71,
+        "gap": {
+          "x": 9,
+          "y": 7
+        },
+        "worker_id": 501,
+        "imp_id": 505,
+        "imp_status": "standby",
+        "posts": {
+          "505": {
+            "x": 8,
+            "y": 8
+          },
+          "501": {
+            "x": 9,
+            "y": 7
+          }
+        },
+        "other_walls_ready": true,
+        "worker_alive": true,
+        "imp_alive": true
+      }
+    },
+    {
+      "log_type": "first_day_policy",
+      "data": {
+        "round": 71,
+        "is_day": false,
+        "attempted_tasks": 2,
+        "finished_tasks": 2,
+        "successful_tasks": 1,
+        "active_task": false,
+        "target_orders": 1,
+        "decision_round": 7,
+        "purchase_attempt_round": 7,
+        "purchase_stage_done": true,
+        "weapon_upgrades_ready": true,
+        "boss_budget": 0,
+        "summon_window_closed": false,
+        "scout_ready": true,
+        "last_pioneer_decision": {
+          "round": 71,
+          "gold": 0,
+          "available_gold": 0,
+          "price": 120,
+          "held": 0,
+          "acquired": 1,
+          "deployed": 1,
+          "purchase_closed": false,
+          "missing_walls": 1,
+          "reason": "night"
+        }
+      }
+    },
+    {
+      "log_type": "defense_diagnostic",
+      "data": {
+        "worker_id": 501,
+        "permanent_plan": [
+          {
+            "x": 6,
+            "y": 9
+          },
+          {
+            "x": 7,
+            "y": 9
+          },
+          {
+            "x": 8,
+            "y": 9
+          },
+          {
+            "x": 9,
+            "y": 9
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 7,
+            "y": 4
+          },
+          {
+            "x": 8,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 5
+          },
+          {
+            "x": 9,
+            "y": 6
+          },
+          {
+            "x": 9,
+            "y": 7
+          },
+          {
+            "x": 9,
+            "y": 8
+          }
+        ],
+        "round": 71,
+        "enabled": true,
+        "status": "bounded_mining",
+        "closed": false,
+        "construction_ready": true,
+        "prepared": false,
+        "reserve_gold": 150,
+        "weapon_ready": false,
+        "stock_target": 5,
+        "stock_held": 0,
+        "station": {
+          "id": 503,
+          "pos": {
+            "x": 6,
+            "y": 7
+          },
+          "hp": 1500,
+          "level": 1
+        },
+        "walls": [
+          {
+            "id": 701,
+            "pos": {
+              "x": 6,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 702,
+            "pos": {
+              "x": 6,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 703,
+            "pos": {
+              "x": 7,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 704,
+            "pos": {
+              "x": 7,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 705,
+            "pos": {
+              "x": 8,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 706,
+            "pos": {
+              "x": 8,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 707,
+            "pos": {
+              "x": 9,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 708,
+            "pos": {
+              "x": 9,
+              "y": 5
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 709,
+            "pos": {
+              "x": 9,
+              "y": 6
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 711,
+            "pos": {
+              "x": 9,
+              "y": 8
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 712,
+            "pos": {
+              "x": 9,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          }
+        ],
+        "guard": {
+          "id": 501,
+          "pos": {
+            "x": 8,
+            "y": 7
+          },
+          "hp": 500,
+          "level": 0
+        },
+        "walls_count": 11,
+        "walls_omitted": 0,
+        "permanent_missing": [
+          {
+            "x": 9,
+            "y": 7
+          }
+        ],
+        "permanent_missing_count": 1,
+        "occupied_gaps": [
+          {
+            "x": 9,
+            "y": 7
+          }
+        ]
+      }
+    },
+    {
+      "log_type": "robot_diagnostic",
+      "data": {
+        "round": 71,
+        "team_id": "first-day-flow-gap-relay",
+        "team_type": "challenger",
+        "robot": {
+          "id": 31035,
+          "type": "bossRobot",
+          "pos": {
+            "x": 37,
+            "y": 25
+          },
+          "hp": 800,
+          "state": "",
+          "owned": true,
+          "target_team": "defender",
+          "attack_power": 40,
+          "attack_range": 3
+        },
+        "policy": {
+          "enabled": true,
+          "day": 1,
+          "is_day": false
+        },
+        "previous": {
+          "round": null,
+          "consecutive": false,
+          "command_matched": false,
+          "command": null,
+          "raw_action_result": null,
+          "legality": "unmatched",
+          "position": null,
+          "robot_hp_before": null,
+          "robot_observed_hp_delta": null,
+          "displacement": null,
+          "movement": "unmatched",
+          "positions": [
+            {
+              "x": 37,
+              "y": 25
+            }
+          ],
+          "oscillating": false,
+          "attack_target": null,
+          "target_hp_now": null,
+          "observed_hp_delta": null,
+          "target_observation": "not_applicable"
+        },
+        "previous_job": {
+          "round": null,
+          "stage": null,
+          "goal": null,
+          "controller_id": null
+        },
+        "called": true,
+        "reason": "direct_attack",
+        "events": [
+          {
+            "kind": "candidate",
+            "target": {
+              "id": 992,
+              "type": "pioneer",
+              "pos": {
+                "x": 36,
+                "y": 25
+              },
+              "hp": 500
+            },
+            "check": {
+              "distance": 1,
+              "attack_range": 3,
+              "in_range": true,
+              "target_lookup_evaluated": true,
+              "target_id": 992,
+              "wall_evaluated": true,
+              "wall": null,
+              "clear": true,
+              "blocked_by": null,
+              "planning_clear": true,
+              "planning_blocker": null
+            },
+            "rank": [
+              false,
+              false,
+              13,
+              500,
+              0,
+              -3,
+              true,
+              1,
+              992
+            ],
+            "direct": true,
+            "cache_until": null,
+            "firing": null,
+            "efficient": true
+          },
+          {
+            "kind": "attack_check",
+            "target": {
+              "x": 36,
+              "y": 25
+            },
+            "check": {
+              "distance": 1,
+              "attack_range": 3,
+              "in_range": true,
+              "target_lookup_evaluated": true,
+              "target_id": 992,
+              "wall_evaluated": true,
+              "wall": null,
+              "clear": true,
+              "blocked_by": null,
+              "planning_clear": true,
+              "planning_blocker": null
+            },
+            "cache_hit": false
+          }
+        ],
+        "events_omitted": 0,
+        "route": {
+          "reachable_count": 1274,
+          "adjacent": [
+            {
+              "pos": {
+                "x": 36,
+                "y": 24
+              },
+              "terrain": "land",
+              "land": true,
+              "reachable": true,
+              "reserved": false,
+              "occupants": []
+            },
+            {
+              "pos": {
+                "x": 36,
+                "y": 25
+              },
+              "terrain": "land",
+              "land": true,
+              "reachable": false,
+              "reserved": false,
+              "occupants": [
+                {
+                  "id": 992,
+                  "type": "pioneer"
+                }
+              ]
+            },
+            {
+              "pos": {
+                "x": 36,
+                "y": 26
+              },
+              "terrain": "land",
+              "land": true,
+              "reachable": true,
+              "reserved": false,
+              "occupants": []
+            },
+            {
+              "pos": {
+                "x": 37,
+                "y": 24
+              },
+              "terrain": "land",
+              "land": true,
+              "reachable": true,
+              "reserved": false,
+              "occupants": []
+            },
+            {
+              "pos": {
+                "x": 37,
+                "y": 26
+              },
+              "terrain": "land",
+              "land": true,
+              "reachable": true,
+              "reserved": false,
+              "occupants": []
+            },
+            {
+              "pos": {
+                "x": 38,
+                "y": 24
+              },
+              "terrain": "land",
+              "land": true,
+              "reachable": true,
+              "reserved": false,
+              "occupants": []
+            },
+            {
+              "pos": {
+                "x": 38,
+                "y": 25
+              },
+              "terrain": "land",
+              "land": true,
+              "reachable": true,
+              "reserved": false,
+              "occupants": []
+            },
+            {
+              "pos": {
+                "x": 38,
+                "y": 26
+              },
+              "terrain": "land",
+              "land": true,
+              "reachable": true,
+              "reserved": false,
+              "occupants": []
+            }
+          ]
+        },
+        "controller_budget": 4,
+        "pursuit_rounds": 0,
+        "controller_budget_remaining": 4,
+        "siege_until": 0,
+        "base_attack_failures": 0,
+        "base_close_required": false,
+        "verified_base_post": null,
+        "verified_base_target": null,
+        "remembered_structures": [
+          {
+            "id": 990,
+            "type": "station",
+            "pos": {
+              "x": 33,
+              "y": 25
+            },
+            "hp": 1500
+          },
+          {
+            "id": 1990,
+            "type": "rocket",
+            "pos": {
+              "x": 35,
+              "y": 26
+            },
+            "hp": 1000
+          },
+          {
+            "id": 1991,
+            "type": "rocket",
+            "pos": {
+              "x": 35,
+              "y": 24
+            },
+            "hp": 1000
+          },
+          {
+            "id": 1992,
+            "type": "rocket",
+            "pos": {
+              "x": 35,
+              "y": 25
+            },
+            "hp": 1000
+          }
+        ],
+        "blocked_steps": [],
+        "failed_cache": [],
+        "failed_cache_omitted": 0,
+        "weapons": [
+          {
+            "id": 1990,
+            "type": "rocket",
+            "pos": {
+              "x": 35,
+              "y": 26
+            },
+            "hp": 1000
+          },
+          {
+            "id": 1991,
+            "type": "rocket",
+            "pos": {
+              "x": 35,
+              "y": 24
+            },
+            "hp": 1000
+          },
+          {
+            "id": 1992,
+            "type": "rocket",
+            "pos": {
+              "x": 35,
+              "y": 25
+            },
+            "hp": 1000
+          }
+        ],
+        "weapons_count": 3,
+        "weapons_omitted": 0,
+        "old_controller_state": "not_applicable",
+        "old_controller_now": null,
+        "visible_heroes": [
+          {
+            "id": 992,
+            "type": "pioneer",
+            "pos": {
+              "x": 36,
+              "y": 25
+            },
+            "hp": 500,
+            "near_weapon_ids": [
+              1990,
+              1991,
+              1992
+            ],
+            "eligible": true
+          }
+        ],
+        "visible_heroes_count": 1,
+        "visible_heroes_omitted": 0,
+        "operator_count": 1,
+        "candidates": [
+          {
+            "target": {
+              "id": 992,
+              "type": "pioneer",
+              "pos": {
+                "x": 36,
+                "y": 25
+              },
+              "hp": 500
+            },
+            "check": {
+              "distance": 1,
+              "attack_range": 3,
+              "in_range": true,
+              "target_lookup_evaluated": true,
+              "target_id": 992,
+              "wall_evaluated": true,
+              "wall": null,
+              "clear": true,
+              "blocked_by": null,
+              "planning_clear": true,
+              "planning_blocker": null
+            },
+            "rank": [
+              false,
+              false,
+              13,
+              500,
+              0,
+              -3,
+              true,
+              1,
+              992
+            ],
+            "direct": true,
+            "cache_until": null,
+            "firing": null,
+            "efficient": true
+          }
+        ],
+        "selected": {
+          "id": 992,
+          "type": "pioneer",
+          "pos": {
+            "x": 36,
+            "y": 25
+          },
+          "hp": 500
+        },
+        "selected_rank": [
+          false,
+          false,
+          13,
+          500,
+          0,
+          -3,
+          true,
+          1,
+          992
+        ],
+        "target_changed": true,
+        "intent": "controller",
+        "target_points": [
+          {
+            "x": 36,
+            "y": 25
+          }
+        ],
+        "stage": "controller",
+        "attempted_command": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 36,
+              "y": 25
+            }
+          ]
+        },
+        "goal": {
+          "x": 37,
+          "y": 25
+        },
+        "accepted": true,
+        "final_command": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 36,
+              "y": 25
+            }
+          ]
+        },
+        "rejections": []
+      }
+    },
+    {
+      "log_type": "gap_defense",
+      "data": {
+        "gaps": {
+          "Pos(x=9, y=7)": {
+            "first_seen": 1,
+            "enemy_id": 901,
+            "last_seen": 70
+          }
+        },
+        "round": 72,
+        "gap": {
+          "x": 9,
+          "y": 7
+        },
+        "worker_id": 501,
+        "imp_id": 505,
+        "imp_status": "holding_gap",
+        "posts": {
+          "505": {
+            "x": 9,
+            "y": 7
+          },
+          "501": {
+            "x": 9,
+            "y": 7
+          }
+        },
+        "other_walls_ready": true,
+        "worker_alive": false,
+        "imp_alive": true
+      }
+    },
+    {
+      "log_type": "first_day_policy",
+      "data": {
+        "round": 72,
+        "is_day": false,
+        "attempted_tasks": 2,
+        "finished_tasks": 2,
+        "successful_tasks": 1,
+        "active_task": false,
+        "target_orders": 1,
+        "decision_round": 7,
+        "purchase_attempt_round": 7,
+        "purchase_stage_done": true,
+        "weapon_upgrades_ready": true,
+        "boss_budget": 0,
+        "summon_window_closed": false,
+        "scout_ready": false,
+        "last_pioneer_decision": {
+          "round": 72,
+          "gold": 0,
+          "available_gold": 0,
+          "price": 120,
+          "held": 0,
+          "acquired": 1,
+          "deployed": 1,
+          "purchase_closed": false,
+          "missing_walls": 1,
+          "reason": "night"
+        }
+      }
+    },
+    {
+      "log_type": "defense_diagnostic",
+      "data": {
+        "worker_id": 504,
+        "permanent_plan": [
+          {
+            "x": 6,
+            "y": 9
+          },
+          {
+            "x": 7,
+            "y": 9
+          },
+          {
+            "x": 8,
+            "y": 9
+          },
+          {
+            "x": 9,
+            "y": 9
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 7,
+            "y": 4
+          },
+          {
+            "x": 8,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 5
+          },
+          {
+            "x": 9,
+            "y": 6
+          },
+          {
+            "x": 9,
+            "y": 7
+          },
+          {
+            "x": 9,
+            "y": 8
+          }
+        ],
+        "round": 72,
+        "enabled": true,
+        "status": "night_guard",
+        "closed": false,
+        "construction_ready": true,
+        "prepared": false,
+        "reserve_gold": 150,
+        "weapon_ready": false,
+        "stock_target": 5,
+        "stock_held": 0,
+        "station": {
+          "id": 503,
+          "pos": {
+            "x": 6,
+            "y": 7
+          },
+          "hp": 1500,
+          "level": 1
+        },
+        "walls": [
+          {
+            "id": 701,
+            "pos": {
+              "x": 6,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 702,
+            "pos": {
+              "x": 6,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 703,
+            "pos": {
+              "x": 7,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 704,
+            "pos": {
+              "x": 7,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 705,
+            "pos": {
+              "x": 8,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 706,
+            "pos": {
+              "x": 8,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 707,
+            "pos": {
+              "x": 9,
+              "y": 4
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 708,
+            "pos": {
+              "x": 9,
+              "y": 5
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 709,
+            "pos": {
+              "x": 9,
+              "y": 6
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 711,
+            "pos": {
+              "x": 9,
+              "y": 8
+            },
+            "hp": 1000,
+            "level": 1
+          },
+          {
+            "id": 712,
+            "pos": {
+              "x": 9,
+              "y": 9
+            },
+            "hp": 1000,
+            "level": 1
+          }
+        ],
+        "guard": {
+          "id": 504,
+          "pos": {
+            "x": 38,
+            "y": 23
+          },
+          "hp": 220,
+          "level": 0
+        },
+        "walls_count": 11,
+        "walls_omitted": 0,
+        "permanent_missing": [
+          {
+            "x": 9,
+            "y": 7
+          }
+        ],
+        "permanent_missing_count": 1,
+        "occupied_gaps": [
+          {
+            "x": 9,
+            "y": 7
+          }
+        ]
+      }
+    },
+    {
+      "log_type": "robot_diagnostic",
+      "data": {
+        "round": 72,
+        "team_id": "first-day-flow-gap-relay",
+        "team_type": "challenger",
+        "robot": {
+          "id": 31035,
+          "type": "bossRobot",
+          "pos": {
+            "x": 37,
+            "y": 25
+          },
+          "hp": 800,
+          "state": "",
+          "owned": true,
+          "target_team": "defender",
+          "attack_power": 40,
+          "attack_range": 3
+        },
+        "policy": {
+          "enabled": true,
+          "day": 1,
+          "is_day": false
+        },
+        "previous": {
+          "round": 71,
+          "consecutive": true,
+          "command_matched": true,
+          "command": {
+            "action": "attack",
+            "targetPos": [
+              {
+                "x": 36,
+                "y": 25
+              }
+            ]
+          },
+          "raw_action_result": null,
+          "legality": "missing",
+          "position": {
+            "x": 37,
+            "y": 25
+          },
+          "robot_hp_before": 800,
+          "robot_observed_hp_delta": 0,
+          "displacement": 0,
+          "movement": "unchanged",
+          "positions": [
+            {
+              "x": 37,
+              "y": 25
+            },
+            {
+              "x": 37,
+              "y": 25
+            }
+          ],
+          "oscillating": false,
+          "attack_target": {
+            "id": 992,
+            "type": "pioneer",
+            "pos": {
+              "x": 36,
+              "y": 25
+            },
+            "hp": 500
+          },
+          "target_hp_now": 500,
+          "observed_hp_delta": 0,
+          "target_observation": "unchanged"
+        },
+        "previous_job": {
+          "round": 71,
+          "stage": "controller",
+          "goal": {
+            "x": 37,
+            "y": 25
+          },
+          "controller_id": 992
+        },
+        "called": true,
+        "reason": "direct_attack",
+        "events": [
+          {
+            "kind": "candidate",
+            "target": {
+              "id": 992,
+              "type": "pioneer",
+              "pos": {
+                "x": 36,
+                "y": 25
+              },
+              "hp": 500
+            },
+            "check": {
+              "distance": 1,
+              "attack_range": 3,
+              "in_range": true,
+              "target_lookup_evaluated": true,
+              "target_id": 992,
+              "wall_evaluated": true,
+              "wall": null,
+              "clear": true,
+              "blocked_by": null,
+              "planning_clear": true,
+              "planning_blocker": null
+            },
+            "rank": [
+              false,
+              false,
+              13,
+              500,
+              0,
+              -3,
+              false,
+              1,
+              992
+            ],
+            "direct": true,
+            "cache_until": null,
+            "firing": null,
+            "efficient": true
+          },
+          {
+            "kind": "attack_check",
+            "target": {
+              "x": 36,
+              "y": 25
+            },
+            "check": {
+              "distance": 1,
+              "attack_range": 3,
+              "in_range": true,
+              "target_lookup_evaluated": true,
+              "target_id": 992,
+              "wall_evaluated": true,
+              "wall": null,
+              "clear": true,
+              "blocked_by": null,
+              "planning_clear": true,
+              "planning_blocker": null
+            },
+            "cache_hit": false
+          }
+        ],
+        "events_omitted": 0,
+        "route": {
+          "reachable_count": 1275,
+          "adjacent": [
+            {
+              "pos": {
+                "x": 36,
+                "y": 24
+              },
+              "terrain": "land",
+              "land": true,
+              "reachable": true,
+              "reserved": false,
+              "occupants": []
+            },
+            {
+              "pos": {
+                "x": 36,
+                "y": 25
+              },
+              "terrain": "land",
+              "land": true,
+              "reachable": false,
+              "reserved": false,
+              "occupants": [
+                {
+                  "id": 992,
+                  "type": "pioneer"
+                }
+              ]
+            },
+            {
+              "pos": {
+                "x": 36,
+                "y": 26
+              },
+              "terrain": "land",
+              "land": true,
+              "reachable": true,
+              "reserved": false,
+              "occupants": []
+            },
+            {
+              "pos": {
+                "x": 37,
+                "y": 24
+              },
+              "terrain": "land",
+              "land": true,
+              "reachable": true,
+              "reserved": false,
+              "occupants": []
+            },
+            {
+              "pos": {
+                "x": 37,
+                "y": 26
+              },
+              "terrain": "land",
+              "land": true,
+              "reachable": true,
+              "reserved": false,
+              "occupants": []
+            },
+            {
+              "pos": {
+                "x": 38,
+                "y": 24
+              },
+              "terrain": "land",
+              "land": true,
+              "reachable": true,
+              "reserved": false,
+              "occupants": []
+            },
+            {
+              "pos": {
+                "x": 38,
+                "y": 25
+              },
+              "terrain": "land",
+              "land": true,
+              "reachable": true,
+              "reserved": false,
+              "occupants": []
+            },
+            {
+              "pos": {
+                "x": 38,
+                "y": 26
+              },
+              "terrain": "land",
+              "land": true,
+              "reachable": true,
+              "reserved": false,
+              "occupants": []
+            }
+          ]
+        },
+        "controller_budget": 4,
+        "pursuit_rounds": 1,
+        "controller_budget_remaining": 3,
+        "siege_until": 0,
+        "base_attack_failures": 0,
+        "base_close_required": false,
+        "verified_base_post": null,
+        "verified_base_target": null,
+        "remembered_structures": [
+          {
+            "id": 990,
+            "type": "station",
+            "pos": {
+              "x": 33,
+              "y": 25
+            },
+            "hp": 1500
+          },
+          {
+            "id": 1990,
+            "type": "rocket",
+            "pos": {
+              "x": 35,
+              "y": 26
+            },
+            "hp": 1000
+          },
+          {
+            "id": 1991,
+            "type": "rocket",
+            "pos": {
+              "x": 35,
+              "y": 24
+            },
+            "hp": 1000
+          },
+          {
+            "id": 1992,
+            "type": "rocket",
+            "pos": {
+              "x": 35,
+              "y": 25
+            },
+            "hp": 1000
+          }
+        ],
+        "blocked_steps": [],
+        "failed_cache": [],
+        "failed_cache_omitted": 0,
+        "weapons": [
+          {
+            "id": 1990,
+            "type": "rocket",
+            "pos": {
+              "x": 35,
+              "y": 26
+            },
+            "hp": 1000
+          },
+          {
+            "id": 1991,
+            "type": "rocket",
+            "pos": {
+              "x": 35,
+              "y": 24
+            },
+            "hp": 1000
+          },
+          {
+            "id": 1992,
+            "type": "rocket",
+            "pos": {
+              "x": 35,
+              "y": 25
+            },
+            "hp": 1000
+          }
+        ],
+        "weapons_count": 3,
+        "weapons_omitted": 0,
+        "old_controller_state": "still_at_weapon",
+        "old_controller_now": {
+          "id": 992,
+          "type": "pioneer",
+          "pos": {
+            "x": 36,
+            "y": 25
+          },
+          "hp": 500
+        },
+        "visible_heroes": [
+          {
+            "id": 992,
+            "type": "pioneer",
+            "pos": {
+              "x": 36,
+              "y": 25
+            },
+            "hp": 500,
+            "near_weapon_ids": [
+              1990,
+              1991,
+              1992
+            ],
+            "eligible": true
+          }
+        ],
+        "visible_heroes_count": 1,
+        "visible_heroes_omitted": 0,
+        "operator_count": 1,
+        "candidates": [
+          {
+            "target": {
+              "id": 992,
+              "type": "pioneer",
+              "pos": {
+                "x": 36,
+                "y": 25
+              },
+              "hp": 500
+            },
+            "check": {
+              "distance": 1,
+              "attack_range": 3,
+              "in_range": true,
+              "target_lookup_evaluated": true,
+              "target_id": 992,
+              "wall_evaluated": true,
+              "wall": null,
+              "clear": true,
+              "blocked_by": null,
+              "planning_clear": true,
+              "planning_blocker": null
+            },
+            "rank": [
+              false,
+              false,
+              13,
+              500,
+              0,
+              -3,
+              false,
+              1,
+              992
+            ],
+            "direct": true,
+            "cache_until": null,
+            "firing": null,
+            "efficient": true
+          }
+        ],
+        "selected": {
+          "id": 992,
+          "type": "pioneer",
+          "pos": {
+            "x": 36,
+            "y": 25
+          },
+          "hp": 500
+        },
+        "selected_rank": [
+          false,
+          false,
+          13,
+          500,
+          0,
+          -3,
+          false,
+          1,
+          992
+        ],
+        "target_changed": false,
+        "intent": "controller",
+        "target_points": [
+          {
+            "x": 36,
+            "y": 25
+          }
+        ],
+        "stage": "controller",
+        "attempted_command": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 36,
+              "y": 25
+            }
+          ]
+        },
+        "goal": {
+          "x": 37,
+          "y": 25
+        },
+        "accepted": true,
+        "final_command": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 36,
+              "y": 25
+            }
+          ]
+        },
+        "rejections": []
+      }
+    }
+  ],
+  "bind_verified": true,
+  "bash_executed": false
+}

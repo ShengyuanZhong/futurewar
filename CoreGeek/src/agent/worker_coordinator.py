@@ -98,7 +98,8 @@ class WorkerCoordinator:
                 return True
         # A relaxed route is diagnostic only. Never step into the blocker's cell.
         ignore = frozenset(w.unit_id for w in self.turn.workers() if w.unit_id != role.unit_id)
-        relaxed = Routes(self.turn,role,self.reserved(),self.s.danger,allowed,ignore)
+        relaxed = Routes(self.turn,role,self.reserved() | self.s.movement_reserved(role),
+                         self.s.danger,allowed,ignore)
         goal = relaxed.nearest(goals)
         if goal is None or (not allow_risk and not self.turn.is_day and relaxed.exposure[goal] > 0):
             return False
@@ -140,7 +141,8 @@ class WorkerCoordinator:
         dx,dy=goal.x-requester.pos.x,goal.y-requester.pos.y
         candidates.sort(key=lambda p:(-abs(dx*(p.y-requester.pos.y)-dy*(p.x-requester.pos.x)),p))
         for p in candidates:
-            after = Routes(self.turn,requester,self.reserved()|{p},self.s.danger,None,frozenset({blocker.unit_id}))
+            after = Routes(self.turn,requester,self.reserved() | self.s.movement_reserved(requester) | {p},
+                           self.s.danger,None,frozenset({blocker.unit_id}))
             if goal not in after.cost:
                 continue
             if self.plan.add(blocker.unit_id,move_command(p)):

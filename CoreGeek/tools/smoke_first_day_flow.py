@@ -18,8 +18,9 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT),str(ROOT/'src')]
 from agent.protocol import Pos,Turn,distance
-from tests.fixtures import request
+from tests.fixtures import request,unit
 from tests.test_gap_defense import occupied,role
+from tests.test_summon_control import provide_scout
 
 
 def fixture(case):
@@ -35,6 +36,10 @@ def fixture(case):
     raw['mapInfo']['zones'] += [{'neutralType':kind,'pos':pos.dump()} for kind,pos in
         (('challengerTaskPoint1',Pos(1,7)),('challengerTaskPoint2',Pos(1,6)),('challengerTaskPoint2',Pos(1,5)))]
     raw['weaponShopList'].append({'name':'BossRobotSummonOrder','price':120})
+    # This short ledger fixture starts with an observed layout and a real
+    # worker at the enemy base. The separate scout-flow tool tests the trip.
+    raw['teamEnemy']['roles'].append(unit(990,'station',33,25))
+    provide_scout(raw)
     return raw
 
 

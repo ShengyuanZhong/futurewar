@@ -4,10 +4,11 @@ import time
 import unittest
 
 from agent.protocol import Pos, Turn, distance, station_footprint
+from agent.summoning import rear_spawn_position, summon_cell_legal
 from app.config import Settings
 from app.service.turn_service import Session, TurnService
 from tests.fixtures import robot, unit
-from tests.test_summon_control import ORDER, finished_tasks, raid_request
+from tests.test_summon_control import ORDER, finished_tasks, provide_scout, raid_request
 from tests.test_worker_safety import strategy
 
 
@@ -29,7 +30,10 @@ class BossRaidTests(unittest.TestCase):
             # Add guns beside the current controller to make its return budget real.
             for i in range(3):
                 raw['teamOur']['roles'].append(unit(600+i, 'rocket', own_x+(2 if own_x > 20 else -1), own_y+i-1))
-            s, plan = strategy(raw, finished_tasks()); s.run()
+            for uid,pos in enumerate(Settings().build_cells(Turn.load(raw),'wall'),1701):
+                raw['teamOur']['roles'].append(unit(uid,'wall',pos.x,pos.y,health=1000))
+            memory = finished_tasks(); provide_scout(raw,memory)
+            s, plan = strategy(raw, memory); s.run()
             command = plan.commands['502']; self.assertEqual(command['name'], ORDER)
             spawn = Pos.load(command['targetPos'][0])
             self.assertEqual(min(distance(spawn,p) for p in station_footprint(Pos(enemy_x,enemy_y))),3)
@@ -37,13 +41,14 @@ class BossRaidTests(unittest.TestCase):
             self.assertTrue(spawn.x > enemy_x+1 if enemy_x > 20 else spawn.x < enemy_x)
             self.assertLess(abs(spawn.y-enemy_y), 3)
 
-    def test_missing_enemy_base_uses_full_two_by_two_mirror(self):
+    def test_missing_enemy_base_keeps_mirror_geometry_but_waits_for_scout(self):
         raw = raid_request(); raw['teamEnemy']['roles'] = []
         raw['teamOur']['roles'][1]['backpack'] = [ORDER]
         raw['teamOur']['goldNum'] = 0
         s, plan = strategy(raw, finished_tasks()); s.run()
-        pos = Pos.load(plan.commands['502']['targetPos'][0])
-        self.assertEqual(pos,Pos(37,25))
+        self.assertEqual(rear_spawn_position(s.turn,s.settings),Pos(37,25))
+        self.assertNotEqual(plan.commands.get('502',{}).get('action'),'use')
+        self.assertFalse(s.raid_scouts.summon_ready())
 
     def test_buy_uses_observed_price_capacity_and_actual_gold(self):
         for gold, price, full, buys in ((130, 130, False, True), (129, 130, False, False),
@@ -67,6 +72,7 @@ class BossRaidTests(unittest.TestCase):
 
     def test_failed_purchase_can_retry_but_carried_coupon_is_not_bought_twice(self):
         raw = raid_request(); memory = finished_tasks()
+        provide_scout(raw,memory)
         s, plan = strategy(raw, memory); s.run(); memory.record(s.turn, plan)
         raw['roundNo'] += 1; raw['lastRoundRoleActionResults'] = {'502': False}
         memory.observe(Turn.load(raw)); s, plan = strategy(raw, memory); s.run()
@@ -82,7 +88,8 @@ class BossRaidTests(unittest.TestCase):
     def test_failed_summon_keeps_order_and_tries_a_different_rear_position(self):
         raw = raid_request(); raw['teamOur']['roles'][1]['backpack'] = [ORDER]
         raw['teamOur']['goldNum'] = 0
-        memory = finished_tasks(); s, plan = strategy(raw, memory); s.run()
+        memory = finished_tasks(); provide_scout(raw,memory)
+        s, plan = strategy(raw, memory); s.run()
         first = plan.commands['502']['targetPos'][0]; memory.record(s.turn, plan)
         raw['roundNo'] += 1; raw['lastRoundRoleActionResults'] = {'502': False}
         memory.observe(Turn.load(raw)); s, plan = strategy(raw, memory); s.run()
@@ -97,15 +104,30 @@ class BossRaidTests(unittest.TestCase):
         s, plan = strategy(raw, finished_tasks(), Settings(enable_boss_raid=False)); s.run()
         self.assertNotIn('30005', plan.commands)
 
-    def test_no_legal_rear_spawn_skips_buy_and_budget_reservation(self):
+    def test_blocked_rear_still_allows_purchase_when_other_legal_positions_exist(self):
         raw = raid_request(); raw['teamEnemy']['roles'][0]['pos'] = {'x': 38, 'y': 25}
         s, plan = strategy(raw, finished_tasks()); s.run()
+        self.assertIsNone(rear_spawn_position(s.turn,s.settings))
+        self.assertEqual(plan.commands['502'],{'action':'buy','name':ORDER,'num':1})
+
+    def test_no_legal_spawn_anywhere_skips_buy_and_budget_reservation(self):
+        raw = raid_request()
+        turn,settings = Turn.load(raw),Settings()
+        # Synthetic NPC coverage leaves paths in the building zones intact,
+        # while every otherwise legal summon tile becomes an NPC tile.
+        raw['mapInfo']['zones'].extend({'neutralType':'vendor','pos':p.dump()}
+            for x in range(turn.width) for y in range(turn.height)
+            if summon_cell_legal(turn,settings,p:=Pos(x,y)))
+        s,plan = strategy(raw,finished_tasks());s.run()
+        self.assertFalse(any(summon_cell_legal(s.turn,settings,Pos(x,y))
+                             for x in range(turn.width) for y in range(turn.height)))
         self.assertNotEqual(plan.commands.get('502', {}).get('name'), ORDER)
         self.assertEqual(s.boss_raid.budget_reserve(), 0)
 
     def test_missing_already_acquired_order_never_triggers_a_second_purchase(self):
         raw = raid_request(); raw['teamOur']['roles'][1]['backpack'] = [ORDER]
-        memory = finished_tasks(); s, plan = strategy(raw, memory); s.run(); memory.record(s.turn, plan)
+        memory = finished_tasks(); provide_scout(raw,memory)
+        s, plan = strategy(raw, memory); s.run(); memory.record(s.turn, plan)
         raw['roundNo'] += 1; raw['teamOur']['roles'][1]['backpack'] = []
         raw['lastRoundRoleActionResults'] = {'502': False}
         memory.observe(Turn.load(raw)); s, plan = strategy(raw, memory); s.run()
@@ -115,7 +137,8 @@ class BossRaidTests(unittest.TestCase):
     def test_failed_summon_releases_its_daily_attempt_and_pending_position(self):
         raw = raid_request(); raw['teamOur']['roles'][1]['backpack'] = [ORDER]
         raw['teamOur']['goldNum'] = 0
-        memory = finished_tasks(); s, plan = strategy(raw, memory); s.run(); memory.record(s.turn, plan)
+        memory = finished_tasks(); provide_scout(raw,memory)
+        s, plan = strategy(raw, memory); s.run(); memory.record(s.turn, plan)
         self.assertEqual(memory.summon_attempts, 1)
         spawn = Pos.load(plan.commands['502']['targetPos'][0])
         self.assertIn(spawn, memory.pending_summon_positions)
@@ -212,7 +235,8 @@ class BossRaidTests(unittest.TestCase):
     def test_api_sequence_buys_once_summons_then_kills_controller_before_base(self):
         raw = raid_request(); service = TurnService(Settings(enable_news=False,enable_first_night_defense=False))
         key = (raw['teamOur']['teamId'], raw['teamOur']['type'])
-        service.sessions[key] = Session(memory=finished_tasks())
+        memory = finished_tasks(); provide_scout(raw,memory)
+        service.sessions[key] = Session(memory=memory)
         births, buys, uses, attacks = [], [], [], []
         boss_id = 32768
         for number in list(range(30, 38)) + list(range(71, 131)):

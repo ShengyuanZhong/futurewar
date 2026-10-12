@@ -8,7 +8,7 @@ from app.service.memory import GameMemory
 from app.service.turn_service import Session,TurnService
 from tests.fixtures import request
 from tests.test_gap_defense import role
-from tests.test_summon_control import ORDER,raid_request
+from tests.test_summon_control import ORDER,provide_scout,raid_request
 from tests.test_worker_safety import strategy
 
 
@@ -193,6 +193,7 @@ class FirstDayOrderTests(unittest.TestCase):
 
     def test_service_two_successes_buy_then_use_two_distinct_positions(self):
         raw,memory,_,_ = day_strategy(2,gold=240)
+        provide_scout(raw,memory)
         service = TurnService(Settings(enable_news=False))
         key = (raw['teamOur']['teamId'],raw['teamOur']['type'])
         service.sessions[key] = Session(memory=memory)

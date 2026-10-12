@@ -1,8 +1,9 @@
 """At most two first-day BOSS orders, confirmed from inventory and feedback."""
 from dataclasses import replace
 from .grid import Routes, adjacent_cells
-from .protocol import PIONEER
-from .summoning import rear_spawn_position
+from .protocol import PIONEER, Pos, distance
+from .summoning import (rear_spawn_position, scouted_spawn_position,
+                       enemy_base_position, summon_cell_legal)
 
 
 BOSS_ORDER = 'BossRobotSummonOrder'
@@ -88,6 +89,10 @@ class BossRaid:
                     self.state['deployed_count'] = min(2, self.state['deployed_count'] + 1)
                 self.state['status'] = 'deployed'
                 self.state['deployment_ledger_confirmed'] = True
+                if pending_use.get('scouted'):
+                    scouted = self.state.setdefault('scouted_spawns',[])
+                    if pending_use['spawn'] not in scouted:
+                        scouted.append(pending_use['spawn'])
                 if spent != 1:
                     self.state['inventory_warning'] = 'use_feedback_inventory_disagree'
                     # A valid use still consumes one managed order even if the
@@ -184,6 +189,8 @@ class BossRaid:
             purchase_attempt_round=self.state.get('purchase_attempt_round'),
             purchase_stage_done=self.state.get('purchase_stage_done',False),
             weapon_upgrades_ready=self.weapon_upgrades_ready(),boss_budget=self.budget_reserve(),
+            summon_window_closed=self.state.get('summon_window_closed',False),
+            scout_ready=getattr(self.s,'raid_scouts',None).summon_ready() if hasattr(self.s,'raid_scouts') else False,
             last_pioneer_decision=self.state.get('decision'))
 
     def available_gold(self):
@@ -218,7 +225,7 @@ class BossRaid:
         role = next(iter(self.turn.alive((PIONEER,))),None)
         price = self.turn.shop_prices.get(BOSS_ORDER)
         if (not role or not self.s.settings.enable_boss_raid or self.turn.day!=1 or not self.turn.is_day
-                or self.state.get('purchase_closed') or price is None
+                or self.state.get('purchase_closed') or self.state.get('summon_window_closed') or price is None
                 or (self.state['deployed_count'] and not self.state['deployment_ledger_confirmed'])
                 or self.state.get('pending_buy')):
             return 0
@@ -235,14 +242,27 @@ class BossRaid:
         positions = self.spawn_positions(1)
         return positions[0] if positions else None
 
-    def spawn_positions(self, count):
+    def spawn_positions(self, count, scouted=False):
         used = set(self.plan.summon_positions) | set(self.state['spawns'])
         failed = self.state.get('failed_positions', set())
-        key = (count, frozenset(used), frozenset(failed))
+        key = (count, scouted, frozenset(used), frozenset(failed))
         if key not in self.spawn_cache:
             positions = []
             for _ in range(count):
-                pos = rear_spawn_position(self.turn, self.s.settings, used, failed)
+                if scouted:
+                    pos = scouted_spawn_position(self.turn,self.s.settings,
+                        self.memory.enemy_structures.values(),used,failed,
+                        self.memory.raid_scouts.get('surveyed',()))
+                else:
+                    # Purchase feasibility only. Actual use must wait for the
+                    # scout and use the observed layout, never this template.
+                    pos = rear_spawn_position(self.turn,self.s.settings,used,failed)
+                    if pos is None:
+                        base = enemy_base_position(self.turn)
+                        legal = [Pos(x,y) for x in range(self.turn.width) for y in range(self.turn.height)
+                                 if Pos(x,y) not in failed
+                                 and summon_cell_legal(self.turn,self.s.settings,Pos(x,y),used)] if base else []
+                        pos = min(legal,key=lambda p:(distance(p,base),p)) if legal else None
                 if pos is None:
                     break
                 positions.append(pos); used.add(pos)
@@ -321,6 +341,9 @@ class BossRaid:
         if self.state['target_count']==0:
             self.state['decision']['reason'] = 'no_successful_tasks'
             return False
+        if self.state.get('summon_window_closed'):
+            self.state['decision']['reason'] = 'summon_window_closed'
+            return self.return_home(role)
         if self.state.get('pending_buy') or self.state.get('pending_use'):
             self.state['decision']['reason'] = 'awaiting_inventory_feedback'
             return self.return_home(role)
@@ -331,6 +354,12 @@ class BossRaid:
             if self.state.get('order_acquired') or self.state.get('deployed_count'):
                 if self.state['deployed_count'] and not self.state['deployment_ledger_confirmed']:
                     self.state['purchase_stage_done'] = True
+                if self.held_orders(role) and not self.state.get('pending_use'):
+                    # The use/return budget is no longer feasible. Preserve
+                    # physical coupons instead of summoning without sight.
+                    self.state.update(summon_window_closed=True,purchase_stage_done=True,
+                                      status='scout_window_expired')
+                    self.state['decision']['reason'] = 'scout_window_expired'
                 return self.return_home(role)
             prepare = self.preparation(role)
             if prepare:
@@ -350,12 +379,29 @@ class BossRaid:
         buy_num = proposal['buy_num']
         if not buy_num:
             self.state['purchase_stage_done'] = True
-            spawn = proposal['positions'][0]
+            scout = self.s.raid_scouts
+            if not scout.summon_ready():
+                self.state['decision']['reason'] = 'waiting_for_scout:' + scout.state.get('readiness_reason','unavailable')
+                self.state['status'] = 'waiting_for_scout'
+                # Move home while awaiting actual observations. At home hold;
+                # starting another task would steal the remaining use window.
+                self.return_home(role)
+                self.plan.used.add(role.unit_id)
+                return True
+            positions = self.spawn_positions(proposal['uses'],scouted=True)
+            if len(positions) != proposal['uses']:
+                self.state['decision']['reason'] = 'no_scouted_spawn'
+                self.return_home(role)
+                self.plan.used.add(role.unit_id)
+                return True
+            spawn = positions[0]
+            self.state['decision'].update(reason='using_scouted_order',spawn=spawn,
+                layout_weapons=scout.state.get('weapons'),operator_cells=scout.state.get('operator_cells'))
             if self.plan.add(role.unit_id, {'action': 'use', 'name': BOSS_ORDER, 'targetPos': [spawn.dump()]}):
                 self.state.pop('returned', None)
                 self.state.update(status='summon_pending', spawn=spawn, summon_round=self.turn.round_no,
                     purchase_locked=True, pending_use={'round':self.turn.round_no,'spawn':spawn,
-                        'held':role.backpack.count(BOSS_ORDER),'actor_id':role.unit_id})
+                        'held':role.backpack.count(BOSS_ORDER),'actor_id':role.unit_id,'scouted':True})
                 return True
             return False
         trip = proposal['trip']

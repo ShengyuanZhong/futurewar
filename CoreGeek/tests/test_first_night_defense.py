@@ -274,11 +274,13 @@ class FirstNightDefenseTests(unittest.TestCase):
             self.assertFalse(configured.enable_first_night_defense)
             self.assertEqual(configured.first_night_repair_stock,100)
 
-    def test_strategy_scout_waits_for_defense_then_assigns_only_the_other_worker(self):
+    def test_strategy_scout_leaves_after_walls_without_waiting_for_upgrade_or_kits(self):
         raw = fortified(30)
         s,_,defense = setup(raw,boss=True)
         self.assertFalse(defense.prepared())
-        self.assertIsNone(s.memory.raid_scouts.get('worker_id'))
+        self.assertEqual(defense.worker_id,501)
+        self.assertEqual(s.memory.raid_scouts.get('worker_id'),504)
+        self.assertEqual(s.memory.raid_scouts.get('home_worker_id'),501)
         raw = ready(raw)
         s,_,defense = setup(raw,boss=True)
         self.assertTrue(defense.prepared())

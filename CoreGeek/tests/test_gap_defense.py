@@ -10,7 +10,7 @@ from tests.fixtures import unit, robot
 from tests.test_maintenance import fortified
 from tests.test_u_layout import point
 from tests.test_worker_safety import strategy
-from tests.test_summon_control import ORDER, finished_tasks
+from tests.test_summon_control import ORDER, finished_tasks, provide_scout
 
 
 GAP = Pos(9,7)
@@ -387,6 +387,7 @@ class BossPurchaseRegressionTests(unittest.TestCase):
 
     def test_carried_order_is_used_when_wall_gap_is_still_open(self):
         raw,memory,settings = self.setup_raid(0)
+        provide_scout(raw,memory)
         role(raw,502)['backpack'] = [ORDER]
         s,plan = strategy(raw,memory,settings);s.run()
         self.assertEqual(plan.commands['502']['action'],'use')
@@ -427,6 +428,7 @@ class BossPurchaseRegressionTests(unittest.TestCase):
 
     def test_service_purchase_inventory_feedback_then_use_is_not_blocked_by_missing_wall(self):
         raw,memory,settings = self.setup_raid(120)
+        provide_scout(raw,memory)
         service = TurnService(settings)
         key = (raw['teamOur']['teamId'],raw['teamOur']['type'])
         service.sessions[key] = Session(memory=memory)
