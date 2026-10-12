@@ -100,7 +100,7 @@
     "CoreGeek/tests/test_boss_raid.py": "6e783ceed4b21237752215f14d55ea1a1c407d462b461c9ccd877cd61ddddad6",
     "CoreGeek/tests/test_combat_strategy.py": "8719891af043d5ac4603846d4a7cb7cb823d49ddb6b161d8129dfe40224a9f22",
     "CoreGeek/tests/test_completed_economy.py": "95e5b7a2cbeb8de0ab499537a390e9f223913de7cc583f49da5c5470d2e080c2",
-    "CoreGeek/tests/test_day_gate.py": "13e75f8708f602e6b8b42dbc5e59a7bde362fd9f5bd8ebd2a02ead056786657a",
+    "CoreGeek/tests/test_day_gate.py": "de38442f6059a4e010ae454338d9ae9432250065f92cc53adaad5d324adb63fa",
     "CoreGeek/tests/test_default_opening.py": "36081e32ae7f06988acfa544576369a067368e88b4d4d0faec769f09ab5e8eb9",
     "CoreGeek/tests/test_dual_boss.py": "7cba4e5e1afab40f563d149120050d719b24a4cb1268012b808cb939e8a04c79",
     "CoreGeek/tests/test_first_day_order.py": "1602f9c4cc97c08ef894869f14195667ec983a1c867e47cea91c92c919ff3d3b",
@@ -170,5 +170,11 @@
     "official LLM/sandbox/judger integration",
     "Linux bash entry on target runtime"
   ],
-  "scope": "protocol and rule regression plus synthetic observation stress; not official certification or win rate"
+  "scope": "protocol and rule regression plus synthetic observation stress; not official certification or win rate",
+  "source_format_cleanup": {
+    "file": "CoreGeek/tests/test_day_gate.py",
+    "change": "Removed surplus EOF blank line after validation; Python AST unchanged",
+    "before_sha256": "13e75f8708f602e6b8b42dbc5e59a7bde362fd9f5bd8ebd2a02ead056786657a",
+    "after_sha256": "de38442f6059a4e010ae454338d9ae9432250065f92cc53adaad5d324adb63fa"
+  }
 }

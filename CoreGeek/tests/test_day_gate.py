@@ -222,4 +222,3 @@ class DayGateTests(unittest.TestCase):
         s = Strategy(turn, ActionPlan(turn, Settings(enable_boss_raid=False)), memory)
         self.assertFalse(s.gap_guard.gaps)
         self.assertEqual(len(s.settings.build_cells(s.turn, 'wall')), 17)
-
