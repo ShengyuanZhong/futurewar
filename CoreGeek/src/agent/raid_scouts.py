@@ -22,6 +22,13 @@ class RaidScouts:
         if alive_boss:
             self.state['seen_boss'] = True
         enemy = next((u for u in self.turn.enemies if u.kind == 'station'), None)
+        if self.state.get('base') not in (None,self.base):
+            for key in ('surveyed','posts','opening_scout_complete','opening_scout_completed_round'):
+                self.state.pop(key,None)
+        self.state.update(base=self.base,round=self.turn.round_no)
+        self.update_survey()
+        self.opening_active = bool(self.turn.day==1 and enemy and enemy.health>0
+                                  and not self.state.get('opening_scout_complete'))
         no_orders = (self.memory.boss_raid.get('order_decision_round') is not None
                      and self.memory.boss_raid.get('target_count') == 0)
         pending_raid = (self.memory.boss_raid.get('deployed_count',0) > 0
@@ -93,7 +100,7 @@ class RaidScouts:
                 post = self.post(worker)
                 if post is not None:
                     cost = self.travel_budget(worker,post,self.scout_route(worker))[0]
-                    if cost <= self.turn.daylight_left:
+                    if cost < 10_000:
                         choices.append((cost,worker.unit_id))
             if choices:
                 self.state['worker_id'] = min(choices)[1]
@@ -115,7 +122,14 @@ class RaidScouts:
         for uid, job in list(self.memory.worker_tasks.items()):
             if job.get('kind','').startswith('raid_scout'):
                 self.memory.worker_tasks.pop(uid)
+        knowledge = {key:self.state[key] for key in
+            ('base','surveyed','weapon_cells','surveyed_count','weapon_sites','layout_ready',
+             'opening_scout_complete','opening_scout_completed_round') if key in self.state}
+        if self.opening_active:
+            imps={u.unit_id for u in self.turn.imps()}
+            knowledge['posts']={uid:job for uid,job in self.state.get('posts',{}).items() if uid in imps}
         self.state.clear()
+        self.state.update(knowledge)
         if finished:
             self.state.update(finished=True,round=self.turn.round_no)
 
@@ -177,12 +191,16 @@ class RaidScouts:
         # Keep this separate from live buildings used for obstruction/attacks.
         self.state['layout_ready'] = enemy_layout_ready(self.turn,
             self.memory.enemy_structures.values(),self.state['surveyed'],self.memory.enemy_weapon_sites)
+        if self.state['layout_ready']:
+            self.state['opening_scout_complete'] = True
+            self.state.setdefault('opening_scout_completed_round',self.turn.round_no)
 
     def operator_cells(self):
         guns = self.known_weapons()
         visible = {u.pos for u in self.turn.enemies if u.health > 0 and u.kind in ('worker','pioneer')
                    and any(distance(u.pos,w.pos) <= 1 for w in guns)}
-        return visible | set(layout_operator_positions(self.turn,self.memory.enemy_structures.values()))
+        return visible | set(layout_operator_positions(self.turn,self.memory.enemy_structures.values(),
+                                                       self.memory.enemy_weapon_sites))
 
     def refresh_readiness(self):
         worker = next((w for w in self.turn.workers() if w.unit_id == self.state.get('worker_id')),None)
@@ -220,6 +238,11 @@ class RaidScouts:
 
     def summon_ready(self):
         return bool(self.active and self.state.get('summon_ready'))
+
+    def spawn_ready(self):
+        """Confirmed static layout suffices for placement; heroes still need live sight to attack."""
+        return bool(self.active and self.state.get('layout_ready')
+                    and any(u.kind=='station' and u.health>0 for u in self.turn.enemies))
 
     def watch_cells(self):
         if not self.state.get('layout_ready'):
@@ -272,8 +295,6 @@ class RaidScouts:
             if min(distance(p,cell) for cell in station_footprint(self.base)) <= 2:
                 continue
             rounds = self.travel_budget(role,p,route)[0]
-            if role.kind != IMP and self.turn.is_day and rounds > self.turn.daylight_left:
-                continue
             coverage = sum(distance(p,target) <= SIGHT for target in targets)
             catch_distance = min((distance(p,u.pos) for u in catchers),default=10_000)
             if not coverage or (role.kind==IMP and catch_distance<=1):
@@ -292,21 +313,25 @@ class RaidScouts:
         """Return travel rounds and a worthwhile, actually observed parked car.
 
         Boarding costs the walking route to the car. Subsequent two-step moves
-        cost one round each; a final single step dismounts at the lookout. A
-        missing/occupied car never creates a waiting or pursuit mission.
+        cost one round each while daylight remains; a final single step
+        dismounts at the lookout. A missing/occupied car never creates a wait.
         """
         steps = route.cost.get(goal,10_000)
         driving = role.kind != IMP and self.turn.is_day and role.is_driving
-        direct = (steps+1)//2 if driving else steps
+        def driven_rounds(after, daylight):
+            # The car disappears on the first night frame. Do not promise
+            # two-step speed beyond the remaining real daytime commands.
+            return min((after+1)//2,daylight)+max(0,after-2*daylight)
+        direct = driven_rounds(steps,self.turn.daylight_left) if driving else steps
         if (role.kind == IMP or not self.turn.is_day or driving or not steps
                 or not self.turn.vehicle_cells(own=True)):
             return direct,None
         avoided = frozenset(self.state.get('avoided_vehicle_sites',set()))
-        option_key = (role.unit_id,role.pos,frozenset(self.plan.reserved),avoided)
+        occupied = (self.turn.blocked(role) | self.plan.reserved
+                    | self.s.coordinator.claimed_goals(role)
+                    | self.spawn_cells() | self.attack_lanes())
+        option_key = (role.unit_id,role.pos,frozenset(occupied),avoided)
         if option_key not in self.vehicle_options:
-            occupied = (self.turn.blocked(role) | self.plan.reserved
-                        | self.s.coordinator.claimed_goals(role)
-                        | self.spawn_cells() | self.attack_lanes())
             options = []
             for cell in self.turn.vehicle_cells(own=True):
                 if (cell==role.pos or cell in occupied or cell in avoided
@@ -314,20 +339,25 @@ class RaidScouts:
                     continue
                 key = (role.unit_id,cell,frozenset(self.plan.reserved))
                 if key not in self.vehicle_routes:
-                    self.vehicle_routes[key] = self.scout_route(replace(role,pos=cell,is_driving=True))
+                    self.vehicle_routes[key] = self.scout_route(
+                        replace(role,pos=cell,is_driving=True),frozenset({role.unit_id}))
                 options.append((cell,route.cost[cell],self.vehicle_routes[key]))
             self.vehicle_options[option_key] = options
+        pickup = self.s.coordinator.job(role)
+        committed = pickup.get('goal') if pickup.get('kind')=='raid_scout_vehicle' else None
         best = (direct,None)
         for cell,boarding,driven in self.vehicle_options[option_key]:
-            after = driven.cost.get(goal,10_000)
-            rounds = boarding+(after+1)//2
-            # A one-round theoretical gain can disappear after shared movement;
-            # take the car only when it gives a meaningful route improvement.
-            if rounds+1 < best[0] and rounds<=self.turn.daylight_left:
+            if goal not in driven.cost:
+                continue
+            after = driven.cost[goal]
+            rounds = boarding+driven_rounds(after,self.turn.daylight_left-boarding)
+            # A real one-round saving is useful. Keep an already-started
+            # pickup on a tie rather than reverse when the scan post changes.
+            if rounds < best[0] or (cell==committed and rounds==best[0]):
                 best = (rounds,cell)
         return best
 
-    def scout_route(self, role):
+    def scout_route(self, role, ignore_workers=frozenset()):
         reserved = self.s.movement_reserved(role)
         reserved.update(self.spawn_cells() | self.attack_lanes())
         # Previously seen hidden weapons still block paths until real sight clears them.
@@ -349,7 +379,7 @@ class RaidScouts:
                 for y in range(max(0,u.pos.y-2),min(self.turn.height,u.pos.y+3))
                 if Pos(x,y) not in exits)
         return Routes(self.turn,role,reserved,self.s.danger if role.kind!=IMP else None,
-                      self.s.worker_region(role))
+                      self.s.worker_region(role),ignore_workers)
 
     def observe_from(self, role):
         post = self.post(role)
@@ -407,6 +437,11 @@ class RaidScouts:
         self.plan.used.add(role.unit_id)
         return True
 
+    def opening_imp(self, role):
+        """First survey outranks home gaps and purchase status, until actually known."""
+        return bool(role.kind==IMP and self.opening_active
+                    and not self.state.get('opening_scout_complete') and self.observe_from(role))
+
     def imp(self, role):
         return self.active and self.observe_from(role)
 
@@ -426,4 +461,5 @@ class RaidScouts:
     def diagnostic(self):
         return {key:self.state.get(key) for key in ('round','worker_id','home_worker_id','worker_status',
             'walls_ready','personal_dispatch_round','paused_for_construction','surveyed_count','weapon_cells','weapons','weapon_sites','layout_ready','operator_cells',
-            'worker_near','imp_ready','observer_ids','uncovered_operators','summon_ready','readiness_reason','posts')}
+            'opening_scout_complete','opening_scout_completed_round',
+            'worker_near','imp_ready','observer_ids','uncovered_operators','summon_ready','readiness_reason','posts')} | dict(spawn_ready=self.spawn_ready())

@@ -309,6 +309,7 @@ class BossRaid:
             weapon_upgrades_ready=self.weapon_upgrades_ready(),boss_budget=self.budget_reserve(),
             summon_window_closed=self.state.get('summon_window_closed',False),
             scout_ready=getattr(self.s,'raid_scouts',None).summon_ready() if hasattr(self.s,'raid_scouts') else False,
+            spawn_ready=getattr(self.s,'raid_scouts',None).spawn_ready() if hasattr(self.s,'raid_scouts') else False,
             last_buyer_decision=self.state.get('decision'),last_pioneer_decision=self.state.get('decision'))
 
     def available_gold(self):
@@ -382,8 +383,8 @@ class BossRaid:
                         self.memory.enemy_structures.values(),used,failed,
                         self.memory.raid_scouts.get('surveyed',()),self.memory.enemy_weapon_sites)
                 else:
-                    # Purchase feasibility only. Actual use must wait for the
-                    # scout and use the observed layout, never this template.
+                    # Purchase feasibility only. Actual use needs a confirmed
+                    # layout and uses its geometry, never this template.
                     pos = rear_spawn_position(self.turn,self.s.settings,used,failed)
                     if pos is None:
                         base = enemy_base_position(self.turn)
@@ -575,7 +576,7 @@ class BossRaid:
                     self.state['purchase_stage_done'] = True
                 if self.held_orders(role) and not self.state.get('pending_use'):
                     # The use/return budget is no longer feasible. Preserve
-                    # physical coupons instead of summoning without sight.
+                    # physical coupons instead of using an unknown layout.
                     self.state.update(summon_window_closed=True,purchase_stage_done=True,
                                       status='scout_window_expired')
                     self.state['decision']['reason'] = 'scout_window_expired'
@@ -594,7 +595,7 @@ class BossRaid:
         if not buy_num:
             self.state['purchase_stage_done'] = True
             scout = self.s.raid_scouts
-            if not scout.summon_ready():
+            if not scout.spawn_ready():
                 self.state['decision']['reason'] = 'waiting_for_scout:' + scout.state.get('readiness_reason','unavailable')
                 self.state['status'] = 'waiting_for_scout'
                 return self.hold_worker(role,'waiting_for_scout')
@@ -604,7 +605,9 @@ class BossRaid:
                 return self.hold_worker(role,'no_scouted_spawn')
             spawn = positions[0]
             self.state['decision'].update(reason='using_scouted_order',spawn=spawn,
-                layout_weapons=scout.state.get('weapons'),operator_cells=scout.state.get('operator_cells'))
+                layout_weapons=scout.state.get('weapons'),weapon_sites=scout.state.get('weapon_sites'),
+                operator_cells=scout.state.get('operator_cells'),
+                current_shared_sight=scout.summon_ready())
             if self.plan.add(role.unit_id, {'action': 'use', 'name': BOSS_ORDER, 'targetPos': [spawn.dump()]}):
                 self.state.pop('returned', None)
                 self.state.update(status='summon_pending', spawn=spawn, summon_round=self.turn.round_no,

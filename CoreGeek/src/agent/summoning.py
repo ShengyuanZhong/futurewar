@@ -1,4 +1,4 @@
-"""Legal summon cells and placement planned from actually scouted enemy guns.
+"""Legal summon cells and placement planned from confirmed enemy weapon sites.
 
 Operator positions below are hypotheses for placement and observer coverage.
 They are never observations and must not be used as robot attack targets.
@@ -10,6 +10,7 @@ from math import ceil
 from .combat import segment_entry
 from .protocol import CONTROLLABLE_TYPES, LAND, MINERALS, TOWER_TYPES, Pos, distance, station_footprint
 from .robot_combat import blocking_wall, planning_building_blocker
+from .worker_safety import wall_shelters
 
 
 def enemy_base_position(turn):
@@ -116,41 +117,59 @@ def enemy_layout_ready(turn, remembered=(), surveyed=(), confirmed_sites=()):
     return bool(cells) and (len(weapons) >= 3 or len(confirmed) >= 3 or cells <= set(surveyed))
 
 
-def layout_operator_positions(turn, remembered=()):
-    """Possible free cells with maximal shared control of observed guns.
+def layout_weapon_sites(turn, remembered=(), confirmed_sites=()):
+    """Placement geometry from actual sightings, retained without live targets.
+
+    The position-only result never supplies a unit id, HP or attack target.
+    Historical sites must belong to this enemy base's actual weapon ring;
+    global walls remain current input and may change the ranked spawn cells.
+    """
+    cells = enemy_weapon_cells(turn)
+    observed = {u.pos for u in enemy_layout_weapons(turn, remembered)}
+    return tuple(sorted(observed | (set(confirmed_sites) & cells)))
+
+
+def layout_operator_positions(turn, remembered=(), confirmed_sites=()):
+    """Possible free cells with maximal shared control of confirmed gun sites.
 
     Buildings and known neutral obstacles cannot be operator positions. An
     actually visible worker/pioneer is allowed to occupy a potential position.
     """
-    guns = enemy_layout_weapons(turn, remembered)
-    if not guns:
+    sites = layout_weapon_sites(turn, remembered, confirmed_sites)
+    if not sites:
         return ()
     base = enemy_base_position(turn)
     occupied = {p for u in turn.ours + turn.enemies if u.health > 0
                 and u.kind not in CONTROLLABLE_TYPES for p in turn.footprint(u)}
-    occupied.update(g.pos for g in guns)
+    occupied.update(sites)
     if base is not None:
         occupied.update(station_footprint(base))
     tasks = {p for task in turn.tasks for p in turn.task_cells(task)}
-    candidates = {p for g in guns for p in g.pos.neighbours()
+    candidates = {p for site in sites for p in site.neighbours()
                   if turn.land(p) and p not in occupied and p not in tasks}
-    counts = {p: sum(distance(p, g.pos) <= 1 for g in guns) for p in candidates}
+    counts = {p: sum(distance(p, site) <= 1 for site in sites) for p in candidates}
     most = max(counts.values(), default=0)
     return tuple(sorted(p for p, count in counts.items() if count == most))
 
 
-def _firing_clear(turn, start, target, remembered):
+def _layout_building_blocked(turn, start, target, remembered, weapon_sites):
+    """Spawn planning only: retained gun sites constrain possible attack lines."""
+    return (planning_building_blocker(turn, start, target, remembered) is not None
+            or wall_shelters(start, target, weapon_sites))
+
+
+def _firing_clear(turn, start, target, remembered, weapon_sites=()):
     return (0 < distance(start, target) <= 3
             and blocking_wall(turn, start, target) is None
-            and planning_building_blocker(turn, start, target, remembered) is None)
+            and not _layout_building_blocked(turn, start, target, remembered, weapon_sites))
 
 
-def _approach_costs(turn, target, blocked, remembered):
+def _approach_costs(turn, target, blocked, remembered, weapon_sites=()):
     """Reverse eight-way BFS to a real clear, range-three firing position."""
     goals = {Pos(x, y) for x in range(max(0, target.x-3), min(turn.width, target.x+4))
              for y in range(max(0, target.y-3), min(turn.height, target.y+4))
              if Pos(x, y) not in blocked and turn.land(Pos(x, y))
-             and _firing_clear(turn, Pos(x, y), target, remembered)}
+             and _firing_clear(turn, Pos(x, y), target, remembered, weapon_sites)}
     costs = {p: 0 for p in goals}
     frontier = deque(sorted(goals))
     while frontier:
@@ -164,7 +183,7 @@ def _approach_costs(turn, target, blocked, remembered):
     return costs
 
 
-def _breach_cost(turn, wall_free, start, target, remembered):
+def _breach_cost(turn, wall_free, start, target, remembered, weapon_sites=()):
     """Only a wall-only line may be budgeted as a BOSS wall breach.
 
     Bases/guns on the line cannot be silently counted as walls or walked
@@ -172,7 +191,7 @@ def _breach_cost(turn, wall_free, start, target, remembered):
     """
     if not 0 < distance(start, target) <= 3:
         return None
-    if planning_building_blocker(wall_free, start, target, remembered) is not None:
+    if _layout_building_blocked(wall_free, start, target, remembered, weapon_sites):
         return None
     dx, dy = target.x-start.x, target.y-start.y
     walls = [u for u in turn.ours + turn.enemies if u.health > 0 and u.kind == 'wall'
@@ -184,7 +203,7 @@ def _breach_cost(turn, wall_free, start, target, remembered):
 
 
 def scouted_spawn_candidates(turn, settings, remembered=(), pending=(), failed=(), surveyed=(), confirmed_sites=()):
-    """Rank legal cells using observed layout, including mirror/rotation cases.
+    """Rank legal cells using confirmed layout, including mirror/rotation cases.
 
     Prefer a stationary shot at a visible cannon crew or an inferred common
     control cell. Otherwise choose the shortest route to a clear firing cell
@@ -199,21 +218,23 @@ def scouted_spawn_candidates(turn, settings, remembered=(), pending=(), failed=(
     if base is None:
         return ()
     guns = enemy_layout_weapons(turn, remembered)
+    sites = layout_weapon_sites(turn, remembered, confirmed_sites)
+    retained_sites = tuple(p for p in sites if p not in {g.pos for g in guns})
     static = guns + tuple(u for u in remembered if u.kind == 'station' and u.health > 0)
     crews = tuple(u.pos for u in turn.enemies if u.health > 0 and u.kind in ('worker', 'pioneer')
-                  and any(distance(u.pos, g.pos) <= 1 for g in guns))
-    targets = tuple(sorted(set(crews))) or layout_operator_positions(turn, remembered)
+                  and any(distance(u.pos, site) <= 1 for site in sites))
+    targets = tuple(sorted(set(crews))) or layout_operator_positions(turn, remembered, confirmed_sites)
     base_cells = station_footprint(base)
     blocked = {p for p, kind in turn.zones.items() if kind != LAND}
     blocked.update(p for task in turn.tasks for p in turn.task_cells(task))
     blocked.update(turn.occupied_cells())
     blocked.update(r.pos for r in turn.robots if r.health > 0)
-    blocked.update(g.pos for g in guns)
+    blocked.update(sites)
     blocked.update(base_cells)
     # Selected robots will appear together at night. A later BOSS must not
     # price a walk or firing post through an earlier stationary spawn.
     blocked.update(pending)
-    routes = {target: _approach_costs(turn, target, blocked, static)
+    routes = {target: _approach_costs(turn, target, blocked, static, retained_sites)
               for target in set(targets) | set(base_cells)}
     wall_free = replace(turn, ours=tuple(u for u in turn.ours if u.kind != 'wall'),
                         enemies=tuple(u for u in turn.enemies if u.kind != 'wall'))
@@ -223,18 +244,18 @@ def scouted_spawn_candidates(turn, settings, remembered=(), pending=(), failed=(
     for x in range(max(0, base.x-6), min(turn.width, base.x+8)):
         for y in range(max(0, base.y-7), min(turn.height, base.y+7)):
             pos = Pos(x, y)
-            if (pos in failed or pos in {g.pos for g in guns}
+            if (pos in failed or pos in sites
                     or not summon_cell_legal(turn, settings, pos, pending)):
                 continue
             def engagement(points):
                 options = []
                 for target in points:
                     cost = routes[target].get(pos)
-                    breach = _breach_cost(turn, wall_free, pos, target, static)
+                    breach = _breach_cost(turn, wall_free, pos, target, static, retained_sites)
                     if breach is not None:
                         cost = min(cost, breach) if cost is not None else breach
                     if cost is not None:
-                        options.append((cost, -sum(distance(target, g.pos) <= 1 for g in guns),
+                        options.append((cost, -sum(distance(target, site) <= 1 for site in sites),
                                         distance(pos, target), target))
                 return min(options) if options else None
             crew = engagement(targets)

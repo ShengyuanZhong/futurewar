@@ -1,12 +1,14 @@
 # CoreGeek 参赛 Agent
 
-当前程序版本为 v1.2.17：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后其余11块侧后墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回到可达邻墙维修区，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
+当前程序版本为 v1.2.18：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后其余11块侧后墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回到可达邻墙维修区，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
 
 此目录可作为参赛程序目录提交。沿用示例的 `main3.py`、`src/agent/protocol.py`、`grid.py`、`brain.py`；HTTP 处理与跨回合协作放在 `app`。新增代码无第三方运行依赖。
 
 历史v1.2.8通过569项回归、320份合成压力及四种布局520次跨帧HTTP检查；证据见[验证报告](../reports/VALIDATION-v1.2.8.md)，未运行新官方对局。历史v1.2.7的529项回归、80份合成压力及跨帧HTTP证据保留在[历史报告](../reports/VALIDATION-v1.2.7.md)。
 
-v1.2.17优化[首日分矿与个人交接](docs/FIRST_DAY_MINING_V1217.md)：从官方 `Zone.remain` 保存真实矿区余量，两名筹石工人联合选择可达石矿，能分矿时优先不同矿并保持有效旧预约；只有单矿时允许不同站位共同采，不让另一人等待。真实三炮及个人施工段完成后，采购工立即赴店，侦察工立即探路，不等待整圈墙齐，也不转去普通挖矿。购券仍在2→1→2三次任务尝试后按成功数冻结0～3张；真实视野、外侧施工、敌占位暂跳和购物截止保持。缺失余量的旧输入仅以10作策略上限，诊断保留未知值。范围及结果见[首日验证报告](../reports/VALIDATION-v1.2.17.md)。
+v1.2.18更新[开局侦察、炮位记忆与车辆路线](docs/OPENING_SCOUT_V1218.md)：捣乱鬼第一天先调查敌炮位置，初次确认三炮位置或实际扫描十二格武器圈后才考虑回防，不受购券开关、任务成功数或己方占墙影响。真实观测的炮位和类型保存到 `enemy_weapon_sites`，结合当前全局可见城墙选召唤位置；已知阵型使用 `spawn_ready`，不因失去操炮手当前视野而停止召唤。机器人攻击仍只选当前可见敌单位。侦察工个人施工完毕直接探路，发现实际小车且更快时取车，保持有效取车行程；仅真实 `isDriving` 且白天输出两个连续邻格，夜间恢复步行。范围及结果见[首日验证报告](../reports/VALIDATION-v1.2.18.md)。
+
+历史v1.2.17优化[首日分矿与个人交接](docs/FIRST_DAY_MINING_V1217.md)：从官方 `Zone.remain` 保存真实矿区余量，两名筹石工人联合选择可达石矿，能分矿时优先不同矿并保持有效旧预约；只有单矿时允许不同站位共同采，不让另一人等待。真实三炮及个人施工段完成后，采购工立即赴店，侦察工立即探路，不等待整圈墙齐，也不转去普通挖矿。购券仍在2→1→2三次任务尝试后按成功数冻结0～3张；真实视野、外侧施工、敌占位暂跳和购物截止保持。缺失余量的旧输入仅以10作策略上限，诊断保留未知值。范围及结果见[首日验证报告](../reports/VALIDATION-v1.2.17.md)。
 
 历史v1.2.16按真实后续目的安排[首日建墙分工](docs/WALL_SCHEDULE_V1216.md)：采购工以报文中的商店为目的，另一工以敌基地为目的，将17墙划成稳定的两段，从较远侧向离开侧推进；实际外侧施工路径相对最近墙只增加两步以内时保留施工方向，已有有效途中目标继续完成。相邻施工与远墙选择使用同一下一墙，采石按各自真正剩余墙数分份，初始已有足量石头时按实际背包切分施工段。三炮完成后，外侧工人的首日日间路线保持在外侧，防止穿入未封内圈再被拉回。首日已腾空的历史占点不再抢占远程施工；购物截止、真实撤出、夜间缺口接力和BOSS协作保持。范围及结果见[首日验证报告](../reports/VALIDATION-v1.2.16.md)。
 
@@ -22,7 +24,7 @@ v1.2.17优化[首日分矿与个人交接](docs/FIRST_DAY_MINING_V1217.md)：从
 
 沿用[有限追击与双BOSS](docs/BOSS_EFFICIENCY.md)的战斗与库存反馈框架；旧“财富提前买两张、晚间降为一张、后续收入补第二张”采购条件已由任务结果冻结数量替代。
 
-当前[视野协作](docs/RAID_SCOUTS.md)以[布局侦察](docs/LAYOUT_SCOUTING.md)和[个人任务交接](docs/FIRST_DAY_MINING_V1217.md)为准：侦察工个人施工完成即走，采购工独立赴店；观察从扫描切换到覆盖操炮位，站在敌建造圈外并避让召唤点/射线。被占缺口时捣乱鬼留家后备，另一工人提供视野；不向记忆或推断敌角色格盲目开火。旧“工人必须等防守补给完成、固定后侧观察、固定后方出生”的条件已撤销。
+当前[视野协作](docs/RAID_SCOUTS.md)以[开局侦察](docs/OPENING_SCOUT_V1218.md)和[个人任务交接](docs/FIRST_DAY_MINING_V1217.md)为准：捣乱鬼先完成初次敌炮调查，再考虑缺口后备；侦察工个人施工完成即走，采购工独立赴店。观察从扫描切换到覆盖操炮位，站在敌建造圈外并避让召唤点/射线。已确认炮位失视后仍支持阵型召唤；移动角色攻击要求当前真实观测，不向记忆或推断敌角色格盲目开火。旧“工人必须等防守补给完成、固定后侧观察、固定后方出生”的条件已撤销。
 
 v1.2.2新增[机器人诊断日志](docs/ROBOT_DIAGNOSTICS.md)，策略保持v1.2.1。默认输出robot_observation与robot_diagnostic两类INFO JSON，包括实际位置/位移、HP、敌炮/角色可见集合、距离/墙/失败缓存、射击位置和最终原因；enable_robot_diagnostics=false可关闭。
 
@@ -195,7 +197,7 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | [src/agent/boss_formation.py](src/agent/boss_formation.py) | `BossFormation(raider).ordered_robots/advance/wait_for_lane` | 近基地者先调度，前排在保留基地射线的同时占共同操炮位，后排仅因已移动同伴占路短等；参数与状态见[多BOSS进位](docs/BOSS_FORMATION_V1214.md) |
 | [src/agent/raid_diagnostics.py](src/agent/raid_diagnostics.py) | `RaidDiagnostics(strategy).set/event/finish` | 复用观测和路径检查，记录目标、移动/攻击反馈与最终指令；字段/参数见[诊断说明](docs/ROBOT_DIAGNOSTICS.md) |
 | [src/agent/first_night_defense.py](src/agent/first_night_defense.py) | `FirstNightDefense(strategy).closed/construction_ready/prepared/worker` | 区分实际施工和出发批准；首日白天只计去程交互、不提前回防，夜间保持原维护 |
-| [src/agent/raid_scouts.py](src/agent/raid_scouts.py) | `RaidScouts(strategy).imp/worker/post/refresh_dispatch` | 个人施工完成派侦察工、唯一存活者暂停侦察并接手施工、12格扫描/实际三炮和持续操炮区视野；参数见[布局侦察](docs/LAYOUT_SCOUTING.md) |
+| [src/agent/raid_scouts.py](src/agent/raid_scouts.py) | `opening_imp/imp/worker/post/refresh_dispatch/spawn_ready/summon_ready/travel_budget` | 捣乱鬼初次侦察优先，个人施工完成派侦察工；已知阵型召唤与实时视野分开，实际小车收益和取车保持；见[开局侦察](docs/OPENING_SCOUT_V1218.md) |
 | [src/agent/boss_raid.py](src/agent/boss_raid.py) | `departure_budget(role)/departure_due(role)` | 真实赴店、腾包、批购、逐张use及两轮余量，opening=0仅保留兼容字段；返回字段见[购物截止](docs/BUYER_DEADLINE_V1213.md) |
 | [src/agent/boss_raid.py](src/agent/boss_raid.py) | `buyer_role/dispatch_ready/worker_dispatch_ready/worker_mission_active` | 稳定采购工，真实施工条件与购物截止分别批准，使命持续锁定 |
 | [src/agent/day_gate.py](src/agent/day_gate.py) | `DayGate.worker(role)/day_ready()` | 已退休兼容对象：worker始终False，无门石、拆墙或临时封门动作 |
@@ -204,7 +206,7 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | [src/agent/wall_schedule.py](src/agent/wall_schedule.py) | `destinations/prepare/posts/cost/targets/remaining/assigned_missing/construction_ready/release/reclaim` | 首日稳定两段施工、外侧站位与个人墙材需求；真实个人完工后交接采购/侦察，见[首日分矿](docs/FIRST_DAY_MINING_V1217.md) |
 | [src/agent/stone_planner.py](src/agent/stone_planner.py) | `targets/needs_material/can_build_now/options/assignments/diagnostic/mine` | 实际墙材缺口、个人筹石份额、首日两矿联合分配、有效预约与单矿共享回退；读取Turn.mine_remaining |
 | [src/agent/first_day_tasks.py](src/agent/first_day_tasks.py) | `record_attempt/finish_attempt/finished_count/success_count` | 用领取回合区分重复Task1，幂等计3次结束和0～3次成功 |
-| [src/agent/summoning.py](src/agent/summoning.py) | `scouted_spawn_position(turn, settings, remembered=(), pending=(), failed=(), surveyed=())` | 真实炮阵/墙/操炮位选择合法出生点；旧rear仅买前可行性 |
+| [src/agent/summoning.py](src/agent/summoning.py) | `layout_weapon_sites/layout_operator_positions/scouted_spawn_position` | `confirmed_sites` 接入真实炮位缓存，位置几何不生成活单位或攻击目标；按当前墙体选择合法出生点，详见[参数](docs/OPENING_SCOUT_V1218.md) |
 | [src/agent/server.py](src/agent/server.py) | `Handler/serve` | 转发新网络层，兼容demo旧导入 |
 
 ## 函数调用时容易混淆的参数
@@ -249,4 +251,4 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 
 0.4.2接入用户提供的`print_log.py`格式：每个新回合记录`[TASK-DEBUG]`，完整打印phaseTask、llmResp、lastCmdResult、本轮prompt和executeCmd。stderr为默认输出，具体映射见[任务日志](docs/TASK_LOGGING.md)。
 
-当前验证仅覆盖第一天，见[首日验证报告](../reports/VALIDATION-v1.2.17.md)。v1.2.9的全量回归为历史证据；本轮未运行新官方对局。
+当前验证仅覆盖第一天，见[首日验证报告](../reports/VALIDATION-v1.2.18.md)。v1.2.9的全量回归为历史证据；本轮未运行新官方对局。

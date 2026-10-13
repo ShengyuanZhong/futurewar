@@ -28,6 +28,77 @@ def scout_strategy(raw,memory):
 
 
 class ScoutVehicleTests(unittest.TestCase):
+    def test_one_round_gain_is_enough_to_use_a_real_car(self):
+        raw,memory = scene()
+        s,_,actor = scout_strategy(raw,memory)
+        route = s.raid_scouts.scout_route(actor)
+        self.assertEqual(s.raid_scouts.travel_budget(actor,Pos(17,10),route),(4,CAR))
+
+    def test_started_pickup_is_kept_when_changed_post_only_ties_walking(self):
+        raw,memory = scene()
+        memory.worker_tasks[WORKER_ID] = dict(kind='raid_scout_vehicle',target=Pos(30,10),
+            goal=CAR,round=19,position=Pos(11,10),moving=True,stalled=0)
+        s,_,actor = scout_strategy(raw,memory)
+        route = s.raid_scouts.scout_route(actor)
+        self.assertEqual(s.raid_scouts.travel_budget(actor,Pos(15,10),route),(3,CAR))
+        # A farther boarding detour is not kept merely because it was remembered.
+        self.assertEqual(s.raid_scouts.travel_budget(actor,Pos(12,11),route),(1,None))
+
+    def test_unstarted_pickup_tied_with_walking_does_not_add_a_detour(self):
+        raw,memory = scene()
+        s,_,actor = scout_strategy(raw,memory)
+        route = s.raid_scouts.scout_route(actor)
+        self.assertEqual(s.raid_scouts.travel_budget(actor,Pos(15,10),route),(3,None))
+
+    def test_car_is_usable_even_when_final_lookout_is_reached_after_nightfall(self):
+        raw,memory = scene(round_no=65)
+        s,_,actor = scout_strategy(raw,memory)
+        route = s.raid_scouts.scout_route(actor)
+        # Six daytime commands: two to board, four driving, four on foot at night.
+        self.assertEqual(s.raid_scouts.travel_budget(actor,LOOKOUT,route),(10,CAR))
+
+    def test_last_daytime_command_cannot_provide_post_boarding_speed(self):
+        raw,memory = scene(round_no=70,car=Pos(13,10))
+        s,_,actor = scout_strategy(raw,memory)
+        route = s.raid_scouts.scout_route(actor)
+        self.assertEqual(s.raid_scouts.travel_budget(actor,LOOKOUT,route),(14,None))
+
+    def test_driving_budget_accounts_for_vehicle_disappearing_at_night(self):
+        raw,memory = scene(round_no=69,driving=True,car=START)
+        s,_,actor = scout_strategy(raw,memory)
+        route = s.raid_scouts.scout_route(actor)
+        self.assertEqual(s.raid_scouts.travel_budget(actor,LOOKOUT,route),(12,None))
+
+    def test_new_coworker_vehicle_claim_invalidates_cached_pickup(self):
+        raw,memory = scene()
+        s,_,actor = scout_strategy(raw,memory)
+        route = s.raid_scouts.scout_route(actor)
+        self.assertEqual(s.raid_scouts.travel_budget(actor,LOOKOUT,route)[1],CAR)
+        memory.worker_tasks[HOME_ID] = dict(kind='travel',target=CAR,goal=CAR,round=20)
+        self.assertIsNone(s.raid_scouts.travel_budget(actor,LOOKOUT,route)[1])
+
+    def test_boarded_route_does_not_block_the_scouts_vacated_corridor_cell(self):
+        raw,memory = scene(car=Pos(10,10))
+        s,_,actor = scout_strategy(raw,memory)
+        # A synthetic one-cell corridor isolates the occupancy forecast.
+        s.sealed_home.outside = {Pos(x,10) for x in range(10,28)}
+        route = s.raid_scouts.scout_route(actor)
+        self.assertEqual(route.cost[Pos(20,10)],8)
+        self.assertEqual(s.raid_scouts.travel_budget(actor,Pos(20,10),route),(7,Pos(10,10)))
+
+    def test_real_late_day_post_continues_driving_without_arrival_deadline(self):
+        raw,memory = scene(round_no=69,driving=True,car=START)
+        s,plan = strategy(raw,memory)
+        actor = next(w for w in s.turn.workers() if w.unit_id==WORKER_ID)
+        self.assertTrue(s.raid_scouts.worker(actor))
+        post = memory.raid_scouts['posts'][WORKER_ID]
+        self.assertGreater(post['travel_rounds'],s.turn.daylight_left)
+        self.assertFalse(post['ready_by_night'])
+        points = tuple(Pos.load(p) for p in plan.commands[str(WORKER_ID)]['targetPos'])
+        self.assertEqual(len(points),2)
+        self.assertEqual(distance(actor.pos,points[0]),1)
+        self.assertEqual(distance(points[0],points[1]),1)
+
     def test_observed_unoccupied_car_is_a_worthwhile_stop(self):
         raw,memory = scene()
         s,plan,actor = scout_strategy(raw,memory)

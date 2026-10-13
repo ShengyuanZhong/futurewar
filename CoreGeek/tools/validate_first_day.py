@@ -19,6 +19,9 @@ MODULES = (
     'tests.test_first_day_order',
     'tests.test_opening_defense',
     'tests.test_scout_survival',
+    'tests.test_imp_opening_scout',
+    'tests.test_cached_layout_summon',
+    'tests.test_layout_survey',
     'tests.test_vehicle_protocol',
     'tests.test_scout_vehicle',
     'tests.test_worker_boss_buyer',
@@ -49,7 +52,6 @@ EXCLUDED = {
     'tests.test_robot_diagnostics.RobotDiagnosticTests.test_ineligible_robots_still_get_explicit_skip_records',
 }
 EXTRA = (
-    'tests.test_layout_survey.LayoutSurveyTests.test_last_wall_command_is_not_actual_construction_completion',
     'tests.test_gap_defense.GapDefenseTests.test_standby_imp_does_not_cross_gap_while_the_worker_is_alive',
     'tests.test_gap_defense.GapDefenseTests.test_first_day_dusk_does_not_start_body_wait_or_build_extra_walls',
     'tests.test_first_night_defense.FirstNightDefenseTests.test_first_night_repairs_below_thirty_percent_even_without_day_three_guard',

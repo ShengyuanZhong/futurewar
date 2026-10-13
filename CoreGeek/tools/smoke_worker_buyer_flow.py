@@ -100,6 +100,8 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--unfinished', action='store_true',
                         help='Exercise purchase deadlines before seven ordinary walls finish')
+    parser.add_argument('--lost-sight', action='store_true',
+                        help='After actual three-gun observations, the scout dies at R7; use must rely on cached static layout.')
     args = parser.parse_args()
     with socket.socket() as sock:
         sock.bind(('127.0.0.1', 0))
@@ -131,6 +133,8 @@ def main():
             shop_arrival, first_return, control_arrival = None, None, None
             for number in range(1, 72):
                 task_frame(raw, number, (True, True, True))
+                if args.lost_sight and number>=7:
+                    actor(raw,SCOUT)['health']=0
                 reveal(raw, truth)
                 buyer_before = Pos.load(actor(raw, BUYER)['pos'])
                 pioneer_before = Pos.load(actor(raw, PIONEER)['pos'])
@@ -162,8 +166,13 @@ def main():
                                      pos=buyer_before.dump()))
                 if buyer_command.get('action') == 'use' and buyer_command.get('name') == ORDER:
                     operator = next(u for u in truth if u['id'] == 994)
-                    assert any(distance(p, Pos.load(operator['pos'])) <= 4 for p in ordinary_sight(raw))
-                    assert any(u['id'] == 994 for u in raw['teamEnemy']['roles'])
+                    if args.lost_sight:
+                        assert not any(u['roleType'] in ('worker','pioneer','rocket','railgun','gatling')
+                                       for u in raw['teamEnemy']['roles'])
+                        assert not any(distance(p,Pos.load(operator['pos']))<=4 for p in ordinary_sight(raw))
+                    else:
+                        assert any(distance(p, Pos.load(operator['pos'])) <= 4 for p in ordinary_sight(raw))
+                        assert any(u['id'] == 994 for u in raw['teamEnemy']['roles'])
                     uses.append(dict(round=number, actor=BUYER, target=buyer_command['targetPos'][0]))
                 if number >= 37 and first_return is None and pioneer_command.get('action') == 'move':
                     first_return = number
@@ -232,6 +241,8 @@ def main():
             'buyer outside, scout already at enemy, pioneer near local task fixture'),
         task_sequence=[2, 1, 2], accepted_rounds=[1, 4, 34], no_private_memory_seed=True,
         visibility='Ordinary alive friendly range-four sight only; enemy station/wall global; summoned robots have no sight',
+        scout_dies_round=7 if args.lost_sight else None,
+        missing_current_hero_and_weapon_sight_at_use=args.lost_sight,
         fixed_shop=SHOP.dump(), requests=len(rows), cases=cases, results=rows, diagnostics=diag,
         bind_verified=f'0.0.0.0:{port}' in logs, execute_cmd_executed=False,
         failure=repr(failure) if failure is not None else None)

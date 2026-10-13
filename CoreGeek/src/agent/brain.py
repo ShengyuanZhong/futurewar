@@ -147,7 +147,8 @@ class Strategy:
             if time.monotonic() >= self.deadline:
                 break
             if role.kind == IMP:
-                if not self.gap_guard.imp(role) and not self.raid_scouts.imp(role):
+                if (not self.raid_scouts.opening_imp(role) and not self.gap_guard.imp(role)
+                        and not self.raid_scouts.imp(role)):
                     self.imp.decide(role)
                 continue
             maximum = 200 if role.kind == PIONEER else 220

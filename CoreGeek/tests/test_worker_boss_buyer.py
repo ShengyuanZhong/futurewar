@@ -353,7 +353,7 @@ class WorkerBossBuyerTests(unittest.TestCase):
         else:
             self.fail('full mineral bag never freed three slots for the actual batch')
 
-    def test_worker_holds_orders_until_current_shared_sight_is_reliable(self):
+    def test_worker_uses_confirmed_static_layout_after_current_sight_is_lost(self):
         raw, memory, settings = worker_raid_scene(successes=1)
         s, _ = load_strategy(raw, memory, settings)  # Observe real three guns.
         actor(raw, SCOUT)['pos'] = Pos(16, 12).dump()
@@ -363,8 +363,9 @@ class WorkerBossBuyerTests(unittest.TestCase):
         raw['teamOur']['goldNum'] = 0
         s, plan = load_strategy(raw, memory, settings)
         self.assertFalse(s.raid_scouts.summon_ready())
+        self.assertTrue(s.raid_scouts.spawn_ready())
         s.boss_raid.worker(role(s))
-        self.assertFalse(any(c.get('action') == 'use' and c.get('name') == ORDER
+        self.assertTrue(any(c.get('action') == 'use' and c.get('name') == ORDER
                              for c in plan.commands.values()))
         self.assertEqual(actor(raw)['backpack'].count(ORDER), 1)
 

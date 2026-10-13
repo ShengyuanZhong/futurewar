@@ -1,4 +1,4 @@
-"""Real worker sight gates BOSS deployment and observed layouts shape placement.
+"""Confirmed layouts guide placement; robot targets still require current sight.
 
 These synthetic maps apply range-four friendly sight to private ground truth.
 Summoned robots never reveal an enemy gun or character for the tests.
@@ -176,7 +176,7 @@ class LayoutSurveyTests(unittest.TestCase):
         self.assertFalse(s.raid_scouts.summon_ready())
         self.assertTrue(s.raid_scouts.state['uncovered_operators'])
 
-    def test_dead_scout_preserves_held_orders_instead_of_blind_use(self):
+    def test_dead_scout_keeps_confirmed_spawn_layout_without_live_attack_sight(self):
         raw, truth = survey_request(near=True)
         actor(raw, HOME)['backpack'] += [ORDER, ORDER]
         memory = finished_tasks(2)
@@ -187,8 +187,14 @@ class LayoutSurveyTests(unittest.TestCase):
         s, plan = strategy(raw, memory, Settings(enable_news=False)); s.run()
         self.assertFalse(s.raid_scouts.summon_ready())
         self.assertEqual(s.raid_scouts.state['readiness_reason'], 'no_live_scout')
-        self.assertFalse(any(c.get('action') == 'use' and c.get('name') == ORDER
-                             for c in plan.commands.values()))
+        self.assertTrue(s.raid_scouts.spawn_ready())
+        self.assertEqual(len(memory.enemy_weapon_sites), 3)
+        self.assertFalse(any(u.kind in TOWER_TYPES + ('worker','pioneer') for u in s.turn.enemies))
+        command = plan.commands[str(HOME)]
+        self.assertEqual(command['action'], 'use')
+        self.assertEqual(command['name'], ORDER)
+        self.assertTrue(summon_cell_legal(s.turn,s.settings,Pos.load(command['targetPos'][0])))
+        self.assertEqual(plan.rejections, [])
         self.assertNotEqual(s.raid_scouts.state.get('worker_id'), HOME)
 
     def test_buy_before_survey_then_confirmed_inventory_waits_without_money_lock(self):
