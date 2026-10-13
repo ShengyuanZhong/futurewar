@@ -36,7 +36,7 @@ class GateMaterialsTests(unittest.TestCase):
         targets = s.stone_targets()
         self.assertEqual(len(s.construction_walls()),17)
         self.assertEqual(sum(targets.values()),17)
-        self.assertEqual(targets,{501:9,504:8})
+        self.assertEqual(targets,{w.unit_id:s.wall_schedule.remaining(w) for w in s.turn.workers()})
 
     def test_no_gate_owner_is_needed_to_keep_buyer_and_scout_distinct(self):
         raw,memory,settings = worker_raid_scene(round_no=20,finished=0)

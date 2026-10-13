@@ -170,6 +170,10 @@ class WallGapDefense:
                 if self.plan.add(role.unit_id,build_command(self.gap,'wall')):
                     self.s.coordinator.assign(role,'build:wall',self.gap,role.pos)
                     return True
+            if self.turn.day==1:
+                # Vacated historical sites are ordinary daytime construction
+                # work. Do not hijack a builder's sweep for a remote gap trip.
+                return False
             if self.gap not in self.turn.occupied_cells():
                 if ('stone' in role.backpack and self.post_cost(role)>=10_000
                         and any(u.health>0 and u.kind==IMP and u.pos in self.posts(role=role)

@@ -67,7 +67,8 @@ class SealedHome:
         if (not self.enabled or not self.turn.is_day or role.kind!='worker'
                 or len(self.turn.weapons())<3 or role.pos in self.outside):
             return False
-        if role.pos not in self.inside and self.s.stone_planner.needs_material(role):
+        exiting = self.s.coordinator.job(role).get('kind')=='construction_exit'
+        if role.pos not in self.inside and not exiting and self.s.stone_planner.needs_material(role):
             return False  # A miner passing an unbuilt perimeter cell can finish its batch.
         # Do not interpret a move command as arrival before the next request.
         route = self.s.route(role)

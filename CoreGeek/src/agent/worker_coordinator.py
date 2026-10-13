@@ -72,6 +72,7 @@ class WorkerCoordinator:
         return False
 
     def diagnostic_route(self, role, allowed=None):
+        allowed = self.s.worker_region(role,allowed)
         return Routes(self.turn,role,self.reserved(),self.s.danger,allowed,
                       frozenset(w.unit_id for w in self.turn.workers() if w.unit_id != role.unit_id))
 
@@ -79,6 +80,7 @@ class WorkerCoordinator:
         return self.s.movement_reserved()
 
     def move_to(self, role, goals, kind='travel', target=None, allowed=None, allow_risk=False, route=None):
+        allowed = self.s.worker_region(role,allowed)
         goals = set(goals) - self.claimed_goals(role)
         if kind.startswith('build:'):
             # Unbuilt sites are legal transit cells, but a builder must stop
@@ -88,6 +90,8 @@ class WorkerCoordinator:
             goals -= set(self.s.construction_walls()) | set(self.s.layout.tower_sites)
             if kind=='build:wall':
                 goals = self.s.sealed_home.builder_posts(goals)
+                if self.s.sealed_home.enabled and role.pos in self.s.sealed_home.outside:
+                    allowed = set(self.s.sealed_home.outside) if allowed is None else allowed & self.s.sealed_home.outside
         if allowed is not None:
             goals &= allowed
         route = route if route is not None else self.s.route(role,allowed)
@@ -150,6 +154,7 @@ class WorkerCoordinator:
                 for w in self.turn.walls()):
             return False
         allowed = guard.inner_cells() if guard.is_guard(blocker) and blocker.pos in guard.inner_cells() else None
+        allowed = self.s.worker_region(blocker,allowed)
         blocked = self.turn.blocked(blocker) | self.reserved() | self.claimed_goals(blocker)
         candidates = [p for p in blocker.pos.neighbours() if self.turn.land(p) and p not in blocked
                       and p != goal and (allowed is None or p in allowed)
@@ -158,7 +163,7 @@ class WorkerCoordinator:
         candidates.sort(key=lambda p:(-abs(dx*(p.y-requester.pos.y)-dy*(p.x-requester.pos.x)),p))
         for p in candidates:
             after = Routes(self.turn,requester,self.reserved() | self.s.movement_reserved(requester) | {p},
-                           self.s.danger,None,frozenset({blocker.unit_id}))
+                           self.s.danger,self.s.worker_region(requester),frozenset({blocker.unit_id}))
             if goal not in after.cost:
                 continue
             if self.plan.add(blocker.unit_id,move_command(p)):

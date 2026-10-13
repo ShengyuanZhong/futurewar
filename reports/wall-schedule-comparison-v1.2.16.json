@@ -1,0 +1,5624 @@
+{
+  "scope": "First-day R29..70 local construction-only policy comparison; not official replay",
+  "previous_revision": "6283eb8",
+  "shop_assumption": {
+    "x": 24,
+    "y": 20
+  },
+  "initial_conditions": "Three observed rockets, zero walls, actual bags9/8, no mines; historical one-frame occupant in lower case; tasks/shopping/combat disabled",
+  "next_trip_scope": "Actual shop-neighbour path and nearest legal exterior range-four enemy-base lookout, not a full layout survey",
+  "cases": [
+    {
+      "upper": false,
+      "previous": {
+        "base": {
+          "x": 30,
+          "y": 10
+        },
+        "closed_round": 55,
+        "movement_steps": {
+          "501": 17,
+          "504": 11
+        },
+        "estimated_next_trip": {
+          "501": 8,
+          "504": 16
+        },
+        "total_movement_and_next_trip": 52,
+        "walls_built": {
+          "501": [
+            {
+              "round": 32,
+              "pos": {
+                "x": 31,
+                "y": 7
+              }
+            },
+            {
+              "round": 34,
+              "pos": {
+                "x": 30,
+                "y": 7
+              }
+            },
+            {
+              "round": 36,
+              "pos": {
+                "x": 29,
+                "y": 7
+              }
+            },
+            {
+              "round": 44,
+              "pos": {
+                "x": 28,
+                "y": 11
+              }
+            },
+            {
+              "round": 45,
+              "pos": {
+                "x": 28,
+                "y": 9
+              }
+            },
+            {
+              "round": 46,
+              "pos": {
+                "x": 28,
+                "y": 10
+              }
+            },
+            {
+              "round": 48,
+              "pos": {
+                "x": 28,
+                "y": 8
+              }
+            },
+            {
+              "round": 50,
+              "pos": {
+                "x": 28,
+                "y": 7
+              }
+            },
+            {
+              "round": 54,
+              "pos": {
+                "x": 28,
+                "y": 12
+              }
+            }
+          ],
+          "504": [
+            {
+              "round": 31,
+              "pos": {
+                "x": 32,
+                "y": 7
+              }
+            },
+            {
+              "round": 32,
+              "pos": {
+                "x": 33,
+                "y": 7
+              }
+            },
+            {
+              "round": 34,
+              "pos": {
+                "x": 33,
+                "y": 8
+              }
+            },
+            {
+              "round": 36,
+              "pos": {
+                "x": 33,
+                "y": 9
+              }
+            },
+            {
+              "round": 40,
+              "pos": {
+                "x": 32,
+                "y": 12
+              }
+            },
+            {
+              "round": 43,
+              "pos": {
+                "x": 31,
+                "y": 12
+              }
+            },
+            {
+              "round": 45,
+              "pos": {
+                "x": 30,
+                "y": 12
+              }
+            },
+            {
+              "round": 47,
+              "pos": {
+                "x": 29,
+                "y": 12
+              }
+            }
+          ]
+        },
+        "final_positions": {
+          "501": {
+            "x": 27,
+            "y": 11
+          },
+          "504": {
+            "x": 30,
+            "y": 13
+          }
+        },
+        "rows": [
+          {
+            "round": 29,
+            "walls": 0,
+            "positions": {
+              "501": {
+                "x": 35,
+                "y": 3
+              },
+              "504": {
+                "x": 35,
+                "y": 4
+              }
+            },
+            "stones": {
+              "501": 9,
+              "504": 8
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 34,
+                    "y": 4
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 34,
+                    "y": 5
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 31,
+                  "y": 7
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 32,
+                  "y": 7
+                }
+              }
+            }
+          },
+          {
+            "round": 30,
+            "walls": 0,
+            "positions": {
+              "501": {
+                "x": 34,
+                "y": 4
+              },
+              "504": {
+                "x": 34,
+                "y": 5
+              }
+            },
+            "stones": {
+              "501": 9,
+              "504": 8
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 33,
+                    "y": 5
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 33,
+                    "y": 6
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 31,
+                  "y": 7
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 32,
+                  "y": 7
+                }
+              }
+            }
+          },
+          {
+            "round": 31,
+            "walls": 0,
+            "positions": {
+              "501": {
+                "x": 33,
+                "y": 5
+              },
+              "504": {
+                "x": 33,
+                "y": 6
+              }
+            },
+            "stones": {
+              "501": 9,
+              "504": 8
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 32,
+                    "y": 6
+                  }
+                ]
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 32,
+                    "y": 7
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 31,
+                  "y": 7
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 32,
+                  "y": 7
+                }
+              }
+            }
+          },
+          {
+            "round": 32,
+            "walls": 1,
+            "positions": {
+              "501": {
+                "x": 32,
+                "y": 6
+              },
+              "504": {
+                "x": 33,
+                "y": 6
+              }
+            },
+            "stones": {
+              "501": 9,
+              "504": 7
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 31,
+                    "y": 7
+                  }
+                ],
+                "name": "wall"
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 33,
+                    "y": 7
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 31,
+                  "y": 7
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 33,
+                  "y": 7
+                }
+              }
+            }
+          },
+          {
+            "round": 33,
+            "walls": 3,
+            "positions": {
+              "501": {
+                "x": 32,
+                "y": 6
+              },
+              "504": {
+                "x": 33,
+                "y": 6
+              }
+            },
+            "stones": {
+              "501": 8,
+              "504": 6
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 31,
+                    "y": 6
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 34,
+                    "y": 7
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 30,
+                  "y": 7
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 33,
+                  "y": 8
+                }
+              }
+            }
+          },
+          {
+            "round": 34,
+            "walls": 3,
+            "positions": {
+              "501": {
+                "x": 31,
+                "y": 6
+              },
+              "504": {
+                "x": 34,
+                "y": 7
+              }
+            },
+            "stones": {
+              "501": 8,
+              "504": 6
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 30,
+                    "y": 7
+                  }
+                ],
+                "name": "wall"
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 33,
+                    "y": 8
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 30,
+                  "y": 7
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 33,
+                  "y": 8
+                }
+              }
+            }
+          },
+          {
+            "round": 35,
+            "walls": 5,
+            "positions": {
+              "501": {
+                "x": 31,
+                "y": 6
+              },
+              "504": {
+                "x": 34,
+                "y": 7
+              }
+            },
+            "stones": {
+              "501": 7,
+              "504": 5
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 30,
+                    "y": 6
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 34,
+                    "y": 8
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 29,
+                  "y": 7
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 33,
+                  "y": 9
+                }
+              }
+            }
+          },
+          {
+            "round": 36,
+            "walls": 5,
+            "positions": {
+              "501": {
+                "x": 30,
+                "y": 6
+              },
+              "504": {
+                "x": 34,
+                "y": 8
+              }
+            },
+            "stones": {
+              "501": 7,
+              "504": 5
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 29,
+                    "y": 7
+                  }
+                ],
+                "name": "wall"
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 33,
+                    "y": 9
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 29,
+                  "y": 7
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 33,
+                  "y": 9
+                }
+              }
+            }
+          },
+          {
+            "round": 37,
+            "walls": 7,
+            "positions": {
+              "501": {
+                "x": 30,
+                "y": 6
+              },
+              "504": {
+                "x": 34,
+                "y": 8
+              }
+            },
+            "stones": {
+              "501": 6,
+              "504": 4
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 29,
+                    "y": 6
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 34,
+                    "y": 9
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "gap_rebuild",
+                "target": {
+                  "x": 28,
+                  "y": 11
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 32,
+                  "y": 12
+                }
+              }
+            }
+          },
+          {
+            "round": 38,
+            "walls": 7,
+            "positions": {
+              "501": {
+                "x": 29,
+                "y": 6
+              },
+              "504": {
+                "x": 34,
+                "y": 9
+              }
+            },
+            "stones": {
+              "501": 6,
+              "504": 4
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 28,
+                    "y": 7
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 34,
+                    "y": 10
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "gap_rebuild",
+                "target": {
+                  "x": 28,
+                  "y": 11
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 32,
+                  "y": 12
+                }
+              }
+            }
+          },
+          {
+            "round": 39,
+            "walls": 7,
+            "positions": {
+              "501": {
+                "x": 28,
+                "y": 7
+              },
+              "504": {
+                "x": 34,
+                "y": 10
+              }
+            },
+            "stones": {
+              "501": 6,
+              "504": 4
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 27,
+                    "y": 6
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 33,
+                    "y": 11
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "construction_exit",
+                "target": {
+                  "x": 27,
+                  "y": 6
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 32,
+                  "y": 12
+                }
+              }
+            }
+          },
+          {
+            "round": 40,
+            "walls": 7,
+            "positions": {
+              "501": {
+                "x": 27,
+                "y": 6
+              },
+              "504": {
+                "x": 33,
+                "y": 11
+              }
+            },
+            "stones": {
+              "501": 6,
+              "504": 4
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 26,
+                    "y": 7
+                  }
+                ]
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 32,
+                    "y": 12
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "gap_rebuild",
+                "target": {
+                  "x": 28,
+                  "y": 11
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 32,
+                  "y": 12
+                }
+              }
+            }
+          },
+          {
+            "round": 41,
+            "walls": 8,
+            "positions": {
+              "501": {
+                "x": 26,
+                "y": 7
+              },
+              "504": {
+                "x": 33,
+                "y": 11
+              }
+            },
+            "stones": {
+              "501": 6,
+              "504": 3
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 25,
+                    "y": 8
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 33,
+                    "y": 12
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "gap_rebuild",
+                "target": {
+                  "x": 28,
+                  "y": 11
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 31,
+                  "y": 12
+                }
+              }
+            }
+          },
+          {
+            "round": 42,
+            "walls": 8,
+            "positions": {
+              "501": {
+                "x": 25,
+                "y": 8
+              },
+              "504": {
+                "x": 33,
+                "y": 12
+              }
+            },
+            "stones": {
+              "501": 6,
+              "504": 3
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 26,
+                    "y": 9
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 32,
+                    "y": 13
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "gap_rebuild",
+                "target": {
+                  "x": 28,
+                  "y": 11
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 31,
+                  "y": 12
+                }
+              }
+            }
+          },
+          {
+            "round": 43,
+            "walls": 8,
+            "positions": {
+              "501": {
+                "x": 26,
+                "y": 9
+              },
+              "504": {
+                "x": 32,
+                "y": 13
+              }
+            },
+            "stones": {
+              "501": 6,
+              "504": 3
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 27,
+                    "y": 10
+                  }
+                ]
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 31,
+                    "y": 12
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "gap_rebuild",
+                "target": {
+                  "x": 28,
+                  "y": 11
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 31,
+                  "y": 12
+                }
+              }
+            }
+          },
+          {
+            "round": 44,
+            "walls": 9,
+            "positions": {
+              "501": {
+                "x": 27,
+                "y": 10
+              },
+              "504": {
+                "x": 32,
+                "y": 13
+              }
+            },
+            "stones": {
+              "501": 6,
+              "504": 2
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 28,
+                    "y": 11
+                  }
+                ],
+                "name": "wall"
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 31,
+                    "y": 13
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 28,
+                  "y": 11
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 30,
+                  "y": 12
+                }
+              }
+            }
+          },
+          {
+            "round": 45,
+            "walls": 10,
+            "positions": {
+              "501": {
+                "x": 27,
+                "y": 10
+              },
+              "504": {
+                "x": 31,
+                "y": 13
+              }
+            },
+            "stones": {
+              "501": 5,
+              "504": 2
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 28,
+                    "y": 9
+                  }
+                ],
+                "name": "wall"
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 30,
+                    "y": 12
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 28,
+                  "y": 9
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 30,
+                  "y": 12
+                }
+              }
+            }
+          },
+          {
+            "round": 46,
+            "walls": 12,
+            "positions": {
+              "501": {
+                "x": 27,
+                "y": 10
+              },
+              "504": {
+                "x": 31,
+                "y": 13
+              }
+            },
+            "stones": {
+              "501": 4,
+              "504": 1
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 28,
+                    "y": 10
+                  }
+                ],
+                "name": "wall"
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 30,
+                    "y": 13
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 28,
+                  "y": 10
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 29,
+                  "y": 12
+                }
+              }
+            }
+          },
+          {
+            "round": 47,
+            "walls": 13,
+            "positions": {
+              "501": {
+                "x": 27,
+                "y": 10
+              },
+              "504": {
+                "x": 30,
+                "y": 13
+              }
+            },
+            "stones": {
+              "501": 3,
+              "504": 1
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 27,
+                    "y": 9
+                  }
+                ]
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 29,
+                    "y": 12
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 28,
+                  "y": 8
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 29,
+                  "y": 12
+                }
+              }
+            }
+          },
+          {
+            "round": 48,
+            "walls": 14,
+            "positions": {
+              "501": {
+                "x": 27,
+                "y": 9
+              },
+              "504": {
+                "x": 30,
+                "y": 13
+              }
+            },
+            "stones": {
+              "501": 3,
+              "504": 0
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 28,
+                    "y": 8
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 28,
+                  "y": 8
+                }
+              },
+              "504": {
+                "kind": "wait:",
+                "target": null
+              }
+            }
+          },
+          {
+            "round": 49,
+            "walls": 15,
+            "positions": {
+              "501": {
+                "x": 27,
+                "y": 9
+              },
+              "504": {
+                "x": 30,
+                "y": 13
+              }
+            },
+            "stones": {
+              "501": 2,
+              "504": 0
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 27,
+                    "y": 8
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 28,
+                  "y": 7
+                }
+              },
+              "504": {
+                "kind": "wait:",
+                "target": null
+              }
+            }
+          },
+          {
+            "round": 50,
+            "walls": 15,
+            "positions": {
+              "501": {
+                "x": 27,
+                "y": 8
+              },
+              "504": {
+                "x": 30,
+                "y": 13
+              }
+            },
+            "stones": {
+              "501": 2,
+              "504": 0
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 28,
+                    "y": 7
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 28,
+                  "y": 7
+                }
+              },
+              "504": {
+                "kind": "wait:",
+                "target": null
+              }
+            }
+          },
+          {
+            "round": 51,
+            "walls": 16,
+            "positions": {
+              "501": {
+                "x": 27,
+                "y": 8
+              },
+              "504": {
+                "x": 30,
+                "y": 13
+              }
+            },
+            "stones": {
+              "501": 1,
+              "504": 0
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 26,
+                    "y": 9
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 28,
+                  "y": 12
+                }
+              },
+              "504": {
+                "kind": "wait:",
+                "target": null
+              }
+            }
+          },
+          {
+            "round": 52,
+            "walls": 16,
+            "positions": {
+              "501": {
+                "x": 26,
+                "y": 9
+              },
+              "504": {
+                "x": 30,
+                "y": 13
+              }
+            },
+            "stones": {
+              "501": 1,
+              "504": 0
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 26,
+                    "y": 10
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 28,
+                  "y": 12
+                }
+              },
+              "504": {
+                "kind": "wait:",
+                "target": null
+              }
+            }
+          },
+          {
+            "round": 53,
+            "walls": 16,
+            "positions": {
+              "501": {
+                "x": 26,
+                "y": 10
+              },
+              "504": {
+                "x": 30,
+                "y": 13
+              }
+            },
+            "stones": {
+              "501": 1,
+              "504": 0
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 27,
+                    "y": 11
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 28,
+                  "y": 12
+                }
+              },
+              "504": {
+                "kind": "wait:",
+                "target": null
+              }
+            }
+          },
+          {
+            "round": 54,
+            "walls": 16,
+            "positions": {
+              "501": {
+                "x": 27,
+                "y": 11
+              },
+              "504": {
+                "x": 30,
+                "y": 13
+              }
+            },
+            "stones": {
+              "501": 1,
+              "504": 0
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 28,
+                    "y": 12
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 28,
+                  "y": 12
+                }
+              },
+              "504": {
+                "kind": "wait:",
+                "target": null
+              }
+            }
+          }
+        ]
+      },
+      "current": {
+        "base": {
+          "x": 30,
+          "y": 10
+        },
+        "closed_round": 50,
+        "movement_steps": {
+          "501": 12,
+          "504": 11
+        },
+        "estimated_next_trip": {
+          "501": 8,
+          "504": 16
+        },
+        "total_movement_and_next_trip": 47,
+        "walls_built": {
+          "501": [
+            {
+              "round": 32,
+              "pos": {
+                "x": 31,
+                "y": 7
+              }
+            },
+            {
+              "round": 34,
+              "pos": {
+                "x": 30,
+                "y": 7
+              }
+            },
+            {
+              "round": 36,
+              "pos": {
+                "x": 29,
+                "y": 7
+              }
+            },
+            {
+              "round": 38,
+              "pos": {
+                "x": 28,
+                "y": 7
+              }
+            },
+            {
+              "round": 41,
+              "pos": {
+                "x": 28,
+                "y": 8
+              }
+            },
+            {
+              "round": 43,
+              "pos": {
+                "x": 28,
+                "y": 9
+              }
+            },
+            {
+              "round": 45,
+              "pos": {
+                "x": 28,
+                "y": 10
+              }
+            },
+            {
+              "round": 47,
+              "pos": {
+                "x": 28,
+                "y": 11
+              }
+            },
+            {
+              "round": 49,
+              "pos": {
+                "x": 28,
+                "y": 12
+              }
+            }
+          ],
+          "504": [
+            {
+              "round": 31,
+              "pos": {
+                "x": 32,
+                "y": 7
+              }
+            },
+            {
+              "round": 32,
+              "pos": {
+                "x": 33,
+                "y": 7
+              }
+            },
+            {
+              "round": 34,
+              "pos": {
+                "x": 33,
+                "y": 8
+              }
+            },
+            {
+              "round": 36,
+              "pos": {
+                "x": 33,
+                "y": 9
+              }
+            },
+            {
+              "round": 40,
+              "pos": {
+                "x": 32,
+                "y": 12
+              }
+            },
+            {
+              "round": 43,
+              "pos": {
+                "x": 31,
+                "y": 12
+              }
+            },
+            {
+              "round": 45,
+              "pos": {
+                "x": 30,
+                "y": 12
+              }
+            },
+            {
+              "round": 47,
+              "pos": {
+                "x": 29,
+                "y": 12
+              }
+            }
+          ]
+        },
+        "final_positions": {
+          "501": {
+            "x": 27,
+            "y": 11
+          },
+          "504": {
+            "x": 30,
+            "y": 13
+          }
+        },
+        "rows": [
+          {
+            "round": 29,
+            "walls": 0,
+            "positions": {
+              "501": {
+                "x": 35,
+                "y": 3
+              },
+              "504": {
+                "x": 35,
+                "y": 4
+              }
+            },
+            "stones": {
+              "501": 9,
+              "504": 8
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 34,
+                    "y": 4
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 34,
+                    "y": 5
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 31,
+                  "y": 7
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 32,
+                  "y": 7
+                }
+              }
+            }
+          },
+          {
+            "round": 30,
+            "walls": 0,
+            "positions": {
+              "501": {
+                "x": 34,
+                "y": 4
+              },
+              "504": {
+                "x": 34,
+                "y": 5
+              }
+            },
+            "stones": {
+              "501": 9,
+              "504": 8
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 33,
+                    "y": 5
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 33,
+                    "y": 6
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 31,
+                  "y": 7
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 32,
+                  "y": 7
+                }
+              }
+            }
+          },
+          {
+            "round": 31,
+            "walls": 0,
+            "positions": {
+              "501": {
+                "x": 33,
+                "y": 5
+              },
+              "504": {
+                "x": 33,
+                "y": 6
+              }
+            },
+            "stones": {
+              "501": 9,
+              "504": 8
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 32,
+                    "y": 6
+                  }
+                ]
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 32,
+                    "y": 7
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 31,
+                  "y": 7
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 32,
+                  "y": 7
+                }
+              }
+            }
+          },
+          {
+            "round": 32,
+            "walls": 1,
+            "positions": {
+              "501": {
+                "x": 32,
+                "y": 6
+              },
+              "504": {
+                "x": 33,
+                "y": 6
+              }
+            },
+            "stones": {
+              "501": 9,
+              "504": 7
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 31,
+                    "y": 7
+                  }
+                ],
+                "name": "wall"
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 33,
+                    "y": 7
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 31,
+                  "y": 7
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 33,
+                  "y": 7
+                }
+              }
+            }
+          },
+          {
+            "round": 33,
+            "walls": 3,
+            "positions": {
+              "501": {
+                "x": 32,
+                "y": 6
+              },
+              "504": {
+                "x": 33,
+                "y": 6
+              }
+            },
+            "stones": {
+              "501": 8,
+              "504": 6
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 31,
+                    "y": 6
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 34,
+                    "y": 7
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 30,
+                  "y": 7
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 33,
+                  "y": 8
+                }
+              }
+            }
+          },
+          {
+            "round": 34,
+            "walls": 3,
+            "positions": {
+              "501": {
+                "x": 31,
+                "y": 6
+              },
+              "504": {
+                "x": 34,
+                "y": 7
+              }
+            },
+            "stones": {
+              "501": 8,
+              "504": 6
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 30,
+                    "y": 7
+                  }
+                ],
+                "name": "wall"
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 33,
+                    "y": 8
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 30,
+                  "y": 7
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 33,
+                  "y": 8
+                }
+              }
+            }
+          },
+          {
+            "round": 35,
+            "walls": 5,
+            "positions": {
+              "501": {
+                "x": 31,
+                "y": 6
+              },
+              "504": {
+                "x": 34,
+                "y": 7
+              }
+            },
+            "stones": {
+              "501": 7,
+              "504": 5
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 30,
+                    "y": 6
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 34,
+                    "y": 8
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 29,
+                  "y": 7
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 33,
+                  "y": 9
+                }
+              }
+            }
+          },
+          {
+            "round": 36,
+            "walls": 5,
+            "positions": {
+              "501": {
+                "x": 30,
+                "y": 6
+              },
+              "504": {
+                "x": 34,
+                "y": 8
+              }
+            },
+            "stones": {
+              "501": 7,
+              "504": 5
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 29,
+                    "y": 7
+                  }
+                ],
+                "name": "wall"
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 33,
+                    "y": 9
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 29,
+                  "y": 7
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 33,
+                  "y": 9
+                }
+              }
+            }
+          },
+          {
+            "round": 37,
+            "walls": 7,
+            "positions": {
+              "501": {
+                "x": 30,
+                "y": 6
+              },
+              "504": {
+                "x": 34,
+                "y": 8
+              }
+            },
+            "stones": {
+              "501": 6,
+              "504": 4
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 29,
+                    "y": 6
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 34,
+                    "y": 9
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 28,
+                  "y": 7
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 32,
+                  "y": 12
+                }
+              }
+            }
+          },
+          {
+            "round": 38,
+            "walls": 7,
+            "positions": {
+              "501": {
+                "x": 29,
+                "y": 6
+              },
+              "504": {
+                "x": 34,
+                "y": 9
+              }
+            },
+            "stones": {
+              "501": 6,
+              "504": 4
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 28,
+                    "y": 7
+                  }
+                ],
+                "name": "wall"
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 34,
+                    "y": 10
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 28,
+                  "y": 7
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 32,
+                  "y": 12
+                }
+              }
+            }
+          },
+          {
+            "round": 39,
+            "walls": 8,
+            "positions": {
+              "501": {
+                "x": 29,
+                "y": 6
+              },
+              "504": {
+                "x": 34,
+                "y": 10
+              }
+            },
+            "stones": {
+              "501": 5,
+              "504": 4
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 28,
+                    "y": 6
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 33,
+                    "y": 11
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 28,
+                  "y": 8
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 32,
+                  "y": 12
+                }
+              }
+            }
+          },
+          {
+            "round": 40,
+            "walls": 8,
+            "positions": {
+              "501": {
+                "x": 28,
+                "y": 6
+              },
+              "504": {
+                "x": 33,
+                "y": 11
+              }
+            },
+            "stones": {
+              "501": 5,
+              "504": 4
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 27,
+                    "y": 7
+                  }
+                ]
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 32,
+                    "y": 12
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 28,
+                  "y": 8
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 32,
+                  "y": 12
+                }
+              }
+            }
+          },
+          {
+            "round": 41,
+            "walls": 9,
+            "positions": {
+              "501": {
+                "x": 27,
+                "y": 7
+              },
+              "504": {
+                "x": 33,
+                "y": 11
+              }
+            },
+            "stones": {
+              "501": 5,
+              "504": 3
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 28,
+                    "y": 8
+                  }
+                ],
+                "name": "wall"
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 33,
+                    "y": 12
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 28,
+                  "y": 8
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 31,
+                  "y": 12
+                }
+              }
+            }
+          },
+          {
+            "round": 42,
+            "walls": 10,
+            "positions": {
+              "501": {
+                "x": 27,
+                "y": 7
+              },
+              "504": {
+                "x": 33,
+                "y": 12
+              }
+            },
+            "stones": {
+              "501": 4,
+              "504": 3
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 27,
+                    "y": 8
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 32,
+                    "y": 13
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 28,
+                  "y": 9
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 31,
+                  "y": 12
+                }
+              }
+            }
+          },
+          {
+            "round": 43,
+            "walls": 10,
+            "positions": {
+              "501": {
+                "x": 27,
+                "y": 8
+              },
+              "504": {
+                "x": 32,
+                "y": 13
+              }
+            },
+            "stones": {
+              "501": 4,
+              "504": 3
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 28,
+                    "y": 9
+                  }
+                ],
+                "name": "wall"
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 31,
+                    "y": 12
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 28,
+                  "y": 9
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 31,
+                  "y": 12
+                }
+              }
+            }
+          },
+          {
+            "round": 44,
+            "walls": 12,
+            "positions": {
+              "501": {
+                "x": 27,
+                "y": 8
+              },
+              "504": {
+                "x": 32,
+                "y": 13
+              }
+            },
+            "stones": {
+              "501": 3,
+              "504": 2
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 27,
+                    "y": 9
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 31,
+                    "y": 13
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 28,
+                  "y": 10
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 30,
+                  "y": 12
+                }
+              }
+            }
+          },
+          {
+            "round": 45,
+            "walls": 12,
+            "positions": {
+              "501": {
+                "x": 27,
+                "y": 9
+              },
+              "504": {
+                "x": 31,
+                "y": 13
+              }
+            },
+            "stones": {
+              "501": 3,
+              "504": 2
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 28,
+                    "y": 10
+                  }
+                ],
+                "name": "wall"
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 30,
+                    "y": 12
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 28,
+                  "y": 10
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 30,
+                  "y": 12
+                }
+              }
+            }
+          },
+          {
+            "round": 46,
+            "walls": 14,
+            "positions": {
+              "501": {
+                "x": 27,
+                "y": 9
+              },
+              "504": {
+                "x": 31,
+                "y": 13
+              }
+            },
+            "stones": {
+              "501": 2,
+              "504": 1
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 27,
+                    "y": 10
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 30,
+                    "y": 13
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 28,
+                  "y": 11
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 29,
+                  "y": 12
+                }
+              }
+            }
+          },
+          {
+            "round": 47,
+            "walls": 14,
+            "positions": {
+              "501": {
+                "x": 27,
+                "y": 10
+              },
+              "504": {
+                "x": 30,
+                "y": 13
+              }
+            },
+            "stones": {
+              "501": 2,
+              "504": 1
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 28,
+                    "y": 11
+                  }
+                ],
+                "name": "wall"
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 29,
+                    "y": 12
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 28,
+                  "y": 11
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 29,
+                  "y": 12
+                }
+              }
+            }
+          },
+          {
+            "round": 48,
+            "walls": 16,
+            "positions": {
+              "501": {
+                "x": 27,
+                "y": 10
+              },
+              "504": {
+                "x": 30,
+                "y": 13
+              }
+            },
+            "stones": {
+              "501": 1,
+              "504": 0
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 27,
+                    "y": 11
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 28,
+                  "y": 12
+                }
+              },
+              "504": {
+                "kind": "wait:",
+                "target": null
+              }
+            }
+          },
+          {
+            "round": 49,
+            "walls": 16,
+            "positions": {
+              "501": {
+                "x": 27,
+                "y": 11
+              },
+              "504": {
+                "x": 30,
+                "y": 13
+              }
+            },
+            "stones": {
+              "501": 1,
+              "504": 0
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 28,
+                    "y": 12
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 28,
+                  "y": 12
+                }
+              },
+              "504": {
+                "kind": "wait:",
+                "target": null
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "upper": true,
+      "previous": {
+        "base": {
+          "x": 9,
+          "y": 22
+        },
+        "closed_round": 54,
+        "movement_steps": {
+          "501": 16,
+          "504": 11
+        },
+        "estimated_next_trip": {
+          "501": 10,
+          "504": 13
+        },
+        "total_movement_and_next_trip": 50,
+        "walls_built": {
+          "501": [
+            {
+              "round": 35,
+              "pos": {
+                "x": 7,
+                "y": 21
+              }
+            },
+            {
+              "round": 37,
+              "pos": {
+                "x": 7,
+                "y": 20
+              }
+            },
+            {
+              "round": 39,
+              "pos": {
+                "x": 7,
+                "y": 19
+              }
+            },
+            {
+              "round": 42,
+              "pos": {
+                "x": 8,
+                "y": 19
+              }
+            },
+            {
+              "round": 44,
+              "pos": {
+                "x": 9,
+                "y": 19
+              }
+            },
+            {
+              "round": 46,
+              "pos": {
+                "x": 10,
+                "y": 19
+              }
+            },
+            {
+              "round": 48,
+              "pos": {
+                "x": 11,
+                "y": 19
+              }
+            },
+            {
+              "round": 50,
+              "pos": {
+                "x": 12,
+                "y": 19
+              }
+            },
+            {
+              "round": 53,
+              "pos": {
+                "x": 12,
+                "y": 20
+              }
+            }
+          ],
+          "504": [
+            {
+              "round": 32,
+              "pos": {
+                "x": 8,
+                "y": 24
+              }
+            },
+            {
+              "round": 34,
+              "pos": {
+                "x": 9,
+                "y": 24
+              }
+            },
+            {
+              "round": 36,
+              "pos": {
+                "x": 10,
+                "y": 24
+              }
+            },
+            {
+              "round": 38,
+              "pos": {
+                "x": 11,
+                "y": 24
+              }
+            },
+            {
+              "round": 40,
+              "pos": {
+                "x": 12,
+                "y": 24
+              }
+            },
+            {
+              "round": 43,
+              "pos": {
+                "x": 12,
+                "y": 23
+              }
+            },
+            {
+              "round": 45,
+              "pos": {
+                "x": 12,
+                "y": 22
+              }
+            },
+            {
+              "round": 47,
+              "pos": {
+                "x": 12,
+                "y": 21
+              }
+            }
+          ]
+        },
+        "final_positions": {
+          "501": {
+            "x": 13,
+            "y": 19
+          },
+          "504": {
+            "x": 13,
+            "y": 22
+          }
+        },
+        "rows": [
+          {
+            "round": 29,
+            "walls": 0,
+            "positions": {
+              "501": {
+                "x": 3,
+                "y": 28
+              },
+              "504": {
+                "x": 4,
+                "y": 28
+              }
+            },
+            "stones": {
+              "501": 9,
+              "504": 8
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 4,
+                    "y": 27
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 5,
+                    "y": 27
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 8,
+                  "y": 24
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 9,
+                  "y": 24
+                }
+              }
+            }
+          },
+          {
+            "round": 30,
+            "walls": 0,
+            "positions": {
+              "501": {
+                "x": 4,
+                "y": 27
+              },
+              "504": {
+                "x": 5,
+                "y": 27
+              }
+            },
+            "stones": {
+              "501": 9,
+              "504": 8
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 5,
+                    "y": 26
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 6,
+                    "y": 26
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 8,
+                  "y": 24
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 9,
+                  "y": 24
+                }
+              }
+            }
+          },
+          {
+            "round": 31,
+            "walls": 0,
+            "positions": {
+              "501": {
+                "x": 5,
+                "y": 26
+              },
+              "504": {
+                "x": 6,
+                "y": 26
+              }
+            },
+            "stones": {
+              "501": 9,
+              "504": 8
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 6,
+                    "y": 25
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 7,
+                    "y": 25
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 8,
+                  "y": 24
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 9,
+                  "y": 24
+                }
+              }
+            }
+          },
+          {
+            "round": 32,
+            "walls": 0,
+            "positions": {
+              "501": {
+                "x": 6,
+                "y": 25
+              },
+              "504": {
+                "x": 7,
+                "y": 25
+              }
+            },
+            "stones": {
+              "501": 9,
+              "504": 8
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 5,
+                    "y": 24
+                  }
+                ]
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 8,
+                    "y": 24
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 7,
+                  "y": 21
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 8,
+                  "y": 24
+                }
+              }
+            }
+          },
+          {
+            "round": 33,
+            "walls": 1,
+            "positions": {
+              "501": {
+                "x": 5,
+                "y": 24
+              },
+              "504": {
+                "x": 7,
+                "y": 25
+              }
+            },
+            "stones": {
+              "501": 9,
+              "504": 7
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 5,
+                    "y": 23
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 8,
+                    "y": 25
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 7,
+                  "y": 21
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 9,
+                  "y": 24
+                }
+              }
+            }
+          },
+          {
+            "round": 34,
+            "walls": 1,
+            "positions": {
+              "501": {
+                "x": 5,
+                "y": 23
+              },
+              "504": {
+                "x": 8,
+                "y": 25
+              }
+            },
+            "stones": {
+              "501": 9,
+              "504": 7
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 6,
+                    "y": 22
+                  }
+                ]
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 9,
+                    "y": 24
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 7,
+                  "y": 21
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 9,
+                  "y": 24
+                }
+              }
+            }
+          },
+          {
+            "round": 35,
+            "walls": 2,
+            "positions": {
+              "501": {
+                "x": 6,
+                "y": 22
+              },
+              "504": {
+                "x": 8,
+                "y": 25
+              }
+            },
+            "stones": {
+              "501": 9,
+              "504": 6
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 7,
+                    "y": 21
+                  }
+                ],
+                "name": "wall"
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 9,
+                    "y": 25
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 7,
+                  "y": 21
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 10,
+                  "y": 24
+                }
+              }
+            }
+          },
+          {
+            "round": 36,
+            "walls": 3,
+            "positions": {
+              "501": {
+                "x": 6,
+                "y": 22
+              },
+              "504": {
+                "x": 9,
+                "y": 25
+              }
+            },
+            "stones": {
+              "501": 8,
+              "504": 6
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 6,
+                    "y": 21
+                  }
+                ]
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 10,
+                    "y": 24
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 7,
+                  "y": 20
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 10,
+                  "y": 24
+                }
+              }
+            }
+          },
+          {
+            "round": 37,
+            "walls": 4,
+            "positions": {
+              "501": {
+                "x": 6,
+                "y": 21
+              },
+              "504": {
+                "x": 9,
+                "y": 25
+              }
+            },
+            "stones": {
+              "501": 8,
+              "504": 5
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 7,
+                    "y": 20
+                  }
+                ],
+                "name": "wall"
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 10,
+                    "y": 25
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 7,
+                  "y": 20
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 11,
+                  "y": 24
+                }
+              }
+            }
+          },
+          {
+            "round": 38,
+            "walls": 5,
+            "positions": {
+              "501": {
+                "x": 6,
+                "y": 21
+              },
+              "504": {
+                "x": 10,
+                "y": 25
+              }
+            },
+            "stones": {
+              "501": 7,
+              "504": 5
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 6,
+                    "y": 20
+                  }
+                ]
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 11,
+                    "y": 24
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 7,
+                  "y": 19
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 11,
+                  "y": 24
+                }
+              }
+            }
+          },
+          {
+            "round": 39,
+            "walls": 6,
+            "positions": {
+              "501": {
+                "x": 6,
+                "y": 20
+              },
+              "504": {
+                "x": 10,
+                "y": 25
+              }
+            },
+            "stones": {
+              "501": 7,
+              "504": 4
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 7,
+                    "y": 19
+                  }
+                ],
+                "name": "wall"
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 11,
+                    "y": 25
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 7,
+                  "y": 19
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 12,
+                  "y": 24
+                }
+              }
+            }
+          },
+          {
+            "round": 40,
+            "walls": 7,
+            "positions": {
+              "501": {
+                "x": 6,
+                "y": 20
+              },
+              "504": {
+                "x": 11,
+                "y": 25
+              }
+            },
+            "stones": {
+              "501": 6,
+              "504": 4
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 6,
+                    "y": 19
+                  }
+                ]
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 12,
+                    "y": 24
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 8,
+                  "y": 19
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 12,
+                  "y": 24
+                }
+              }
+            }
+          },
+          {
+            "round": 41,
+            "walls": 8,
+            "positions": {
+              "501": {
+                "x": 6,
+                "y": 19
+              },
+              "504": {
+                "x": 11,
+                "y": 25
+              }
+            },
+            "stones": {
+              "501": 6,
+              "504": 3
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 7,
+                    "y": 18
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 12,
+                    "y": 25
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 8,
+                  "y": 19
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 12,
+                  "y": 23
+                }
+              }
+            }
+          },
+          {
+            "round": 42,
+            "walls": 8,
+            "positions": {
+              "501": {
+                "x": 7,
+                "y": 18
+              },
+              "504": {
+                "x": 12,
+                "y": 25
+              }
+            },
+            "stones": {
+              "501": 6,
+              "504": 3
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 8,
+                    "y": 19
+                  }
+                ],
+                "name": "wall"
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 13,
+                    "y": 24
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 8,
+                  "y": 19
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 12,
+                  "y": 23
+                }
+              }
+            }
+          },
+          {
+            "round": 43,
+            "walls": 9,
+            "positions": {
+              "501": {
+                "x": 7,
+                "y": 18
+              },
+              "504": {
+                "x": 13,
+                "y": 24
+              }
+            },
+            "stones": {
+              "501": 5,
+              "504": 3
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 8,
+                    "y": 18
+                  }
+                ]
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 12,
+                    "y": 23
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 9,
+                  "y": 19
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 12,
+                  "y": 23
+                }
+              }
+            }
+          },
+          {
+            "round": 44,
+            "walls": 10,
+            "positions": {
+              "501": {
+                "x": 8,
+                "y": 18
+              },
+              "504": {
+                "x": 13,
+                "y": 24
+              }
+            },
+            "stones": {
+              "501": 5,
+              "504": 2
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 9,
+                    "y": 19
+                  }
+                ],
+                "name": "wall"
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 13,
+                    "y": 23
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 9,
+                  "y": 19
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 12,
+                  "y": 22
+                }
+              }
+            }
+          },
+          {
+            "round": 45,
+            "walls": 11,
+            "positions": {
+              "501": {
+                "x": 8,
+                "y": 18
+              },
+              "504": {
+                "x": 13,
+                "y": 23
+              }
+            },
+            "stones": {
+              "501": 4,
+              "504": 2
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 9,
+                    "y": 18
+                  }
+                ]
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 12,
+                    "y": 22
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 10,
+                  "y": 19
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 12,
+                  "y": 22
+                }
+              }
+            }
+          },
+          {
+            "round": 46,
+            "walls": 12,
+            "positions": {
+              "501": {
+                "x": 9,
+                "y": 18
+              },
+              "504": {
+                "x": 13,
+                "y": 23
+              }
+            },
+            "stones": {
+              "501": 4,
+              "504": 1
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 10,
+                    "y": 19
+                  }
+                ],
+                "name": "wall"
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 13,
+                    "y": 22
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 10,
+                  "y": 19
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 12,
+                  "y": 21
+                }
+              }
+            }
+          },
+          {
+            "round": 47,
+            "walls": 13,
+            "positions": {
+              "501": {
+                "x": 9,
+                "y": 18
+              },
+              "504": {
+                "x": 13,
+                "y": 22
+              }
+            },
+            "stones": {
+              "501": 3,
+              "504": 1
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 10,
+                    "y": 18
+                  }
+                ]
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 12,
+                    "y": 21
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 11,
+                  "y": 19
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 12,
+                  "y": 21
+                }
+              }
+            }
+          },
+          {
+            "round": 48,
+            "walls": 14,
+            "positions": {
+              "501": {
+                "x": 10,
+                "y": 18
+              },
+              "504": {
+                "x": 13,
+                "y": 22
+              }
+            },
+            "stones": {
+              "501": 3,
+              "504": 0
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 11,
+                    "y": 19
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 11,
+                  "y": 19
+                }
+              },
+              "504": {
+                "kind": "wait:",
+                "target": null
+              }
+            }
+          },
+          {
+            "round": 49,
+            "walls": 15,
+            "positions": {
+              "501": {
+                "x": 10,
+                "y": 18
+              },
+              "504": {
+                "x": 13,
+                "y": 22
+              }
+            },
+            "stones": {
+              "501": 2,
+              "504": 0
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 11,
+                    "y": 18
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 12,
+                  "y": 19
+                }
+              },
+              "504": {
+                "kind": "wait:",
+                "target": null
+              }
+            }
+          },
+          {
+            "round": 50,
+            "walls": 15,
+            "positions": {
+              "501": {
+                "x": 11,
+                "y": 18
+              },
+              "504": {
+                "x": 13,
+                "y": 22
+              }
+            },
+            "stones": {
+              "501": 2,
+              "504": 0
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 12,
+                    "y": 19
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 12,
+                  "y": 19
+                }
+              },
+              "504": {
+                "kind": "wait:",
+                "target": null
+              }
+            }
+          },
+          {
+            "round": 51,
+            "walls": 16,
+            "positions": {
+              "501": {
+                "x": 11,
+                "y": 18
+              },
+              "504": {
+                "x": 13,
+                "y": 22
+              }
+            },
+            "stones": {
+              "501": 1,
+              "504": 0
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 12,
+                    "y": 18
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 12,
+                  "y": 20
+                }
+              },
+              "504": {
+                "kind": "wait:",
+                "target": null
+              }
+            }
+          },
+          {
+            "round": 52,
+            "walls": 16,
+            "positions": {
+              "501": {
+                "x": 12,
+                "y": 18
+              },
+              "504": {
+                "x": 13,
+                "y": 22
+              }
+            },
+            "stones": {
+              "501": 1,
+              "504": 0
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 13,
+                    "y": 19
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 12,
+                  "y": 20
+                }
+              },
+              "504": {
+                "kind": "wait:",
+                "target": null
+              }
+            }
+          },
+          {
+            "round": 53,
+            "walls": 16,
+            "positions": {
+              "501": {
+                "x": 13,
+                "y": 19
+              },
+              "504": {
+                "x": 13,
+                "y": 22
+              }
+            },
+            "stones": {
+              "501": 1,
+              "504": 0
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 12,
+                    "y": 20
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 12,
+                  "y": 20
+                }
+              },
+              "504": {
+                "kind": "wait:",
+                "target": null
+              }
+            }
+          }
+        ]
+      },
+      "current": {
+        "base": {
+          "x": 9,
+          "y": 22
+        },
+        "closed_round": 52,
+        "movement_steps": {
+          "501": 14,
+          "504": 13
+        },
+        "estimated_next_trip": {
+          "501": 10,
+          "504": 16
+        },
+        "total_movement_and_next_trip": 53,
+        "walls_built": {
+          "501": [
+            {
+              "round": 34,
+              "pos": {
+                "x": 9,
+                "y": 24
+              }
+            },
+            {
+              "round": 36,
+              "pos": {
+                "x": 10,
+                "y": 24
+              }
+            },
+            {
+              "round": 38,
+              "pos": {
+                "x": 11,
+                "y": 24
+              }
+            },
+            {
+              "round": 40,
+              "pos": {
+                "x": 12,
+                "y": 24
+              }
+            },
+            {
+              "round": 43,
+              "pos": {
+                "x": 12,
+                "y": 23
+              }
+            },
+            {
+              "round": 45,
+              "pos": {
+                "x": 12,
+                "y": 22
+              }
+            },
+            {
+              "round": 47,
+              "pos": {
+                "x": 12,
+                "y": 21
+              }
+            },
+            {
+              "round": 49,
+              "pos": {
+                "x": 12,
+                "y": 20
+              }
+            },
+            {
+              "round": 51,
+              "pos": {
+                "x": 12,
+                "y": 19
+              }
+            }
+          ],
+          "504": [
+            {
+              "round": 32,
+              "pos": {
+                "x": 8,
+                "y": 24
+              }
+            },
+            {
+              "round": 36,
+              "pos": {
+                "x": 7,
+                "y": 21
+              }
+            },
+            {
+              "round": 38,
+              "pos": {
+                "x": 7,
+                "y": 20
+              }
+            },
+            {
+              "round": 40,
+              "pos": {
+                "x": 7,
+                "y": 19
+              }
+            },
+            {
+              "round": 43,
+              "pos": {
+                "x": 8,
+                "y": 19
+              }
+            },
+            {
+              "round": 45,
+              "pos": {
+                "x": 9,
+                "y": 19
+              }
+            },
+            {
+              "round": 47,
+              "pos": {
+                "x": 10,
+                "y": 19
+              }
+            },
+            {
+              "round": 49,
+              "pos": {
+                "x": 11,
+                "y": 19
+              }
+            }
+          ]
+        },
+        "final_positions": {
+          "501": {
+            "x": 13,
+            "y": 20
+          },
+          "504": {
+            "x": 10,
+            "y": 18
+          }
+        },
+        "rows": [
+          {
+            "round": 29,
+            "walls": 0,
+            "positions": {
+              "501": {
+                "x": 3,
+                "y": 28
+              },
+              "504": {
+                "x": 4,
+                "y": 28
+              }
+            },
+            "stones": {
+              "501": 9,
+              "504": 8
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 4,
+                    "y": 27
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 5,
+                    "y": 27
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 9,
+                  "y": 24
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 8,
+                  "y": 24
+                }
+              }
+            }
+          },
+          {
+            "round": 30,
+            "walls": 0,
+            "positions": {
+              "501": {
+                "x": 4,
+                "y": 27
+              },
+              "504": {
+                "x": 5,
+                "y": 27
+              }
+            },
+            "stones": {
+              "501": 9,
+              "504": 8
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 5,
+                    "y": 26
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 6,
+                    "y": 26
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 9,
+                  "y": 24
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 8,
+                  "y": 24
+                }
+              }
+            }
+          },
+          {
+            "round": 31,
+            "walls": 0,
+            "positions": {
+              "501": {
+                "x": 5,
+                "y": 26
+              },
+              "504": {
+                "x": 6,
+                "y": 26
+              }
+            },
+            "stones": {
+              "501": 9,
+              "504": 8
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 6,
+                    "y": 25
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 7,
+                    "y": 25
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 9,
+                  "y": 24
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 8,
+                  "y": 24
+                }
+              }
+            }
+          },
+          {
+            "round": 32,
+            "walls": 0,
+            "positions": {
+              "501": {
+                "x": 6,
+                "y": 25
+              },
+              "504": {
+                "x": 7,
+                "y": 25
+              }
+            },
+            "stones": {
+              "501": 9,
+              "504": 8
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 7,
+                    "y": 24
+                  }
+                ]
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 8,
+                    "y": 24
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 9,
+                  "y": 24
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 8,
+                  "y": 24
+                }
+              }
+            }
+          },
+          {
+            "round": 33,
+            "walls": 1,
+            "positions": {
+              "501": {
+                "x": 7,
+                "y": 24
+              },
+              "504": {
+                "x": 7,
+                "y": 25
+              }
+            },
+            "stones": {
+              "501": 9,
+              "504": 7
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 8,
+                    "y": 25
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 6,
+                    "y": 24
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 9,
+                  "y": 24
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 7,
+                  "y": 21
+                }
+              }
+            }
+          },
+          {
+            "round": 34,
+            "walls": 1,
+            "positions": {
+              "501": {
+                "x": 8,
+                "y": 25
+              },
+              "504": {
+                "x": 6,
+                "y": 24
+              }
+            },
+            "stones": {
+              "501": 9,
+              "504": 7
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 9,
+                    "y": 24
+                  }
+                ],
+                "name": "wall"
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 5,
+                    "y": 23
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 9,
+                  "y": 24
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 7,
+                  "y": 21
+                }
+              }
+            }
+          },
+          {
+            "round": 35,
+            "walls": 2,
+            "positions": {
+              "501": {
+                "x": 8,
+                "y": 25
+              },
+              "504": {
+                "x": 5,
+                "y": 23
+              }
+            },
+            "stones": {
+              "501": 8,
+              "504": 7
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 9,
+                    "y": 25
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 6,
+                    "y": 22
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 10,
+                  "y": 24
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 7,
+                  "y": 21
+                }
+              }
+            }
+          },
+          {
+            "round": 36,
+            "walls": 2,
+            "positions": {
+              "501": {
+                "x": 9,
+                "y": 25
+              },
+              "504": {
+                "x": 6,
+                "y": 22
+              }
+            },
+            "stones": {
+              "501": 8,
+              "504": 7
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 10,
+                    "y": 24
+                  }
+                ],
+                "name": "wall"
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 7,
+                    "y": 21
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 10,
+                  "y": 24
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 7,
+                  "y": 21
+                }
+              }
+            }
+          },
+          {
+            "round": 37,
+            "walls": 4,
+            "positions": {
+              "501": {
+                "x": 9,
+                "y": 25
+              },
+              "504": {
+                "x": 6,
+                "y": 22
+              }
+            },
+            "stones": {
+              "501": 7,
+              "504": 6
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 10,
+                    "y": 25
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 6,
+                    "y": 21
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 11,
+                  "y": 24
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 7,
+                  "y": 20
+                }
+              }
+            }
+          },
+          {
+            "round": 38,
+            "walls": 4,
+            "positions": {
+              "501": {
+                "x": 10,
+                "y": 25
+              },
+              "504": {
+                "x": 6,
+                "y": 21
+              }
+            },
+            "stones": {
+              "501": 7,
+              "504": 6
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 11,
+                    "y": 24
+                  }
+                ],
+                "name": "wall"
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 7,
+                    "y": 20
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 11,
+                  "y": 24
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 7,
+                  "y": 20
+                }
+              }
+            }
+          },
+          {
+            "round": 39,
+            "walls": 6,
+            "positions": {
+              "501": {
+                "x": 10,
+                "y": 25
+              },
+              "504": {
+                "x": 6,
+                "y": 21
+              }
+            },
+            "stones": {
+              "501": 6,
+              "504": 5
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 11,
+                    "y": 25
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 6,
+                    "y": 20
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 12,
+                  "y": 24
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 7,
+                  "y": 19
+                }
+              }
+            }
+          },
+          {
+            "round": 40,
+            "walls": 6,
+            "positions": {
+              "501": {
+                "x": 11,
+                "y": 25
+              },
+              "504": {
+                "x": 6,
+                "y": 20
+              }
+            },
+            "stones": {
+              "501": 6,
+              "504": 5
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 12,
+                    "y": 24
+                  }
+                ],
+                "name": "wall"
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 7,
+                    "y": 19
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 12,
+                  "y": 24
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 7,
+                  "y": 19
+                }
+              }
+            }
+          },
+          {
+            "round": 41,
+            "walls": 8,
+            "positions": {
+              "501": {
+                "x": 11,
+                "y": 25
+              },
+              "504": {
+                "x": 6,
+                "y": 20
+              }
+            },
+            "stones": {
+              "501": 5,
+              "504": 4
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 12,
+                    "y": 25
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 6,
+                    "y": 19
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 12,
+                  "y": 23
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 8,
+                  "y": 19
+                }
+              }
+            }
+          },
+          {
+            "round": 42,
+            "walls": 8,
+            "positions": {
+              "501": {
+                "x": 12,
+                "y": 25
+              },
+              "504": {
+                "x": 6,
+                "y": 19
+              }
+            },
+            "stones": {
+              "501": 5,
+              "504": 4
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 13,
+                    "y": 24
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 7,
+                    "y": 18
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 12,
+                  "y": 23
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 8,
+                  "y": 19
+                }
+              }
+            }
+          },
+          {
+            "round": 43,
+            "walls": 8,
+            "positions": {
+              "501": {
+                "x": 13,
+                "y": 24
+              },
+              "504": {
+                "x": 7,
+                "y": 18
+              }
+            },
+            "stones": {
+              "501": 5,
+              "504": 4
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 12,
+                    "y": 23
+                  }
+                ],
+                "name": "wall"
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 8,
+                    "y": 19
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 12,
+                  "y": 23
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 8,
+                  "y": 19
+                }
+              }
+            }
+          },
+          {
+            "round": 44,
+            "walls": 10,
+            "positions": {
+              "501": {
+                "x": 13,
+                "y": 24
+              },
+              "504": {
+                "x": 7,
+                "y": 18
+              }
+            },
+            "stones": {
+              "501": 4,
+              "504": 3
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 13,
+                    "y": 23
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 8,
+                    "y": 18
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 12,
+                  "y": 22
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 9,
+                  "y": 19
+                }
+              }
+            }
+          },
+          {
+            "round": 45,
+            "walls": 10,
+            "positions": {
+              "501": {
+                "x": 13,
+                "y": 23
+              },
+              "504": {
+                "x": 8,
+                "y": 18
+              }
+            },
+            "stones": {
+              "501": 4,
+              "504": 3
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 12,
+                    "y": 22
+                  }
+                ],
+                "name": "wall"
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 9,
+                    "y": 19
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 12,
+                  "y": 22
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 9,
+                  "y": 19
+                }
+              }
+            }
+          },
+          {
+            "round": 46,
+            "walls": 12,
+            "positions": {
+              "501": {
+                "x": 13,
+                "y": 23
+              },
+              "504": {
+                "x": 8,
+                "y": 18
+              }
+            },
+            "stones": {
+              "501": 3,
+              "504": 2
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 13,
+                    "y": 22
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 9,
+                    "y": 18
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 12,
+                  "y": 21
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 10,
+                  "y": 19
+                }
+              }
+            }
+          },
+          {
+            "round": 47,
+            "walls": 12,
+            "positions": {
+              "501": {
+                "x": 13,
+                "y": 22
+              },
+              "504": {
+                "x": 9,
+                "y": 18
+              }
+            },
+            "stones": {
+              "501": 3,
+              "504": 2
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 12,
+                    "y": 21
+                  }
+                ],
+                "name": "wall"
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 10,
+                    "y": 19
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 12,
+                  "y": 21
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 10,
+                  "y": 19
+                }
+              }
+            }
+          },
+          {
+            "round": 48,
+            "walls": 14,
+            "positions": {
+              "501": {
+                "x": 13,
+                "y": 22
+              },
+              "504": {
+                "x": 9,
+                "y": 18
+              }
+            },
+            "stones": {
+              "501": 2,
+              "504": 1
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 13,
+                    "y": 21
+                  }
+                ]
+              },
+              "504": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 10,
+                    "y": 18
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 12,
+                  "y": 20
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 11,
+                  "y": 19
+                }
+              }
+            }
+          },
+          {
+            "round": 49,
+            "walls": 14,
+            "positions": {
+              "501": {
+                "x": 13,
+                "y": 21
+              },
+              "504": {
+                "x": 10,
+                "y": 18
+              }
+            },
+            "stones": {
+              "501": 2,
+              "504": 1
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 12,
+                    "y": 20
+                  }
+                ],
+                "name": "wall"
+              },
+              "504": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 11,
+                    "y": 19
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 12,
+                  "y": 20
+                }
+              },
+              "504": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 11,
+                  "y": 19
+                }
+              }
+            }
+          },
+          {
+            "round": 50,
+            "walls": 16,
+            "positions": {
+              "501": {
+                "x": 13,
+                "y": 21
+              },
+              "504": {
+                "x": 10,
+                "y": 18
+              }
+            },
+            "stones": {
+              "501": 1,
+              "504": 0
+            },
+            "commands": {
+              "501": {
+                "action": "move",
+                "targetPos": [
+                  {
+                    "x": 13,
+                    "y": 20
+                  }
+                ]
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 12,
+                  "y": 19
+                }
+              },
+              "504": {
+                "kind": "wait:",
+                "target": null
+              }
+            }
+          },
+          {
+            "round": 51,
+            "walls": 16,
+            "positions": {
+              "501": {
+                "x": 13,
+                "y": 20
+              },
+              "504": {
+                "x": 10,
+                "y": 18
+              }
+            },
+            "stones": {
+              "501": 1,
+              "504": 0
+            },
+            "commands": {
+              "501": {
+                "action": "build",
+                "targetPos": [
+                  {
+                    "x": 12,
+                    "y": 19
+                  }
+                ],
+                "name": "wall"
+              }
+            },
+            "jobs": {
+              "501": {
+                "kind": "build:wall",
+                "target": {
+                  "x": 12,
+                  "y": 19
+                }
+              },
+              "504": {
+                "kind": "wait:",
+                "target": null
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

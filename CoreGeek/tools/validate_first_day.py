@@ -29,6 +29,7 @@ MODULES = (
     'tests.test_exterior_repair',
     'tests.test_day_gate',
     'tests.test_gate_materials',
+    'tests.test_wall_schedule',
     'tests.test_boss_raid',
     'tests.test_boss_formation',
     'tests.test_robot_diagonal',
@@ -55,6 +56,8 @@ EXTRA = (
     'tests.test_first_night_defense.FirstNightDefenseTests.test_blocked_shop_does_not_turn_daytime_worker_into_a_waiting_guard',
     'tests.test_first_night_defense.FirstNightDefenseTests.test_first_day_ore_trips_do_not_search_a_return_path',
     'tests.test_first_night_defense.FirstNightDefenseTests.test_occupied_gap_guard_returns_to_a_legal_exterior_waiting_post',
+    'tests.test_worker_efficiency.WorkerEfficiencyTests.test_build_target_keeps_its_identity_during_the_trip',
+    'tests.test_worker_efficiency.WorkerEfficiencyTests.test_builders_keep_their_distinct_in_progress_wall_assignments',
 )
 
 
@@ -80,7 +83,7 @@ def main():
     paths.append(ROOT/'pyproject.toml')
     rules = list((ROOT.parent/'32_docs').glob('*'))+[ROOT.parent/'DEVELOPMENT_RULES.md']
     log_hashes = {name:hashlib.sha256((ROOT.parent/'temp'/name).read_bytes()).hexdigest()
-                  for name in ('bug_log1.log','bug_log2.log','boss_attack_log.log')
+                  for name in ('bug_log1.log','bug_log2.log','boss_attack_log.log','build_bug.log')
                   if (ROOT.parent/'temp'/name).is_file()}
     report = dict(created_utc=datetime.now(timezone.utc).isoformat(),python=platform.python_version(),
         scope='First day only (rounds 1-130); local regression inputs, not official match replay',

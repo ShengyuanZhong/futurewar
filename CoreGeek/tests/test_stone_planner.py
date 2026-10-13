@@ -28,6 +28,7 @@ def scene(number=12, first=None, second=None, mines=None, missing=17, memory=Non
     walls = [Pos(20 + i // 5, 3 + i % 5) for i in range(missing)]
     s.construction_walls = lambda: walls
     s.wall_keeps_exit = lambda role, target: True
+    s.wall_schedule.enabled = False  # Isolate these synthetic quotas from real blueprint arcs.
     planner = StonePlanner(s)
     return raw, s, plan, planner
 

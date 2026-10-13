@@ -1,12 +1,14 @@
 # CoreGeek 参赛 Agent
 
-当前程序版本为 v1.2.15：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后其余11块侧后墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回到可达邻墙维修区，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
+当前程序版本为 v1.2.16：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后其余11块侧后墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回到可达邻墙维修区，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
 
 此目录可作为参赛程序目录提交。沿用示例的 `main3.py`、`src/agent/protocol.py`、`grid.py`、`brain.py`；HTTP 处理与跨回合协作放在 `app`。新增代码无第三方运行依赖。
 
 历史v1.2.8通过569项回归、320份合成压力及四种布局520次跨帧HTTP检查；证据见[验证报告](../reports/VALIDATION-v1.2.8.md)，未运行新官方对局。历史v1.2.7的529项回归、80份合成压力及跨帧HTTP证据保留在[历史报告](../reports/VALIDATION-v1.2.7.md)。
 
-v1.2.15采用[永久封闭建家与采石协调](docs/SEALED_HOME_V1215.md)：沿用两张用户图的17墙、三火箭和外侧P位，取消白天临时门、门石预留与自动拆墙；三炮建成后，工人先按真实观测撤出将被封闭的内圈，再从外侧逐块施工。建墙同时检查本轮其它施工目标，不把同轮移动当成已离开。首夜维修改用可达外侧邻墙格，旧观测中已困在内部的角色仍可就地维修。采石按真实缺墙、在家工人库存与稳定配额安排，邻近可施工时先用已有石头建墙，够材后停止额外筹石；同矿可用不同采集站位。首日购物截止、2→1→2三任务及v1.2.14 BOSS协作保持。验证范围见[首日报告](../reports/VALIDATION-v1.2.15.md)。
+v1.2.16按真实后续目的安排[首日建墙分工](docs/WALL_SCHEDULE_V1216.md)：采购工以报文中的商店为目的，另一工以敌基地为目的，将17墙划成稳定的两段，从较远侧向离开侧推进；实际外侧施工路径相对最近墙只增加两步以内时保留施工方向，已有有效途中目标继续完成。相邻施工与远墙选择使用同一下一墙，采石按各自真正剩余墙数分份，初始已有足量石头时按实际背包切分施工段。三炮完成后，外侧工人的首日日间路线保持在外侧，防止穿入未封内圈再被拉回。首日已腾空的历史占点不再抢占远程施工；购物截止、真实撤出、夜间缺口接力和BOSS协作保持。范围及结果见[首日验证报告](../reports/VALIDATION-v1.2.16.md)。
+
+历史v1.2.15采用[永久封闭建家与采石协调](docs/SEALED_HOME_V1215.md)：沿用两张用户图的17墙、三火箭和外侧P位，取消白天临时门、门石预留与自动拆墙；三炮建成后，工人先按真实观测撤出将被封闭的内圈，再从外侧逐块施工。建墙同时检查本轮其它施工目标，不把同轮移动当成已离开。首夜维修改用可达外侧邻墙格，旧观测中已困在内部的角色仍可就地维修。采石按真实缺墙、在家工人库存与稳定配额安排，邻近可施工时先用已有石头建墙，够材后停止额外筹石；同矿可用不同采集站位。首日购物截止、2→1→2三任务及v1.2.14 BOSS协作保持。验证范围见[首日报告](../reports/VALIDATION-v1.2.15.md)。
 
 沿用v1.2.14的[多BOSS进位与直攻基地](docs/BOSS_FORMATION_V1214.md)：继续先清真实可见炮手；转攻基地后，多只BOSS中前排优先占住真实可见的共同操炮位，每次移动的落脚格均须仍有清晰基地射线；后排先寻找实际可达的基地直射位置，再考虑拆墙或炮台。仅在同伴已发出移动、通路暂时被其本轮位置占住时短等，最多3轮；不预测同伴已腾空、不合并移动攻击。历史失败只封禁原目标和原站位的射线，不再迫使其它清晰射线一律靠近。首日购物截止、工人分工及任务顺序沿用v1.2.13。
 
@@ -197,7 +199,8 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | [src/agent/day_gate.py](src/agent/day_gate.py) | `DayGate.worker(role)/day_ready()` | 已退休兼容对象：worker始终False，无门石、拆墙或临时封门动作 |
 | [src/agent/sealed_home.py](src/agent/sealed_home.py) | `builder_posts/safe_wall/evacuate/repair_cells` | 未来完整墙体外部分类、真实工人撤出、同轮施工安全及可达维修站位 |
 | 同上 | `needs_operator/pioneer_yield/wait_for_operator` | 白天实际持券工人请求操炮位交互，先锋真实让位后再用券；夜里不让炮手退出 |
-| [src/agent/stone_planner.py](src/agent/stone_planner.py) | `targets/needs_material/can_build_now/mine` | 实际墙材缺口、稳定独立配额、邻墙优先施工、同矿不同站位采集 |
+| [src/agent/wall_schedule.py](src/agent/wall_schedule.py) | `destinations/prepare/posts/cost/targets/remaining` | 首日按实际商店与敌基地分成稳定施工两段；外侧站位成本、两步绕行范围、有效途中目标与个人墙材需求，见[建墙调度](docs/WALL_SCHEDULE_V1216.md) |
+| [src/agent/stone_planner.py](src/agent/stone_planner.py) | `targets/needs_material/can_build_now/mine` | 实际墙材缺口、按个人施工段分份、同一计划下一墙就地施工、同矿不同站位采集 |
 | [src/agent/first_day_tasks.py](src/agent/first_day_tasks.py) | `record_attempt/finish_attempt/finished_count/success_count` | 用领取回合区分重复Task1，幂等计3次结束和0～3次成功 |
 | [src/agent/summoning.py](src/agent/summoning.py) | `scouted_spawn_position(turn, settings, remembered=(), pending=(), failed=(), surveyed=())` | 真实炮阵/墙/操炮位选择合法出生点；旧rear仅买前可行性 |
 | [src/agent/server.py](src/agent/server.py) | `Handler/serve` | 转发新网络层，兼容demo旧导入 |
@@ -244,4 +247,4 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 
 0.4.2接入用户提供的`print_log.py`格式：每个新回合记录`[TASK-DEBUG]`，完整打印phaseTask、llmResp、lastCmdResult、本轮prompt和executeCmd。stderr为默认输出，具体映射见[任务日志](docs/TASK_LOGGING.md)。
 
-当前验证仅覆盖第一天，见[首日验证报告](../reports/VALIDATION-v1.2.15.md)。v1.2.9的全量回归为历史证据；本轮未运行新官方对局。
+当前验证仅覆盖第一天，见[首日验证报告](../reports/VALIDATION-v1.2.16.md)。v1.2.9的全量回归为历史证据；本轮未运行新官方对局。

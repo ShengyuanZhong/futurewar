@@ -24,7 +24,9 @@ class StonePlanner:
         """
         workers = self.turn.workers()
         raid = getattr(self.s, 'boss_raid', None)
-        builders = [w for w in workers if raid is None or not raid.worker_mission_active(w)]
+        schedule = getattr(self.s,'wall_schedule',None)
+        builders = (schedule.active_builders() if schedule is not None and schedule.enabled else
+                    [w for w in workers if raid is None or not raid.worker_mission_active(w)])
         builder_ids = {w.unit_id for w in builders}
         remaining = len(set(self.s.construction_walls()))
         targets = {w.unit_id: 0 for w in workers}
@@ -35,6 +37,14 @@ class StonePlanner:
             targets[worker.unit_id] = held
             capacity[worker.unit_id] = held + max(0, worker.capacity - len(worker.backpack))
         shortage = max(0, remaining - sum(targets.values()))
+        if schedule is not None and schedule.enabled:
+            # Supply the actual assigned wall arcs before retaining a previous
+            # mining batch. A 7/10 split must not keep the old 9/8 allocation.
+            for worker in builders:
+                amount = min(shortage,max(0,min(schedule.remaining(worker),capacity[worker.unit_id])
+                                          - targets[worker.unit_id]))
+                targets[worker.unit_id]+=amount
+                shortage-=amount
         # Retain a miner's unfinished batch across the teammate's construction
         # actions, but never allocate past the genuine team shortage.
         for worker in sorted(builders, key=lambda w: w.unit_id):
@@ -68,7 +78,12 @@ class StonePlanner:
         if not self.turn.is_day or 'stone' not in role.backpack:
             return False
         blocked = self.turn.blocked(role) | self.plan.reserved | self.s.goals
-        for target in self.s.construction_walls():
+        candidates = self.s.construction_walls()
+        schedule = getattr(self.s,'wall_schedule',None)
+        if schedule is not None and schedule.enabled:
+            candidates = schedule.targets(role,[p for p in candidates if p not in blocked
+                and not self.s.coordinator.target_owned(role,p,'build:wall')],local_only=True)
+        for target in candidates:
             if (distance(role.pos, target) != 1 or target in blocked
                     or target in self.turn.vehicle_cells() | self.turn.vehicle_cells(False)
                     or self.s.coordinator.target_owned(role, target, 'build:wall')):

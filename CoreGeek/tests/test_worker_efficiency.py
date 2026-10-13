@@ -122,11 +122,11 @@ class WorkerEfficiencyTests(unittest.TestCase):
     def test_builders_keep_their_distinct_in_progress_wall_assignments(self):
         for mirrored in (False, True):
             raw = drawing_request(mirrored, built=True, round_no=25)
-            raw['teamOur']['roles'][2].update(pos=point(8,7,mirrored).dump(), backpack=['stone']*9)
+            raw['teamOur']['roles'][2].update(pos=point(10,7,mirrored).dump(), backpack=['stone']*9)
             raw['teamOur']['roles'][3].update(pos=point(8,10,mirrored).dump(), backpack=['stone']*9)
             lower, upper = point(9,4,mirrored), point(9,9,mirrored)
             memory = GameMemory(worker_tasks={
-                501:{'round':24,'kind':'build:wall','target':lower,'goal':point(8,5,mirrored)},
+                501:{'round':24,'kind':'build:wall','target':lower,'goal':point(10,5,mirrored),'moving':True},
                 504:{'round':24,'kind':'build:wall','target':upper,'goal':point(8,10,mirrored)}})
             s, plan = strategy(raw, memory); s.run()
             self.assertEqual(memory.worker_tasks[501]['target'], lower)

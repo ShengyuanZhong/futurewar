@@ -305,7 +305,8 @@ class RaidScouts:
                 for x in range(max(0,u.pos.x-2),min(self.turn.width,u.pos.x+3))
                 for y in range(max(0,u.pos.y-2),min(self.turn.height,u.pos.y+3))
                 if Pos(x,y) not in exits)
-        return Routes(self.turn,role,reserved,self.s.danger if role.kind!=IMP else None)
+        return Routes(self.turn,role,reserved,self.s.danger if role.kind!=IMP else None,
+                      self.s.worker_region(role))
 
     def observe_from(self, role):
         post = self.post(role)

@@ -18,6 +18,7 @@ from .first_night_defense import FirstNightDefense
 from .day_gate import DayGate
 from .sealed_home import SealedHome
 from .stone_planner import StonePlanner
+from .wall_schedule import WallSchedule
 from .summoning import rear_spawn_position
 from . import upgrade_policy
 from .first_day_tasks import TASK_SEQUENCE, task_attempts, task_number, finished_count, finish_attempt
@@ -48,6 +49,7 @@ class Strategy:
         self.boss_raid = BossRaid(self)
         self.raider = RobotRaider(self)
         self.raid_scouts = RaidScouts(self)
+        self.wall_schedule = WallSchedule(self)
         self.stone_planner = StonePlanner(self)
 
     def movement_reserved(self, role: Unit | None = None) -> set[Pos]:
@@ -87,7 +89,15 @@ class Strategy:
                 reserved.update(scouts.spawn_cells() | scouts.attack_lanes())
         return reserved
 
+    def worker_region(self, role: Unit, allowed=None):
+        if (allowed is None and role.kind=='worker' and self.turn.day==1 and self.turn.is_day
+                and len(self.turn.weapons())>=3 and self.sealed_home.enabled
+                and role.pos in self.sealed_home.outside):
+            return self.sealed_home.outside
+        return allowed
+
     def route(self, role: Unit, allowed: set[Pos] | None = None) -> Routes:
+        allowed = self.worker_region(role,allowed)
         reserved = self.movement_reserved(role)
         key = (role.unit_id, frozenset(reserved), None if allowed is None else frozenset(allowed))
         if key not in self.routes:
@@ -393,22 +403,21 @@ class Strategy:
         walls = [p for p in self.construction_walls() if p not in self.turn.blocked(role)
                  and p not in self.plan.reserved and p not in self.goals and p != role.pos
                  and not self.coordinator.target_owned(role, p, 'build:wall')]
-        if local_only:
-            walls = [p for p in walls if distance(role.pos,p)==1]
-        job = self.coordinator.job(role)
-        previous = job.get('target') if job.get('kind') == 'build:wall' else None
-        for target in sorted(walls, key=lambda p: (p != previous, self.cost(role, [p]), p)):
+        for target in self.wall_schedule.targets(role,walls,local_only=local_only):
             if distance(role.pos,target)>1 and any(
                     w.unit_id!=role.unit_id and w.unit_id not in self.plan.used
                     and 'stone' in w.backpack and distance(w.pos,target)==1
                     and w.pos in self.sealed_home.outside
                     and not self.boss_raid.worker_mission_active(w) and not self.raid_scouts.is_worker(w)
+                    and (not self.wall_schedule.enabled or len(walls)==1
+                         or target in self.wall_schedule.state.get('arcs',{}).get(w.unit_id,()))
                     for w in self.turn.workers()):
                 # A courier must not claim the local builder's immediate wall.
                 self.coordinator.assign(role,'construction_share',None,role.pos)
                 continue
             # Do not spend the last daylight rounds walking towards illegal night work.
-            if self.cost(role, [target]) + 1 > self.turn.daylight_left:
+            cost = self.wall_schedule.cost(role,target) if self.wall_schedule.enabled else self.cost(role,[target])
+            if cost + 1 > self.turn.daylight_left:
                 continue
             if self.wall_keeps_exit(role, target) and self.interact(role, target, build_command(target, "wall")):
                 self.goals.add(target)

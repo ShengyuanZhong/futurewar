@@ -117,6 +117,8 @@ class TurnService:
             if turn.day == 1:
                 LOGGER.info('home_construction %s',json.dumps(plain(strategy.sealed_home.diagnostic()),
                     ensure_ascii=False,separators=(',',':')))
+                LOGGER.info('wall_schedule %s',json.dumps(plain(strategy.wall_schedule.diagnostic()),
+                    ensure_ascii=False,separators=(',',':')))
                 LOGGER.info('first_day_policy %s',json.dumps(plain(strategy.boss_raid.diagnostic()),
                     ensure_ascii=False,separators=(',',':')))
                 LOGGER.info('defense_diagnostic %s',json.dumps(plain(strategy.first_defense.diagnostic()),
