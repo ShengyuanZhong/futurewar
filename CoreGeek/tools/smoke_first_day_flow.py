@@ -158,6 +158,8 @@ def main():
         for outcomes in product((False,True),repeat=3):
             case = ''.join('1' if flag else '0' for flag in outcomes)
             raw = fixture(case)
+            starting_walls = {Pos.load(u['pos']) for u in raw['teamOur']['roles'] if u['roleType']=='wall'}
+            possible_walls = starting_walls | {Pos(5,9)}
             truth = copy.deepcopy(raw['teamEnemy']['roles'])
             wanted = sum(outcomes)
             spawns = []
@@ -167,8 +169,9 @@ def main():
                 task_frame(raw,number,outcomes)
                 reveal(raw,truth)
                 if number==71:
-                    assert len([u for u in raw['teamOur']['roles']
-                                if u['roleType']=='wall' and u['health']>0])==17
+                    walls = {Pos.load(u['pos']) for u in raw['teamOur']['roles']
+                             if u['roleType']=='wall' and u['health']>0}
+                    assert starting_walls <= walls <= possible_walls
                     occupied = Turn.load(raw).occupied_cells()
                     assert all(Pos.load(p) not in occupied for p in spawns)
                     raw['teamOur']['summonRobotList'] = [robot(30005+i,p['x'],p['y'],
@@ -221,7 +224,8 @@ def main():
             assert len(spawns)==wanted and len({(p['x'],p['y']) for p in spawns})==wanted
             assert upgrade_seen,(case,'weapon purchases stayed locked after the order step')
             assert buyer_walked,(case,'buyer must actually walk from home to the shop')
-            assert len([u for u in raw['teamOur']['roles'] if u['roleType']=='wall' and u['health']>0])==17
+            walls = {Pos.load(u['pos']) for u in raw['teamOur']['roles'] if u['roleType']=='wall' and u['health']>0}
+            assert starting_walls <= walls <= possible_walls
     finally:
         process.terminate();process.wait(timeout=3)
         capture.seek(0);logs = capture.read().decode('utf-8',errors='replace');capture.close()

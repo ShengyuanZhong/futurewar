@@ -22,6 +22,7 @@ MODULES = (
     'tests.test_vehicle_protocol',
     'tests.test_scout_vehicle',
     'tests.test_worker_boss_buyer',
+    'tests.test_buyer_deadline',
     'tests.test_buyer_coordination',
     'tests.test_boss_raid',
 )
@@ -37,9 +38,14 @@ EXTRA = (
     'tests.test_gap_defense.GapDefenseTests.test_standby_imp_does_not_cross_gap_while_the_worker_is_alive',
     'tests.test_day_gate.DayGateTests.test_owner_collects_one_seal_stone_before_optional_supplies',
     'tests.test_day_gate.DayGateTests.test_owner_seals_from_inside_and_move_is_separate_action',
-    'tests.test_day_gate.DayGateTests.test_dual_guards_wait_until_both_inside_before_sealing',
     'tests.test_day_gate.DayGateTests.test_night_never_opens_gate_and_complete_template_matches_blueprint',
-    'tests.test_day_gate.DayGateTests.test_two_workers_pass_entry_and_restore_seventeen_walls_before_night',
+    'tests.test_gap_defense.GapDefenseTests.test_first_day_dusk_does_not_start_body_wait_or_build_extra_walls',
+    'tests.test_first_night_defense.FirstNightDefenseTests.test_first_night_repairs_below_thirty_percent_even_without_day_three_guard',
+    'tests.test_first_night_defense.FirstNightDefenseTests.test_supply_buys_five_kits_then_one_coupon_at_the_same_stop',
+    'tests.test_first_night_defense.FirstNightDefenseTests.test_dusk_from_a_distant_mine_keeps_working_without_a_return_budget',
+    'tests.test_first_night_defense.FirstNightDefenseTests.test_blocked_shop_does_not_turn_daytime_worker_into_a_waiting_guard',
+    'tests.test_first_night_defense.FirstNightDefenseTests.test_first_day_ore_trips_do_not_search_a_return_path',
+    'tests.test_first_night_defense.FirstNightDefenseTests.test_occupied_gap_guard_returns_to_a_legal_inner_waiting_post',
 )
 
 

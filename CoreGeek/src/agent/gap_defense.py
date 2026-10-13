@@ -119,6 +119,8 @@ class WallGapDefense:
         return (self.active_role(role) and (not self.turn.is_day or self.preparing(role)))
 
     def preparing(self, role):
+        if self.turn.day == 1 and self.turn.is_day:
+            return False  # Begin body defence at night, without a return budget.
         return self.turn.daylight_left <= max(10,self.post_cost(role)+self.s.settings.return_margin+1)
 
     def move_or_hold(self, role, goals, kind):

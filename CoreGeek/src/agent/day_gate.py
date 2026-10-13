@@ -54,6 +54,8 @@ class DayGate:
     def closing(self):
         if not self.enabled or not self.turn.is_day:
             return False
+        if self.turn.day == 1:
+            return False  # No first-day worker is recalled to reserve a seal trip.
         if not self.memory.opening_complete and not self.other_ready(self.s.gap_guard.gaps):
             return False  # A lone door is no reason to abandon an unfinished opening.
         role = self.role()
@@ -149,7 +151,8 @@ class DayGate:
                 and r.unit_id != self.memory.raid_scouts.get('worker_id')]
 
     def can_seal(self, role):
-        return bool(self.enabled and self.turn.is_day and self.closing()
+        seal_now = self.closing() or (self.turn.day == 1 and self.turn.daylight_left == 1)
+        return bool(self.enabled and self.turn.is_day and seal_now
                     and role.unit_id == self.worker_id and 'stone' in role.backpack
                     and role.pos in self.inner_posts()
                     and all(w.pos in self.s.guard.inner_cells() for w in self.required_inside())
@@ -193,6 +196,13 @@ class DayGate:
                 self.state['status'] = 'collecting_seal_stone'
                 return True
             return False
+        if self.turn.day == 1 and self.can_seal(role):
+            # Only an already present builder may seal on R70. No return move
+            # or planned future arrival is treated as somebody being inside.
+            if self.plan.add(role.unit_id, build_command(self.pos, 'wall')):
+                self.s.coordinator.assign(role, 'build:wall', self.pos, role.pos)
+                self.state['status'] = 'sealing'
+                return True
         if not self.closing():
             if owner and 'stone' in role.backpack and self.prepare_coupon(role):
                 return True

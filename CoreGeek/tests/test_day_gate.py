@@ -63,7 +63,7 @@ class DayGateTests(unittest.TestCase):
         self.assertFalse(s.day_gate.day_ready())
 
     def test_owner_collects_one_seal_stone_before_optional_supplies(self):
-        raw = gate_request()
+        raw = gate_request(round_no=40)
         raw['teamOur']['roles'][2]['pos'] = {'x': 4, 'y': 9}
         s, plan = setup(raw)
         s.run_worker(s.turn.workers()[0])
@@ -82,7 +82,7 @@ class DayGateTests(unittest.TestCase):
 
     def test_owner_seals_from_inside_and_move_is_separate_action(self):
         for mirrored in (False, True):
-            raw = gate_request(round_no=68, mirrored=mirrored)
+            raw = gate_request(round_no=70, mirrored=mirrored)
             raw['teamOur']['roles'][2].update(pos=point(6, 8, mirrored).dump(), backpack=['stone'])
             s, plan = setup(raw)
             worker = s.turn.workers()[0]
@@ -94,8 +94,8 @@ class DayGateTests(unittest.TestCase):
             self.assertEqual(plan.rejections, [])
             raw['teamOur']['roles'][2]['pos'] = point(4, 8, mirrored).dump()
             s, plan = setup(raw)
-            s.run_worker(s.turn.workers()[0])
-            self.assertEqual(plan.commands['501']['action'], 'move')
+            self.assertFalse(s.day_gate.worker(s.turn.workers()[0]))
+            self.assertNotIn('501',plan.commands)
             self.assertFalse(any(c['action'] == 'build' for c in plan.commands.values()))
 
     def test_dual_guards_wait_until_both_inside_before_sealing(self):
@@ -121,7 +121,7 @@ class DayGateTests(unittest.TestCase):
         self.assertEqual(len(s.settings.build_cells(s.turn, 'wall')), 17)
 
     def test_night_never_opens_gate_and_complete_template_matches_blueprint(self):
-        raw = gate_request(round_no=201, closed=True)
+        raw = gate_request(round_no=71, closed=True)
         raw['teamOur']['roles'][2].update(pos={'x': 6, 'y': 8}, backpack=['stone'])
         s, plan = setup(raw)
         self.assertFalse(s.day_gate.worker(s.turn.workers()[0]))

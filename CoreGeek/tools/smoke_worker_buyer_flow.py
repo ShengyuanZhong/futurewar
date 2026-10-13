@@ -30,7 +30,7 @@ from tools.smoke_first_day_flow import task_frame
 from tools.smoke_scout_flow import apply, diagnostics, ordinary_sight
 
 
-def fixture(lower_right):
+def fixture(lower_right, unfinished=False):
     raw, _, settings = worker_raid_scene(round_no=1, lower_right=lower_right, finished=0)
     name = 'lower-right' if lower_right else 'upper-left'
     raw['teamOur'].update(teamId='worker-buyer-nonsymmetric-' + name, totalScore=0,
@@ -57,10 +57,26 @@ def fixture(lower_right):
     assert inner_start not in {p for u in Turn.load(raw).ours if u.unit_id != BUYER
                                for p in Turn.load(raw).footprint(u)}
     assert SHOP not in {Pos.load(u['pos']) for u in raw['teamOur']['roles']}
+    if unfinished:
+        # This variant begins with seven ordinary walls still unbuilt and
+        # stone far from both homes. The second worker performs real mining
+        # and construction; an ordinary IMP supplies the enemy sight.
+        missing = {u['id'] for u in raw['teamOur']['roles'] if u['roleType']=='wall'}
+        missing = set(sorted(missing)[:7])
+        raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles'] if u['id'] not in missing]
+        actor(raw,SCOUT)['pos'] = Pos(base.x+(-3 if lower_right else 4),base.y-2).dump()
+        for zone in raw['mapInfo']['zones']:
+            if zone['neutralType']=='stone':
+                zone['pos'] = Pos(1,1).dump()
+        imp_pos = Pos(enemy['pos']['x']+(-5 if lower_right else 6),enemy['pos']['y']-2)
+        raw['teamOur']['roles'].append(unit(505,'imp',imp_pos.x,imp_pos.y,health=500))
+    name += '-unfinished' if unfinished else ''
+    raw['teamOur']['teamId'] = 'worker-buyer-nonsymmetric-'+name
     return raw, truth, dict(case=name, base=base.dump(), shop=SHOP.dump(),
         gate=gate.dump(), buyer_initial=inner_start.dump(), pioneer_control=control.dump(),
         scout_initial=copy.deepcopy(actor(raw, SCOUT)['pos']),
-        pioneer_initial=copy.deepcopy(actor(raw, PIONEER)['pos']))
+        pioneer_initial=copy.deepcopy(actor(raw, PIONEER)['pos']),unfinished=unfinished,
+        initial_wall_count=len(Turn.load(raw).walls()))
 
 
 def post(port, raw):
@@ -82,6 +98,8 @@ def post(port, raw):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--unfinished', action='store_true',
+                        help='Exercise purchase deadlines before seven ordinary walls finish')
     args = parser.parse_args()
     with socket.socket() as sock:
         sock.bind(('127.0.0.1', 0))
@@ -108,7 +126,7 @@ def main():
             finally:
                 conn.close()
         for lower_right in (False, True):
-            raw, truth, summary = fixture(lower_right)
+            raw, truth, summary = fixture(lower_right,args.unfinished)
             spawns, buys, uses, accepts, gate_crossings = [], [], [], [], []
             shop_arrival, first_return, control_arrival = None, None, None
             for number in range(1, 72):
@@ -161,15 +179,18 @@ def main():
                     ordinary_sight_origins=[p.dump() for p in sorted(ordinary_sight(raw))],
                     visible_enemy_roles=[dict(id=u['id'], kind=u['roleType'], pos=u['pos'])
                                          for u in raw['teamEnemy']['roles']],
+                    observed_wall_count=len(Turn.load(raw).walls()),
                     commands=commands, prompt_chars=len(result['prompt'])))
                 apply(raw, truth, commands, spawns)
             assert accepts == [dict(round=1, task=2), dict(round=4, task=1), dict(round=34, task=2)]
             assert len(buys) == 1 and buys[0]['num'] == 3 and buys[0]['actor'] == BUYER, buys
             assert len(uses) == 3 and all(u['actor'] == BUYER for u in uses), uses
             assert len({(p['x'], p['y']) for p in spawns}) == 3
-            assert gate_crossings and shop_arrival is not None and shop_arrival < 37
+            assert shop_arrival is not None and shop_arrival <= 67
+            if not args.unfinished:
+                assert gate_crossings and shop_arrival < 37
             assert first_return == 37 and control_arrival is not None and control_arrival <= 70
-            summary.update(shop_arrival_round=shop_arrival, waited_until_task_settlement=37-shop_arrival,
+            summary.update(shop_arrival_round=shop_arrival, waited_until_task_settlement=max(0,37-shop_arrival),
                 gate_crossing_rounds=gate_crossings, buys=buys, uses=uses, spawns=spawns,
                 pioneer_first_return_round=first_return, pioneer_control_arrival_round=control_arrival,
                 buyer_final=copy.deepcopy(actor(raw, BUYER)['pos']),
@@ -186,11 +207,29 @@ def main():
         capture.close()
     if failure is None and 'action_rejected' in logs:
         failure = AssertionError('HTTP process logged action_rejected')
-    report = dict(scope='First-day R1..71 synthetic completed-wall observations, task answers and verdicts over real HTTP; not official matches',
-        initial_conditions='Three real guns, sixteen real ordinary walls and one seal stone; buyer inside, scout already at enemy, pioneer near local task fixture',
+    diag = diagnostics(logs)
+    if args.unfinished and failure is None:
+        for case in cases:
+            departures = [row['data'] for row in diag if row['kind']=='first_day_policy'
+                          and row['data'].get('team_id')=='worker-buyer-nonsymmetric-'+case['case']
+                          and row['data'].get('departure_reason')=='shop_deadline'
+                          and row['data'].get('buyer_id')==BUYER and row['data'].get('departure_authorized')]
+            assert departures, 'unfinished construction must activate a purchase deadline'
+            case.update(departure_round=departures[0]['departure_round'],
+                        departure_budget=departures[0]['departure_budget_at_start'])
+            buys = [row for row in rows if row['case']==case['case'] and
+                    row['commands'].get(str(BUYER),{}).get('name')==ORDER and
+                    row['commands'][str(BUYER)]['action']=='buy']
+            assert buys and buys[0]['observed_wall_count']<16, 'fixture must still be unfinished at purchase'
+            case['walls_at_purchase'] = buys[0]['observed_wall_count']
+    report = dict(scope='First-day R1..71 synthetic observations, task answers and verdicts over real HTTP; not official matches',
+        initial_conditions=('Three real guns, nine observed ordinary walls, one buyer seal stone; buyer inside, '
+            'other worker collecting distant stone, actual IMP enemy sight, pioneer near local task fixture'
+            if args.unfinished else 'Three real guns, sixteen real ordinary walls and one seal stone; '
+            'buyer inside, scout already at enemy, pioneer near local task fixture'),
         task_sequence=[2, 1, 2], accepted_rounds=[1, 4, 34], no_private_memory_seed=True,
         visibility='Ordinary alive friendly range-four sight only; enemy station/wall global; summoned robots have no sight',
-        fixed_shop=SHOP.dump(), requests=len(rows), cases=cases, results=rows, diagnostics=diagnostics(logs),
+        fixed_shop=SHOP.dump(), requests=len(rows), cases=cases, results=rows, diagnostics=diag,
         bind_verified=f'0.0.0.0:{port}' in logs, execute_cmd_executed=False,
         failure=repr(failure) if failure is not None else None)
     args.output.parent.mkdir(parents=True, exist_ok=True)

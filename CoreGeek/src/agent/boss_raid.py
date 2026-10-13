@@ -52,18 +52,80 @@ class BossRaid:
         return bool(required) and len(self.turn.weapons())>=3 and required<={w.pos for w in self.turn.walls()}
 
     def worker_mission_active(self, role):
-        approved_departure = self.state.get('mission_started') and self.state.get('buyer_departed')
+        approved_departure = self.state.get('departure_authorized') or (
+            self.state.get('mission_started') and self.state.get('buyer_departed'))
         if (not self.s.settings.enable_boss_raid or self.turn.day!=1 or not self.turn.is_day
                 or role.kind!=WORKER or role.health<=0 or role.unit_id!=self.buyer_id
                 or role.unit_id==self.memory.raid_scouts.get('worker_id')
                 or BOSS_ORDER not in self.turn.shop_prices
-                or (not self.dispatch_ready() and not approved_departure)
+                or (not self.dispatch_ready() and not approved_departure and not self.departure_due(role))
                 or self.state.get('summon_window_closed')):
             return False
         target = self.target_orders()
         if target is not None and (target==0 or self.state.get('deployed_count',0)>=target):
             return False
         return not self.state.get('purchase_closed') or bool(self.held_orders(role))
+
+    def departure_budget(self, role):
+        """Reserve actual outbound actions; no first-day return-home allowance.
+
+        Three orders are the worst case until the task ledger settles. A sealed
+        entrance is removed only in this forecast, never in the live map. Two
+        spare rounds cover ordinary coworker yielding and route changes.
+        """
+        key = ('departure',role.unit_id,role.pos)
+        if key in self.trip:
+            return self.trip[key]
+        target = self.target_orders()
+        target = FIRST_DAY_LIMIT if target is None else target
+        uses = max(0,target-self.state.get('deployed_count',0))
+        needed = max(0,target-self.state.get('acquired_count',0))
+        drops = max(0,len(role.backpack)+needed-role.capacity)
+        buying = int(needed>0)
+        shops = [p for p,k in self.turn.zones.items() if k=='weaponShop']
+        goals = adjacent_cells(self.turn,shops)-self.s.coordinator.claimed_goals(role)
+        options = []
+        def offer(route, opening=0, approach=0, mode='actual_route', driving=None):
+            post = route.nearest(goals)
+            if post is None:
+                return
+            steps = route.cost[post]
+            driving = role.is_driving if driving is None else driving
+            travel = (steps+1)//2 if self.turn.is_day and driving else steps
+            travel += approach
+            total = travel+opening+drops+buying+uses+2
+            options.append(dict(total=total,travel=travel,opening=opening,drop=drops,
+                buy=buying,use=uses,slack=2,post=post,route_mode=mode,
+                latest_departure=self.turn.round_no+self.turn.daylight_left-total))
+        route = self.s.route(role)
+        offer(route)
+        if not options:
+            offer(self.s.coordinator.diagnostic_route(role),mode='coworker_yield')
+        gate = self.s.day_gate
+        wall = gate.wall() if gate.enabled else None
+        if not options and wall is not None and gate.worker_id==role.unit_id:
+            entries = adjacent_cells(self.turn,[gate.pos])
+            if distance(role.pos,gate.pos)<=1:
+                entries.add(role.pos)
+            entry = route.nearest(entries)
+            if entry is not None:
+                before = route.cost[entry]
+                driving_after = role.is_driving and before%2==0
+                moved = replace(role,pos=entry,is_driving=driving_after)
+                simulated = replace(self.turn,ours=tuple(moved if u.unit_id==role.unit_id else u
+                    for u in self.turn.ours if u.unit_id!=wall.unit_id))
+                reserved = self.s.movement_reserved(role)-{gate.pos}
+                after = Routes(simulated,moved,reserved)
+                approach = (before+1)//2 if role.is_driving else before
+                offer(after,opening=1,approach=approach,mode='remove_entrance',driving=driving_after)
+        self.trip[key] = min(options,key=lambda p:(p['total'],p['post'])) if options else None
+        return self.trip[key]
+
+    def departure_due(self, role):
+        budget = self.departure_budget(role)
+        # No reachable shop is a reason to start diagnosing the route now,
+        # rather than spend the remaining window on lower-priority wall work.
+        return (budget is None or self.turn.daylight_left<=budget['total'])
 
     def observe(self):
         # A dead buyer's preserved bag is evidence, although it cannot act.
@@ -232,7 +294,7 @@ class BossRaid:
     def diagnostic(self):
         role = next(iter(self.turn.alive((PIONEER,))),None)
         buyer = self.buyer_role()
-        return dict(round=self.turn.round_no,is_day=self.turn.is_day,
+        return dict(round=self.turn.round_no,team_id=self.turn.team_id,is_day=self.turn.is_day,
             pioneer=dict(id=role.unit_id,pos=role.pos,health=role.health,
                 command=self.plan.commands.get(str(role.unit_id))) if role else None,
             buyer_id=self.buyer_id,
@@ -240,6 +302,11 @@ class BossRaid:
                 held=buyer.backpack.count(BOSS_ORDER),command=self.plan.commands.get(str(buyer.unit_id))) if buyer else None,
             dispatch_ready=self.dispatch_ready(),buyer_departed=self.state.get('buyer_departed',False),
             construction_approved_round=self.state.get('construction_approved_round'),
+            departure_authorized=self.state.get('departure_authorized',False),
+            departure_reason=self.state.get('departure_reason'),
+            departure_round=self.state.get('departure_round'),
+            departure_budget_at_start=self.state.get('departure_budget_at_start'),
+            departure_budget=self.departure_budget(buyer) if buyer and self.turn.day==1 and self.turn.is_day else None,
             tasks=[dict(kind=t.kind,pos=t.pos,valid=t.valid,cooldown=t.cooldown,timeout=t.timeout) for t in self.turn.tasks],
             task_itinerary_closed=self.memory.task_schedule.get('itinerary_closed',False),
             attempted_tasks=len(task_attempts(self.memory)),
@@ -469,12 +536,19 @@ class BossRaid:
                 'no_successful_tasks' if self.target_orders()==0 else 'worker_mission_complete')
             return False
         if not self.state.get('mission_started'):
-            self.state['construction_approved_round'] = self.turn.round_no
+            ready = self.dispatch_ready()
+            if ready:
+                self.state['construction_approved_round'] = self.turn.round_no
+            self.state.update(departure_authorized=True,departure_round=self.turn.round_no,
+                departure_reason='walls_ready' if ready else 'shop_deadline',
+                departure_budget_at_start=self.departure_budget(role))
         self.state['mission_started'] = True
         if role.pos not in self.s.guard.inner_cells():
             self.state['buyer_departed'] = True
         if not self.tasks_finished():
             self.state['decision']['reason'] = 'waiting_for_three_tasks_at_shop'
+            if self.free_capacity(role,max(0,FIRST_DAY_LIMIT-self.state['acquired_count'])):
+                return True
             return self.approach_shop(role)
         needed = max(0,self.target_orders()-self.state['acquired_count'])
         if needed and self.free_capacity(role,needed):

@@ -385,7 +385,7 @@ class WorkerBossBuyerTests(unittest.TestCase):
         raw, memory, settings = worker_raid_scene(round_no=67, successes=1)
         settings = replace(settings, enable_first_night_defense=True)
         s, plan = load_strategy(raw, memory, settings)
-        self.assertTrue(s.day_gate.closing())
+        self.assertFalse(s.day_gate.closing())
         self.assertEqual(s.first_defense.worker_id, BUYER)
         s.run()
         self.assertEqual(plan.commands[str(BUYER)], dict(action='buy', name=ORDER, num=1))

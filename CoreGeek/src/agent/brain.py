@@ -296,6 +296,13 @@ class Strategy:
         for role in workers:
             held = role.backpack.count("stone")
             reserve[role.unit_id] = self.day_gate.reserve_stone(role)
+            raid = getattr(self, 'boss_raid', None)
+            if raid is not None and raid.worker_mission_active(role):
+                # Outbound shopping stone cannot supply the worker still at
+                # home. Give that builder an independent remaining quota.
+                targets[role.unit_id] = reserve[role.unit_id]
+                capacity[role.unit_id] = reserve[role.unit_id]
+                continue
             allocated = min(max(0,held-reserve[role.unit_id]),remaining)
             targets[role.unit_id] = allocated + reserve[role.unit_id]
             remaining -= allocated
@@ -434,7 +441,7 @@ class Strategy:
                         return self.plan.add(role.unit_id, {"action": "use", "name": name, "targetPos": [target.dump()]})
         for name in sorted(set(role.backpack) & SUMMON_ITEMS):
             if name == BOSS_ORDER and self.settings.enable_boss_raid:
-                continue  # Reserved for the task-complete day-one pioneer workflow.
+                continue  # Reserved for the task-complete day-one buyer workflow.
             if self.plan.summon_used < 10:
                 spawn = rear_spawn_position(self.turn, self.settings, self.plan.summon_positions)
                 if spawn is not None:
@@ -643,7 +650,7 @@ class Strategy:
                 route = self.coordinator.diagnostic_route(role)
             if self.danger:
                 goals = {p for p in goals if not self.danger.get(p, 0) and route.exposure.get(p) == 0}
-            if return_cells is not None:
+            if return_cells is not None and not (self.turn.day==1 and self.turn.is_day):
                 goals = {p for p in goals if p in route.cost and return_cells
                          and route.cost[p] + 1 + min(distance(p, home) for home in return_cells)
                          + self.settings.return_margin < self.turn.daylight_left}

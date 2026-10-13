@@ -36,6 +36,9 @@ class ScoutBugRegressionTests(unittest.TestCase):
         raw, memory = self.log2_scout_scene()
         raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles']
             if not (u['roleType']=='wall' and u['pos']==GAP.dump())]
+        # This case starts before actual completion; the survey helper above
+        # must not grant a historical construction approval to that scenario.
+        memory.raid_scouts.pop('construction_verified_round',None)
         s, _ = strategy(raw, memory)
         self.assertTrue(memory.raid_scouts['imp_ready'])
         self.assertFalse(s.raid_scouts.summon_ready())

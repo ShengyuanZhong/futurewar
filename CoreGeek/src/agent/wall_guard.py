@@ -108,6 +108,8 @@ class WallGuard:
 
     def daytime(self, role) -> bool:
         """Return before dusk; otherwise replenish stock and resume normal work."""
+        if self.turn.day == 1 and self.turn.is_day:
+            return False
         if self.full_time:
             self.final_daytime(role)
             return True
@@ -148,6 +150,9 @@ class WallGuard:
     def final_daytime(self, role) -> None:
         """Repair, sell, buy kits and mine; both workers return before dusk."""
         s = self.strategy
+        if self.turn.day == 1 and self.turn.is_day:
+            s.worker(role)
+            return
         if self.nighttime(role, urgent_only=True):
             return
         cells = self.inner_cells()
@@ -179,6 +184,8 @@ class WallGuard:
 
     def trip_fits_daylight(self, role, landmarks, cells) -> bool:
         """Budget one interaction and a return estimate, using current outbound paths."""
+        if self.turn.day == 1 and self.turn.is_day:
+            return bool(landmarks and self.strategy.cost(role, landmarks)+1 <= self.turn.daylight_left)
         if not landmarks or not cells:
             return False
         return_cost = min(max(0, distance(p, home)-1) for p in landmarks for home in cells)

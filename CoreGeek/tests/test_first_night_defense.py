@@ -200,23 +200,24 @@ class FirstNightDefenseTests(unittest.TestCase):
             self.assertEqual(command['action'],'move')
             self.assertIn(Pos.load(command['targetPos'][0]),s.guard.inner_cells())
 
-    def test_dusk_from_a_distant_mine_returns_without_a_new_supply_or_collect_trip(self):
+    def test_dusk_from_a_distant_mine_keeps_working_without_a_return_budget(self):
         raw = open_entrance(ready(fortified(70),position=(20,7)))
         raw['mapInfo']['zones'].append({'neutralType':'iron','pos':Pos(20,6).dump()})
         s,plan,defense = setup(raw)
-        s.run()  # The entrance controller owns the final daytime return.
-        self.assertEqual(plan.commands['501']['action'],'move')
-        self.assertLess(plan.commands['501']['targetPos'][0]['x'],20)
+        worker = s.turn.workers()[0]
+        self.assertFalse(defense.return_home(worker))
+        self.assertTrue(defense.mine(worker))
+        self.assertEqual(plan.commands['501'],{'action':'collect','targetPos':[Pos(20,6).dump()]})
 
-    def test_late_shop_round_trip_does_not_fit_and_guard_holds_home(self):
+    def test_blocked_shop_does_not_turn_daytime_worker_into_a_waiting_guard(self):
         raw = ready(fortified(61),stock=0)
         s,plan,defense = setup(raw)
-        self.assertTrue(defense.worker(s.turn.workers()[0]))
+        self.assertFalse(defense.worker(s.turn.workers()[0]))
         self.assertNotIn('501',plan.commands)
-        self.assertIn(501,plan.used)
+        self.assertNotIn(501,plan.used)
 
     def test_occupied_gap_guard_returns_to_a_legal_inner_waiting_post(self):
-        raw,memory = self.occupied_gap(number=70)
+        raw,memory = self.occupied_gap(number=71)
         actor(raw)['pos'] = Pos(6,5).dump()
         s,plan,defense = setup(raw,memory)
         self.assertTrue(defense.return_home(s.turn.workers()[0]))
@@ -256,7 +257,7 @@ class FirstNightDefenseTests(unittest.TestCase):
         self.assertFalse(defense.enabled)
         self.assertEqual(defense.diagnostic()['station']['hp'],0)
 
-    def test_many_ore_candidates_share_one_reverse_home_path_search(self):
+    def test_first_day_ore_trips_do_not_search_a_return_path(self):
         raw = ready(fortified(35))
         raw['mapInfo']['zones'] += [{'neutralType':'iron','pos':Pos(x,y).dump()}
                                    for x in (12,15,18,21,24,27,30) for y in (2,5,8,11,14)]
@@ -265,7 +266,7 @@ class FirstNightDefenseTests(unittest.TestCase):
         for position,kind in s.turn.zones.items():
             if kind in ('stone','iron'):
                 defense.trip(guard,{p for p in position.neighbours() if s.turn.land(p)})
-        self.assertEqual(len(defense.return_cost_cache),1)
+        self.assertEqual(len(defense.return_cost_cache),0)
 
     def test_new_settings_validate_types_and_stock_range(self):
         with tempfile.TemporaryDirectory() as directory:

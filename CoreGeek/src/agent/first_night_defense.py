@@ -107,6 +107,14 @@ class FirstNightDefense:
     def trip(self, role, goals, interactions=1):
         """Budget outbound, interactions and an actual return path, not distance."""
         route = self.s.route(role)
+        if self.turn.day == 1 and self.turn.is_day:
+            options = []
+            for post in (set(goals)-self.s.coordinator.claimed_goals(role)) & set(route.cost):
+                travel = (route.cost[post]+1)//2 if role.is_driving else route.cost[post]
+                total = travel+interactions
+                if total <= self.turn.daylight_left:
+                    options.append((total,route.cost[post],post))
+            return min(options) if options else None
         homes = self.home_cells()
         if not homes:
             return None
@@ -155,6 +163,8 @@ class FirstNightDefense:
         return True
 
     def return_home(self, role, reason='returning'):
+        if self.turn.is_day:
+            return False  # This first-day module starts return duty at night.
         self.state['status'] = reason
         if self.s.guard.nighttime(role,urgent_only=True):
             return True
@@ -285,16 +295,12 @@ class FirstNightDefense:
         if self.s.guard.nighttime(role,urgent_only=True):
             self.state['status'] = 'urgent_repair'
             return True
-        route = self.s.route(role)
-        home = route.nearest(self.home_cells())
-        if home is None or self.turn.daylight_left <= route.cost[home]+self.settings.return_margin:
-            return self.return_home(role)
         # Stock the kit batch at the same shop stop before delivering the coupon.
         if self.supply(role) or self.deliver_voucher(role):
             return True
         if self.prepared():
             # Continue the established focused rocket-to-L3 strategy after the
-            # minimum first-night loadout, with the same deadline for delivery.
+            # minimum first-night loadout, budgeting delivery without a return.
             if self.s.consume(role,allow_travel=False):
                 self.state['status'] = 'ordinary_upgrade'
                 return True
@@ -309,7 +315,8 @@ class FirstNightDefense:
                 return True
         if self.sell(role) or self.mine(role):
             return True
-        return self.return_home(role,'prepared_guard' if self.prepared() else 'waiting_for_supply')
+        self.state['status'] = 'daytime_economy'
+        return False  # Ordinary work continues; first-day defence starts at night.
 
     def on_site_upgrade(self, role):
         # WallGuard is normally dormant before day three. Treat this worker as

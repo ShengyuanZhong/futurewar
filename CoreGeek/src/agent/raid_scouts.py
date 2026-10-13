@@ -46,6 +46,8 @@ class RaidScouts:
         live = {u.unit_id for u in self.turn.controllable()}
         self.state['posts'] = {uid:job for uid,job in self.state.get('posts', {}).items() if uid in live}
         self.state['walls_ready'] = self.walls_ready()
+        if self.state['walls_ready']:
+            self.state.setdefault('construction_verified_round',self.turn.round_no)
         self.update_survey()
         workers = self.turn.workers()
         self.state['worker_status'] = ('assigned' if self.state.get('worker_id') is not None else
@@ -107,7 +109,8 @@ class RaidScouts:
         # abandon shopping/sight and restart unrelated economic trips.
         raid = self.memory.boss_raid
         return bool(self.active and (self.state.get('walls_ready') or
-                    (raid.get('mission_started') and raid.get('buyer_departed'))))
+                    self.state.get('construction_verified_round') is not None or
+                    raid.get('construction_approved_round') is not None))
 
     def known_weapons(self):
         return enemy_layout_weapons(self.turn,self.memory.enemy_structures.values())
@@ -160,7 +163,8 @@ class RaidScouts:
         uncovered = {p for p in cells if not self.seen(p)}
         base_visible = any(u.kind=='station' and u.health>0 for u in self.turn.enemies)
         reason = ('enemy_base_unconfirmed' if not base_visible else
-                  'waiting_for_walls' if not self.dispatch_granted() else
+                  'waiting_for_walls' if not (self.dispatch_granted() or
+                      self.memory.boss_raid.get('departure_authorized')) else
                   'no_live_scout' if not worker_available and not imps else
                   'scout_travelling' if not observer_ready else
                   'layout_incomplete' if not self.state['layout_ready'] else

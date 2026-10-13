@@ -147,12 +147,12 @@ class GapDefenseTests(unittest.TestCase):
         self.assertEqual(set(built),{'501','504'})
         self.assertEqual(set(built.values()),{Pos(9,6),Pos(9,8)})
 
-    def test_dusk_waits_adjacent_and_never_builds_extra_walls(self):
+    def test_first_day_dusk_does_not_start_body_wait_or_build_extra_walls(self):
         raw = occupied(70)
         s,plan = strategy(raw)
-        s.run()
-        self.assertIn(501,plan.used)
-        self.assertEqual(s.coordinator.job(s.turn.workers()[0])['kind'],'gap_wait')
+        worker = s.turn.workers()[0]
+        self.assertFalse(s.gap_guard.preparing(worker))
+        self.assertFalse(s.gap_guard.worker(worker))
         self.assertNotIn('501',plan.commands)
         self.assertFalse(any(c['action'] in ('build','remove') for c in plan.commands.values()))
 
