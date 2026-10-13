@@ -107,6 +107,9 @@ class WorkerCoordinator:
                 self.assign(role,kind,target,goal)
                 return False
             points = move_targets(self.turn,role,route,{goal})
+            schedule=getattr(self.s,'wall_schedule',None)
+            if kind=='build:wall' and schedule is not None:
+                points=schedule.straight_steps(role,goal) or points
             if points and self.plan.add(role.unit_id,move_command(points)):
                 self.assign(role,kind,target,goal,True)
                 return True
@@ -129,6 +132,9 @@ class WorkerCoordinator:
             return False
         if step is not None and step not in self.turn.blocked(role) and step not in self.plan.reserved:
             points = move_targets(self.turn,role,relaxed,{goal})
+            schedule=getattr(self.s,'wall_schedule',None)
+            if kind=='build:wall' and schedule is not None:
+                points=schedule.straight_steps(role,goal) or points
             # The relaxed search ignores a coworker only to diagnose blocking.
             # Never drive its second segment through that coworker's real cell.
             if any(p in self.turn.blocked(role) or p in self.plan.reserved for p in points):

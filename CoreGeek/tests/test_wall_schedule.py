@@ -64,7 +64,9 @@ class WallScheduleTests(unittest.TestCase):
             if u['roleType']=='worker':
                 u['backpack']=[]
         s,schedule = strategy(raw,memory,settings)
-        self.assertEqual(s.stone_targets(),{501:7,504:10})
+        self.assertEqual(sorted(s.stone_targets().values()),[7,10])
+        self.assertEqual(s.stone_targets(),
+                         {w.unit_id:schedule.remaining(w) for w in s.turn.workers()})
         self.assertEqual(sum(s.stone_targets().values()),17)
 
     def test_pending_build_never_reduces_actual_personal_material(self):
@@ -102,10 +104,18 @@ class WallScheduleTests(unittest.TestCase):
         self.assertIn(gap,s.gap_guard.gaps)
         self.assertFalse(s.gap_guard.worker(worker))
         self.assertFalse(s.plan.commands)
+        frontier=schedule.targets(worker,s.construction_walls())[0]
         s.run_worker(worker)
         command=s.plan.commands['501']
-        self.assertEqual(command['action'],'build')
-        self.assertEqual(command['targetPos'][0]['y'],7)
+        self.assertIn(command['action'],('build','move'))
+        self.assertEqual(s.coordinator.job(worker)['target'],frontier)
+        self.assertEqual(frontier.y,7)
+        if command['action']=='build':
+            self.assertEqual(Pos.load(command['targetPos'][0]),frontier)
+        else:
+            step=Pos.load(command['targetPos'][0])
+            self.assertEqual(distance(worker.pos,step),1)
+            self.assertIn(step,s.sealed_home.outside)
         self.assertNotEqual(s.coordinator.job(worker).get('kind'),'gap_rebuild')
         self.assertFalse(s.plan.rejections)
 
@@ -180,7 +190,7 @@ class WallScheduleTests(unittest.TestCase):
         s, schedule = strategy(*scene())
         worker = s.turn.workers()[0]
         choices = schedule.targets(worker, s.construction_walls())
-        target = choices[-1]
+        target = choices[0]
         goal = min(schedule.posts(worker, target))
         s.coordinator.assign(worker, 'build:wall', target, goal, moving=True)
         self.assertEqual(schedule.targets(worker, s.construction_walls())[0], target)

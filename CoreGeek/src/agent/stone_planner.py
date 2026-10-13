@@ -86,6 +86,8 @@ class StonePlanner:
             candidates = schedule.targets(role,[p for p in candidates if p not in blocked
                 and not self.s.coordinator.target_owned(role,p,'build:wall')],local_only=True)
         for target in candidates:
+            if schedule is not None and schedule.enabled and role.pos not in schedule.posts(role,target):
+                continue
             if (distance(role.pos, target) != 1 or target in blocked
                     or target in self.turn.vehicle_cells() | self.turn.vehicle_cells(False)
                     or self.s.coordinator.target_owned(role, target, 'build:wall')):

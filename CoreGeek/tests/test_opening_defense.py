@@ -40,6 +40,22 @@ class OpeningDefenseTests(unittest.TestCase):
         self.assertEqual(plan.rejections, [])
         return plan
 
+    def stage_workers_at_scheduled_posts(self, raw):
+        memory = GameMemory()
+        turn = Turn.load(raw)
+        initial = Strategy(turn, ActionPlan(turn, opening_settings()), memory)
+        targets = {}
+        for worker in turn.workers():
+            target = initial.wall_schedule.targets(worker, initial.construction_walls())[0]
+            post = initial.route(worker).nearest(initial.wall_schedule.posts(worker, target))
+            self.assertIsNotNone(post)
+            self.assertIn(post, initial.sealed_home.outside)
+            next(u for u in raw['teamOur']['roles'] if u['id'] == worker.unit_id)['pos'] = post.dump()
+            targets[worker.unit_id] = target
+        self.assertEqual(len(set(targets.values())), 2)
+        raw['roundNo'] += 1  # Posts become actual observations before issuing builds.
+        return memory, targets
+
     def test_default_loadout_is_three_rockets(self):
         self.assertEqual(Settings().loadout, ("rocket",) * 3)
 
@@ -58,10 +74,13 @@ class OpeningDefenseTests(unittest.TestCase):
         raw = opening_request(towers=True)
         raw["teamOur"]["roles"][1]["backpack"] = ["stone"]
         raw["teamOur"]["roles"][3]["backpack"] = ["stone"]
-        plan = self.decide(raw)
+        memory, targets = self.stage_workers_at_scheduled_posts(raw)
+        plan = self.decide(raw, memory)
         self.assertEqual(plan.commands["501"]["action"], "build")
         self.assertEqual(plan.commands["504"]["action"], "build")
         self.assertTrue(all(plan.commands[str(uid)]["name"]=="wall" for uid in (501,504)))
+        self.assertEqual({uid: Pos.load(plan.commands[str(uid)]['targetPos'][0]) for uid in (501,504)},
+                         targets)
 
     def test_sufficient_stone_builds_walls_before_selling_or_upgrades(self):
         raw = opening_request(towers=True)
@@ -69,11 +88,12 @@ class OpeningDefenseTests(unittest.TestCase):
         for r in raw["teamOur"]["roles"]:
             if r["roleType"] == "worker":
                 r["backpack"] = ["stone"] * 12
-        raw["teamOur"]["roles"][1]["pos"] = {"x": 7, "y": 24}
-        raw["teamOur"]["roles"][3]["pos"] = {"x": 12, "y": 24}
-        plan = self.decide(raw)
+        memory, targets = self.stage_workers_at_scheduled_posts(raw)
+        plan = self.decide(raw, memory)
         self.assertEqual([plan.commands[str(i)]["action"] for i in (501, 504)], ["build", "build"])
         self.assertTrue(all(plan.commands[str(i)]["name"] == "wall" for i in (501, 504)))
+        self.assertEqual({uid: Pos.load(plan.commands[str(uid)]['targetPos'][0]) for uid in (501,504)},
+                         targets)
 
     def test_workers_collect_at_night_while_pioneer_fires(self):
         raw = opening_request(71, towers=True)

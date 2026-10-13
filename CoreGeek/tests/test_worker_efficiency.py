@@ -123,16 +123,37 @@ class WorkerEfficiencyTests(unittest.TestCase):
         for mirrored in (False, True):
             raw = drawing_request(mirrored, built=True, round_no=25)
             raw['teamOur']['roles'][2].update(pos=point(10,7,mirrored).dump(), backpack=['stone']*9)
-            raw['teamOur']['roles'][3].update(pos=point(8,10,mirrored).dump(), backpack=['stone']*9)
+            raw['teamOur']['roles'][3].update(pos=point(9,10,mirrored).dump(), backpack=['stone']*9)
             lower, upper = point(9,4,mirrored), point(9,9,mirrored)
             memory = GameMemory(worker_tasks={
-                501:{'round':24,'kind':'build:wall','target':lower,'goal':point(10,5,mirrored),'moving':True},
-                504:{'round':24,'kind':'build:wall','target':upper,'goal':point(8,10,mirrored)}})
-            s, plan = strategy(raw, memory); s.run()
+                501:{'round':24,'kind':'build:wall','target':lower,'goal':point(9,3,mirrored),'moving':True},
+                504:{'round':24,'kind':'build:wall','target':upper,'goal':point(9,10,mirrored)}})
+            initial, _ = strategy(raw, memory)
+            # These are genuine distinct first frontiers, rather than old trips
+            # that skipped earlier missing walls. Both shares fit the real bags.
+            arcs = {
+                501:[point(x,4,mirrored) for x in range(9,3,-1)]
+                    + [point(4,y,mirrored) for y in (5,6)],
+                504:[point(x,9,mirrored) for x in range(9,4,-1)]
+                    + [point(9,y,mirrored) for y in range(8,4,-1)]}
+            self.assertEqual(len(set(arcs[501])|set(arcs[504])),17)
+            self.assertFalse(set(arcs[501])&set(arcs[504]))
+            initial.wall_schedule.state['arcs'] = arcs
+            s, plan = strategy(raw, memory)
+            for uid, target in ((501,lower),(504,upper)):
+                worker = next(w for w in s.turn.workers() if w.unit_id==uid)
+                self.assertEqual(s.wall_schedule.targets(worker,s.construction_walls())[0],target)
+            s.run()
             self.assertEqual(memory.worker_tasks[501]['target'], lower)
             self.assertEqual(memory.worker_tasks[504]['target'], upper)
             self.assertEqual(plan.commands['501']['action'], 'move')
             self.assertEqual(plan.commands['504']['action'], 'build')
+            self.assertTrue(memory.worker_tasks[501]['moving'])
+            self.assertFalse(memory.worker_tasks[504]['moving'])
+            destination=Pos.load(plan.commands['501']['targetPos'][0])
+            self.assertNotIn(destination,s.turn.occupied_cells())
+            self.assertIn(destination,s.sealed_home.outside)
+            self.assertNotEqual(destination,upper)
             self.assertEqual(plan.rejections, [])
 
     def test_mining_commitment_releases_an_unsafe_or_exhausted_mine(self):

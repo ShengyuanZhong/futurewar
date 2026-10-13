@@ -369,6 +369,12 @@ class Strategy:
         # If all remaining stone is already in the other bag, keep mining income.
         if "stone" in role.backpack and self.build_wall(role):
             return True
+        if self.wall_schedule.enabled and self.wall_schedule.assigned_missing(role,ignore_enemy_occupied=True):
+            # A deferred construction post is not permission to leave for
+            # unrelated income mining before the personal wall segment ends.
+            self.coordinator.assign(role,'build_wait',None,role.pos)
+            self.plan.used.add(role.unit_id)
+            return True
         if role.backpack_full:
             self.sell(role, keep_stone=True)
         else:
@@ -421,7 +427,19 @@ class Strategy:
             cost = self.wall_schedule.cost(role,target) if self.wall_schedule.enabled else self.cost(role,[target])
             if cost + 1 > self.turn.daylight_left:
                 continue
-            if self.wall_keeps_exit(role, target) and self.interact(role, target, build_command(target, "wall")):
+            if not self.wall_keeps_exit(role,target):
+                continue
+            if self.wall_schedule.enabled:
+                posts=self.wall_schedule.posts(role,target)
+                if role.pos in posts:
+                    handled=self.plan.add(role.unit_id,build_command(target,'wall'))
+                    if handled:
+                        self.coordinator.assign(role,'build:wall',target,role.pos)
+                else:
+                    handled=self.coordinator.move_to(role,posts,'build:wall',target)
+            else:
+                handled=self.interact(role,target,build_command(target,'wall'))
+            if handled:
                 self.goals.add(target)
                 return True
         return False

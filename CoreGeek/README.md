@@ -1,12 +1,14 @@
 # CoreGeek 参赛 Agent
 
-当前程序版本为 v1.2.19：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后其余11块侧后墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回到可达邻墙维修区，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
+当前程序版本为 v1.2.20：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后其余11块侧后墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回到可达邻墙维修区，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
 
 此目录可作为参赛程序目录提交。沿用示例的 `main3.py`、`src/agent/protocol.py`、`grid.py`、`brain.py`；HTTP 处理与跨回合协作放在 `app`。新增代码无第三方运行依赖。
 
 历史v1.2.8通过569项回归、320份合成压力及四种布局520次跨帧HTTP检查；证据见[验证报告](../reports/VALIDATION-v1.2.8.md)，未运行新官方对局。历史v1.2.7的529项回归、80份合成压力及跨帧HTTP证据保留在[历史报告](../reports/VALIDATION-v1.2.7.md)。
 
-v1.2.19更新[三火箭阵型的 BOSS 攻击与占位](docs/ROCKET_CONTROL_V1219.md)：敌方已确认三座火箭时，只清理同时能操控三炮的共同位置上的当前可见敌方可控单位，其它炮旁或基地旁角色不引起追击；共同位置无人时，单只或多只 BOSS 均尝试占住可达共同位置并攻击基地。炮位及类型可以使用真实观测后的缓存，人员攻击仍依当前真实视野；混合或不足三炮保留旧策略。射程三、45°弹道、实际占用和同轮不移攻保留，结果见[首日验证报告](../reports/VALIDATION-v1.2.19.md)。
+v1.2.20优化[首日直墙连续施工](docs/STRAIGHT_WALL_BUILD_V1220.md)：个人施工段按实际首缺墙逐格推进，取消两步距离插入导致的隔格建墙与回扫；直墙正对外侧站位，空闲同轴轨道轴向前进，真实障碍和转角保留八方向绕行。实际到站才建，暂时受阻且仍有个人墙任务时记build_wait，不转收入挖矿；个人最后一墙经下一轮观测确认后立即赴店或侦察，不等整圈完工。购物截止和封闭安全继续保留，根因与结果见[首日验证报告](../reports/VALIDATION-v1.2.20.md)。
+
+历史v1.2.19更新[三火箭阵型的 BOSS 攻击与占位](docs/ROCKET_CONTROL_V1219.md)：敌方已确认三座火箭时，只清理同时能操控三炮的共同位置上的当前可见敌方可控单位，其它炮旁或基地旁角色不引起追击；共同位置无人时，单只或多只 BOSS 均尝试占住可达共同位置并攻击基地。炮位及类型可以使用真实观测后的缓存，人员攻击仍依当前真实视野；混合或不足三炮保留旧策略。射程三、45°弹道、实际占用和同轮不移攻保留，结果见[首日验证报告](../reports/VALIDATION-v1.2.19.md)。
 
 v1.2.18更新[开局侦察、炮位记忆与车辆路线](docs/OPENING_SCOUT_V1218.md)：捣乱鬼第一天先调查敌炮位置，初次确认三炮位置或实际扫描十二格武器圈后才考虑回防，不受购券开关、任务成功数或己方占墙影响。真实观测的炮位和类型保存到 `enemy_weapon_sites`，结合当前全局可见城墙选召唤位置；已知阵型使用 `spawn_ready`，不因失去操炮手当前视野而停止召唤。机器人攻击仍只选当前可见敌单位。侦察工个人施工完毕直接探路，发现实际小车且更快时取车，保持有效取车行程；仅真实 `isDriving` 且白天输出两个连续邻格，夜间恢复步行。范围及结果见[首日验证报告](../reports/VALIDATION-v1.2.18.md)。
 
@@ -140,6 +142,8 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 6. [src/agent/actions.py](src/agent/actions.py)：每个动作必须满足的条件。
 7. 根据修改目标继续看construction、grid、combat，或LLM/Task/Memory服务。
 
+首日建墙诊断使用 `wall_schedule.arcs/frontier/remaining/released` 与 `worker_motion.position/target/goal/command/last_action_ok`。前者描述计划，后者区分真实位置、外侧站位和下一轮平台反馈；`build_wait` 表示携石暂缓施工，不表示完工。详见[诊断说明](docs/STRAIGHT_WALL_BUILD_V1220.md#诊断和验证)。
+
 ## 模块与关键函数速查
 
 下表中的路径均相对于CoreGeek目录。参数的完整含义与副作用在根README展开；此处用于快速定位。
@@ -205,8 +209,8 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | [src/agent/day_gate.py](src/agent/day_gate.py) | `DayGate.worker(role)/day_ready()` | 已退休兼容对象：worker始终False，无门石、拆墙或临时封门动作 |
 | [src/agent/sealed_home.py](src/agent/sealed_home.py) | `builder_posts/safe_wall/evacuate/repair_cells` | 未来完整墙体外部分类、真实工人撤出、同轮施工安全及可达维修站位 |
 | 同上 | `needs_operator/pioneer_yield/wait_for_operator` | 白天实际持券工人请求操炮位交互，先锋真实让位后再用券；夜里不让炮手退出 |
-| [src/agent/wall_schedule.py](src/agent/wall_schedule.py) | `destinations/prepare/posts/cost/targets/remaining/assigned_missing/construction_ready/release/reclaim` | 首日稳定两段施工、外侧站位与个人墙材需求；真实个人完工后交接采购/侦察，见[首日分矿](docs/FIRST_DAY_MINING_V1217.md) |
-| [src/agent/stone_planner.py](src/agent/stone_planner.py) | `targets/needs_material/can_build_now/options/assignments/diagnostic/mine` | 实际墙材缺口、个人筹石份额、首日两矿联合分配、有效预约与单矿共享回退；读取Turn.mine_remaining |
+| [src/agent/wall_schedule.py](src/agent/wall_schedule.py) | `destinations/prepare/posts/straight_steps/cost/targets/remaining/assigned_missing/construction_ready/release/reclaim` | 个人弧顺序逐墙、法线/角点站位与外侧轴向步；实际完工后交接采购/侦察，见[直墙施工](docs/STRAIGHT_WALL_BUILD_V1220.md) |
+| [src/agent/stone_planner.py](src/agent/stone_planner.py) | `targets/needs_material/can_build_now/options/assignments/diagnostic/mine` | 实际墙材缺口、个人筹石份额与两矿分配；can_build_now与build_wall共用实际首墙站位，读取Turn.mine_remaining |
 | [src/agent/first_day_tasks.py](src/agent/first_day_tasks.py) | `record_attempt/finish_attempt/finished_count/success_count` | 用领取回合区分重复Task1，幂等计3次结束和0～3次成功 |
 | [src/agent/summoning.py](src/agent/summoning.py) | `layout_weapon_sites/layout_operator_positions/scouted_spawn_position` | `confirmed_sites` 接入真实炮位缓存，位置几何不生成活单位或攻击目标；按当前墙体选择合法出生点，详见[参数](docs/OPENING_SCOUT_V1218.md) |
 | [src/agent/server.py](src/agent/server.py) | `Handler/serve` | 转发新网络层，兼容demo旧导入 |
@@ -253,4 +257,4 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 
 0.4.2接入用户提供的`print_log.py`格式：每个新回合记录`[TASK-DEBUG]`，完整打印phaseTask、llmResp、lastCmdResult、本轮prompt和executeCmd。stderr为默认输出，具体映射见[任务日志](docs/TASK_LOGGING.md)。
 
-当前验证仅覆盖第一天，见[首日验证报告](../reports/VALIDATION-v1.2.19.md)。v1.2.9的全量回归为历史证据；本轮未运行新官方对局。
+当前验证仅覆盖第一天，见[首日验证报告](../reports/VALIDATION-v1.2.20.md)。v1.2.9的全量回归为历史证据；本轮未运行新官方对局。

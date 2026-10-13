@@ -75,6 +75,7 @@ def main():
                 ore_remaining={p:10 for p in ore_sites[:2]};ore_index=1
                 collected,built={},{}
                 construction_mines={}
+                construction_order={}
                 first_closed=None;collection_at_closure=None
                 for number in range(1,72):
                     raw['roundNo']=number
@@ -111,6 +112,10 @@ def main():
                             ore_remaining[Pos.load(c['targetPos'][0])]-=1
                         elif c['action']=='build':
                             assert c['name']=='wall'
+                            target=Pos.load(c['targetPos'][0])
+                            worker=next(w for w in before.workers() if str(w.unit_id)==uid)
+                            assert abs(worker.pos.x-target.x)+abs(worker.pos.y-target.y)==1, 'build must face the wall'
+                            construction_order.setdefault(uid,[]).append(target)
                             built[uid]=built.get(uid,0)+1
                     rows.append(dict(case=case,round=number,status=200,elapsed_ms=round(elapsed,3),
                         walls=len(real_walls),worker_positions={str(w.unit_id):w.pos.dump() for w in before.workers()},
@@ -144,10 +149,15 @@ def main():
                 assert set(construction_mines)=={'501','504'}
                 assert all(len(sites)==1 for sites in construction_mines.values()),construction_mines
                 assert len(set().union(*construction_mines.values()))==2,construction_mines
+                for order in construction_order.values():
+                    for first,second in zip(order,order[1:]):
+                        if first.x==second.x or first.y==second.y:
+                            assert distance(first,second)==1, 'a straight construction edge must not skip empty walls'
                 assert {u.pos for u in Turn.load(raw).walls()}==expected
                 cases.append(dict(case=case,starts_inside=starts_inside,closed_round=first_closed,
                     construction_stone=collection_at_closure,built=built,collected_first_day=collected,
                     construction_mines={uid:[p.dump() for p in sorted(sites)] for uid,sites in construction_mines.items()},
+                    construction_order={uid:[p.dump() for p in order] for uid,order in construction_order.items()},
                     initial_three_rockets=True,night_reopens=False))
     except Exception as error:
         failure=error

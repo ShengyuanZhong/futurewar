@@ -151,6 +151,12 @@ class SealedHomeTests(unittest.TestCase):
                 s, plan = strategy(raw, memory, settings)
                 builder = next(w for w in s.turn.workers() if w.unit_id == 501)
                 target = position(*GATE, mirrored)
+                post = s.route(builder).nearest(s.wall_schedule.posts(builder, target))
+                self.assertIsNotNone(post)
+                actor(raw, 501)['pos'] = post.dump()
+                raw['roundNo'] += 1
+                s, plan = strategy(raw, memory, settings)
+                builder = next(w for w in s.turn.workers() if w.unit_id == 501)
                 self.assertTrue(s.build_wall(builder))
                 self.assertEqual(plan.commands['501'], build_command(target, 'wall'))
                 self.assertFalse(plan.rejections)

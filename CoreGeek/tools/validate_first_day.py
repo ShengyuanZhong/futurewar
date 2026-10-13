@@ -35,6 +35,7 @@ MODULES = (
     'tests.test_day_gate',
     'tests.test_gate_materials',
     'tests.test_wall_schedule',
+    'tests.test_straight_wall_build',
     'tests.test_boss_raid',
     'tests.test_boss_formation',
     'tests.test_rocket_control_policy',
@@ -88,7 +89,7 @@ def main():
     paths.append(ROOT/'pyproject.toml')
     rules = list((ROOT.parent/'32_docs').glob('*'))+[ROOT.parent/'DEVELOPMENT_RULES.md']
     log_hashes = {name:hashlib.sha256((ROOT.parent/'temp'/name).read_bytes()).hexdigest()
-                  for name in ('bug_log1.log','bug_log2.log','boss_attack_log.log','build_bug.log')
+                  for name in ('bug_log1.log','bug_log2.log','boss_attack_log.log','build_bug.log','build_bug3.log')
                   if (ROOT.parent/'temp'/name).is_file()}
     report = dict(created_utc=datetime.now(timezone.utc).isoformat(),python=platform.python_version(),
         scope='First day only (rounds 1-130); local regression inputs, not official match replay',

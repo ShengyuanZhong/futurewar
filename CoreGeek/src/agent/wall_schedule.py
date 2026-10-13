@@ -12,7 +12,6 @@ from .protocol import CONTROLLABLE_TYPES, Pos, distance
 
 
 class WallSchedule:
-    LOCAL_DETOUR = 2
 
     def __init__(self, strategy):
         self.s = strategy
@@ -103,6 +102,7 @@ class WallSchedule:
         self.state.update(blueprint=signature, destinations=destinations, departure=finish,
                           arcs={w.unit_id: arc for w, arc in zip(workers, arcs)},
                           assigned_round=self.turn.round_no)
+        self.post_cache.clear()  # Scoring used the old/no arc; corners now follow the assigned segment.
 
     def active_builders(self):
         raid = self.s.boss_raid
@@ -182,11 +182,52 @@ class WallSchedule:
         key = (role.unit_id,target,frozenset(self.plan.reserved),
                frozenset(self.s.coordinator.claimed_goals(role)))
         if key not in self.post_cache:
-            blocked = (self.s.coordinator.claimed_goals(role) | self.plan.reserved
-                       | self.walls | set(self.s.layout.tower_sites))
-            self.post_cache[key] = self.s.sealed_home.builder_posts(
-                adjacent_cells(self.turn, [target]) - blocked)
+            occupied=self.s.coordinator.claimed_goals(role)|self.plan.reserved
+            terrain=self.s.sealed_home.builder_posts(adjacent_cells(self.turn,[target])
+                                                    -self.walls-set(self.s.layout.tower_sites))
+            legal=terrain-occupied
+            if not self.enabled:
+                self.post_cache[key]=legal
+            else:
+                # Face a straight edge from its exterior normal. At a corner
+                # follow the next segment (or the previous one at its end).
+                xmin,xmax=min(p.x for p in self.walls),max(p.x for p in self.walls)
+                ymin,ymax=min(p.y for p in self.walls),max(p.y for p in self.walls)
+                horizontal=[Pos(target.x,target.y-1)] if target.y==ymin else []
+                if target.y==ymax:
+                    horizontal.append(Pos(target.x,target.y+1))
+                vertical=[Pos(target.x-1,target.y)] if target.x==xmin else []
+                if target.x==xmax:
+                    vertical.append(Pos(target.x+1,target.y))
+                arcs=self.state.get('arcs',{})
+                arc=next((a for a in [arcs.get(role.unit_id,())]+list(arcs.values()) if target in a),())
+                index=arc.index(target) if target in arc else -1
+                neighbour=arc[index+1] if index>=0 and index+1<len(arc) else arc[index-1] if index>0 else None
+                choices=(vertical+horizontal if neighbour is not None and neighbour.x==target.x
+                         else horizontal+vertical)
+                preferred=next((p for p in choices if p in terrain),None)
+                cardinal={p for p in terrain if abs(p.x-target.x)+abs(p.y-target.y)==1}
+                # A temporary reservation must not rotate a free straight rail
+                # into a diagonal stance. Static terrain may require a detour.
+                self.post_cache[key]=({preferred}&legal if preferred is not None else
+                                      (cardinal&legal if cardinal else legal))
         return self.post_cache[key]
+
+    def straight_steps(self, role, goal):
+        """Use the clear exterior rail, rather than an equal-cost diagonal zigzag.
+
+        Remote approaches, corners and real obstructions keep normal eight-way
+        routing. Submitted moves never change occupancy or advance a wall.
+        """
+        if not self.enabled or (role.pos.x!=goal.x and role.pos.y!=goal.y):
+            return ()
+        dx=(goal.x>role.pos.x)-(goal.x<role.pos.x)
+        dy=(goal.y>role.pos.y)-(goal.y<role.pos.y)
+        blocked=self.turn.blocked(role)|self.s.movement_reserved(role)
+        points=tuple(Pos(role.pos.x+dx*i,role.pos.y+dy*i) for i in range(1,distance(role.pos,goal)+1))
+        if not points or any(p not in self.s.sealed_home.outside or p in blocked for p in points):
+            return ()
+        return points[:2 if role.is_driving and self.turn.is_day else 1]
 
     def cost(self, role, target):
         allowed = self.s.sealed_home.outside if role.pos in self.s.sealed_home.outside else None
@@ -198,12 +239,7 @@ class WallSchedule:
         return route.cost[goal] if goal is not None else 10000
 
     def targets(self, role, candidates, local_only=False):
-        """Rank the same frontier for immediate builds and travel decisions.
-
-        A directed next wall may cost two extra steps over the nearest legal
-        wall. Larger detours permit a local insertion. A valid travel appointment
-        persists. Unreachable/occupied sites never hold up the rest of an arc.
-        """
+        """Finish actual holes in arc order; only blocked/unreachable sites defer."""
         candidates = list(candidates)
         if not self.enabled or not self.state.get('arcs'):
             job = self.s.coordinator.job(role)
@@ -217,37 +253,24 @@ class WallSchedule:
         own = list(arcs.get(role.unit_id, ()))
         personal = [p for p in own if p in candidates]
         abandoned = self.assigned_missing(role) - set(own)
-        job = self.s.coordinator.job(role)
-        previous = job.get('target') if job.get('kind') == 'build:wall' else None
-        # A peer with no stone cannot perform an immediate local build; release
-        # that frontier rather than keeping a material-carrying worker idle.
-        released = {p for uid, arc in arcs.items()
-                    if uid not in active or 'stone' not in active[uid].backpack for p in arc}
-        available = personal + [p for p in candidates if p not in personal and (
-            p in abandoned or p in released or not personal)]
+        if len(active)==1:
+            abandoned=set(self.s.construction_walls())-set(own)
+        inherited=[p for arc in arcs.values() for p in arc if p in abandoned and p in candidates]
+        available=personal+inherited
+        if not set(own)&set(self.s.construction_walls()) and not abandoned:
+            available += [p for p in candidates if p not in available]
         # Actual outgoing missions are excluded by active_builders/released.
         # An ordinary builder with no next mission can help finish the peer's
         # last wall, including scenarios with the BOSS workflow disabled.
-        if previous in candidates and previous not in available:
-            available.append(previous)  # Preserve a real trip across a policy handoff.
         costs = {p: self.cost(role, p) for p in available}
         reachable = [p for p in available if costs[p] < 10000]
         if not reachable:
             return []
-        nearest = min(costs[p] for p in reachable)
-        rank = {p: i for i, p in enumerate(own)}
-        feasible = [p for p in reachable if costs[p] <= nearest + self.LOCAL_DETOUR]
-        if (previous in reachable and job.get('stalled', 0) < 2
-                and (job.get('moving') or isinstance(job.get('goal'),Pos) or distance(role.pos,previous)==1)
-                and job.get('round', 0) >= self.turn.round_no - 1):
-            first = previous
-        else:
-            first = min(feasible, key=lambda p: (p not in rank, rank.get(p, 10000), costs[p], p))
+        first=reachable[0]
         self.state.setdefault('frontier', {})[role.unit_id] = first
         if local_only:
-            return [first] if distance(role.pos, first) == 1 else []
-        return [first] + sorted([p for p in reachable if p != first],
-            key=lambda p: (p not in rank, rank.get(p, 10000), costs[p], p))
+            return [first] if role.pos in self.posts(role,first) else []
+        return reachable
 
     def diagnostic(self):
         return dict(self.state, enabled=self.enabled,
