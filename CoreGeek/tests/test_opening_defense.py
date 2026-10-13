@@ -54,13 +54,14 @@ class OpeningDefenseTests(unittest.TestCase):
         self.assertEqual([c["name"] for c in worker_commands], ["rocket", "rocket"])
         self.assertEqual(plan.gold, 25)
 
-    def test_stockpile_stone_before_wall_construction(self):
+    def test_carried_stone_builds_a_local_wall_before_a_mining_detour(self):
         raw = opening_request(towers=True)
         raw["teamOur"]["roles"][1]["backpack"] = ["stone"]
         raw["teamOur"]["roles"][3]["backpack"] = ["stone"]
         plan = self.decide(raw)
-        self.assertEqual(plan.commands["501"]["action"], "collect")
-        self.assertEqual(plan.commands["504"]["action"], "collect")
+        self.assertEqual(plan.commands["501"]["action"], "build")
+        self.assertEqual(plan.commands["504"]["action"], "build")
+        self.assertTrue(all(plan.commands[str(uid)]["name"]=="wall" for uid in (501,504)))
 
     def test_sufficient_stone_builds_walls_before_selling_or_upgrades(self):
         raw = opening_request(towers=True)

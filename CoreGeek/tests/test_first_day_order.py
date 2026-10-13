@@ -23,7 +23,6 @@ def day_strategy(successes=1,attempts=3,gold=1000,number=30):
     raw = raid_request(number)
     raw['teamOur']['goldNum'] = gold
     raw['teamEnemy']['roles'] = raw['teamEnemy']['roles'][:1]
-    raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles'] if u['pos'] != Pos(5,9).dump()]
     role(raw,501).update(pos=Pos(2,8).dump(),backpack=['WallFixer']*5+['stone'])
     memory = task_memory(successes,attempts,number)
     s,plan = strategy(raw,memory,Settings(enable_news=False))

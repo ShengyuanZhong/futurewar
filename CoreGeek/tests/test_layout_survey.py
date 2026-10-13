@@ -95,12 +95,11 @@ class LayoutSurveyTests(unittest.TestCase):
 
     def test_last_wall_command_is_not_actual_construction_completion(self):
         raw, _ = survey_request()
-        raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles'] if not (u['roleType']=='wall' and u['pos']==Pos(5,9).dump())]
         actor(raw,HOME).update(pos=Pos(3,7).dump(),backpack=['stone']+['WallFixer']*5)
         missing = Pos(9, 6)
         raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles']
             if not (u['roleType'] == 'wall' and u['pos'] == missing.dump())]
-        actor(raw, SCOUT).update(pos=Pos(8, 6).dump(), backpack=['stone'])
+        actor(raw, SCOUT).update(pos=Pos(10, 6).dump(), backpack=['stone'])
         memory = finished_tasks(1)
         s, plan = strategy(raw, memory, Settings(enable_news=False)); s.run()
         self.assertFalse(s.raid_scouts.walls_ready())

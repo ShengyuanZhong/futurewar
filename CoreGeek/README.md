@@ -1,16 +1,18 @@
 # CoreGeek 参赛 Agent
 
-当前程序版本为 v1.2.14：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后其余11块侧后墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回墙内，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
+当前程序版本为 v1.2.15：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后其余11块侧后墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回到可达邻墙维修区，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
 
 此目录可作为参赛程序目录提交。沿用示例的 `main3.py`、`src/agent/protocol.py`、`grid.py`、`brain.py`；HTTP 处理与跨回合协作放在 `app`。新增代码无第三方运行依赖。
 
 历史v1.2.8通过569项回归、320份合成压力及四种布局520次跨帧HTTP检查；证据见[验证报告](../reports/VALIDATION-v1.2.8.md)，未运行新官方对局。历史v1.2.7的529项回归、80份合成压力及跨帧HTTP证据保留在[历史报告](../reports/VALIDATION-v1.2.7.md)。
 
-v1.2.14修正[多BOSS进位与直攻基地](docs/BOSS_FORMATION_V1214.md)：继续先清真实可见炮手；转攻基地后，多只BOSS中前排优先占住真实可见的共同操炮位，每次移动的落脚格均须仍有清晰基地射线；后排先寻找实际可达的基地直射位置，再考虑拆墙或炮台。仅在同伴已发出移动、通路暂时被其本轮位置占住时短等，最多3轮；不预测同伴已腾空、不合并移动攻击。历史失败只封禁原目标和原站位的射线，不再迫使其它清晰射线一律靠近。首日购物截止、工人分工及任务顺序沿用v1.2.13。
+v1.2.15采用[永久封闭建家与采石协调](docs/SEALED_HOME_V1215.md)：沿用两张用户图的17墙、三火箭和外侧P位，取消白天临时门、门石预留与自动拆墙；三炮建成后，工人先按真实观测撤出将被封闭的内圈，再从外侧逐块施工。建墙同时检查本轮其它施工目标，不把同轮移动当成已离开。首夜维修改用可达外侧邻墙格，旧观测中已困在内部的角色仍可就地维修。采石按真实缺墙、在家工人库存与稳定配额安排，邻近可施工时先用已有石头建墙，够材后停止额外筹石；同矿可用不同采集站位。首日购物截止、2→1→2三任务及v1.2.14 BOSS协作保持。验证范围见[首日报告](../reports/VALIDATION-v1.2.15.md)。
+
+沿用v1.2.14的[多BOSS进位与直攻基地](docs/BOSS_FORMATION_V1214.md)：继续先清真实可见炮手；转攻基地后，多只BOSS中前排优先占住真实可见的共同操炮位，每次移动的落脚格均须仍有清晰基地射线；后排先寻找实际可达的基地直射位置，再考虑拆墙或炮台。仅在同伴已发出移动、通路暂时被其本轮位置占住时短等，最多3轮；不预测同伴已腾空、不合并移动攻击。历史失败只封禁原目标和原站位的射线，不再迫使其它清晰射线一律靠近。首日购物截止、工人分工及任务顺序沿用v1.2.13。
 
 历史v1.2.13更新[首日购物截止与持续工作](docs/BUYER_DEADLINE_V1213.md)：首日白天两名工人不提前回防，也不预留返程；采购工按实际赴店路径、可能拆入口、腾包、批购一轮、最多三轮用券及两轮让行余量计算出发截止，墙齐或到截止就赴店，购物优先于继续建墙。三次任务未结束仅等店，结算后仍按真实成功数购用0～3张；采购出发批准与真实施工记录分开，侦察不假设墙已完成，召唤仍需当前普通共享视野。开拓者三次任务后回防，夜间和第二天后的维护沿用原逻辑。
 
-历史v1.2.12的[采购工人分工](docs/WORKER_BOSS_V1212.md)仍保留；固定购手身份、工人背包与反馈账本、真实商店坐标、入口让行和首夜缺口接力继续沿用。
+历史v1.2.12的[采购工人分工](docs/WORKER_BOSS_V1212.md)仍保留；固定购手身份、工人背包与反馈账本、真实商店坐标、工人让行和首夜缺口接力继续沿用；旧临时入口以v1.2.15永久墙策略替代。
 
 历史v1.2.8增加[真实布局侦察与阵型召唤](docs/LAYOUT_SCOUTING.md)：非留守工人在三炮及可建原墙实际完成后立即探路，不再等L2火箭和修包。敌基地/墙全局可见，炮台及普通角色受视野限制，BOSS没有视野。布局通过真实三炮或12格武器圈累计扫描确认；实际用券还需活侦察工人就近、当前普通共享视野覆盖共同操炮位及可见炮手。按实测炮阵选择合法出生点，利用45度缺口、直射或一堵墙突破，并维持第一夜视野。购券仍在两任务结束后按成功数冻结0/1/2张，只有use等待侦察；火箭升级采购等购券尝试之后。缺口留守、任务prompt、普通升级及经济路线保持。首日完整时序见[FIRST_DAY_PLAN](docs/FIRST_DAY_PLAN.md)。
 
@@ -78,7 +80,7 @@ python main3.py 8080 --config config.local.json
 
 也可设置 `FUTUREWAR_CONFIG`。相对路径以启动命令的当前目录解析；生产环境建议使用绝对路径。程序启动时读取一次配置，修改后需重启。
 
-默认无需配置文件即可开局建造。`allow_base_surroundings=true`在2×2基地外第一圈武器、第二圈墙的合法范围内生成17墙、后排三炮和P位，白天实际开一堵后上墙、夜前封回，右侧镜像；显式配置也不能越圈建造。
+默认无需配置文件即可开局建造。`allow_base_surroundings=true`在2×2基地外第一圈武器、第二圈墙的合法范围内生成17墙、后排三炮和P位，全17墙永久施工，工人先撤出内部再从外侧封闭，右侧镜像；显式配置也不能越圈建造。
 
 需要自定义时，可在layouts中填写各阵营相对基地左上角的`{x,y}`偏移、source及verified:true，优先覆盖默认布局。旧模板的未核验空坐标不会阻止默认建造。`loadout`为`["rocket","rocket","rocket"]`；默认先造三炮，空闲工人并行采石，观测三炮后建墙。详见[开发文档](docs/DEVELOPMENT.md)。
 
@@ -88,8 +90,8 @@ python main3.py 8080 --config config.local.json
 
 - 官方请求解析，敌方可见单位与双格任务点障碍，八方向寻路。
 - 同回合目标预留、共享金币预算、角色与武器操控互斥。
-- 开局75金币先建三火箭，再攒够石头建墙；后续按实时价格卖矿、购买与使用升级券。
-- 规划三炮共同操控格；首日开拓者三任务后回防，首日两工白天不提前回防；其它天沿用黄昏回防，夜间每轮选一座冷却完成的炮发射；普通工人昼夜按相同经济优先级工作，夜间避险且禁建；第三天起维修工黄昏回到墙内，夜间维修优先并可沿内侧升级。
+- 开局75金币先建三火箭，再按真实缺墙筹石；手中有石头且邻格可施工时优先就地建墙；后续按实时价格卖矿、购买与使用升级券。
+- 规划三炮共同操控格；首日开拓者三任务后回防，首日两工白天不提前回防；其它天沿用黄昏回防，夜间每轮选一座冷却完成的炮发射；普通工人昼夜按相同经济优先级工作，夜间避险且禁建；第三天起维修工黄昏回到可达邻墙区域，夜间维修优先并可就地升级。
 - 防御优先于活跃任务与宝藏；保留射程、目标数量、伤害估值和角色互斥检查。
 - 开拓者接任务，官方 LLM / 沙盒探索，提交答案，按类型保存成功/失败经验并复用SOP/Skill。
 - 跨日新闻积累、停矿信息推理、宝藏购买与定时献祭、失败方案去重。
@@ -139,7 +141,7 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | [main3.py](main3.py) | `main()` | 读取`port/--config`，启动服务 |
 | [app/config.py](app/config.py) | `Settings.load(path=None)` | 文件/环境变量加载及配置校验，返回Settings |
 | 同上 | `Settings.build_cells(turn, kind)` | 优先自定义确认布局，否则按启用的基地周围布局计算绝对建造格 |
-| 同上 | `base_surrounding_offsets(kind, mirrored=False)` | 三炮和17格城墙偏移；镜像为dx→1-dx，详见[当前布局](docs/HOME_LAYOUT_V129.md) |
+| 同上 | `base_surrounding_offsets(kind, mirrored=False)` | 三炮和17格城墙偏移；镜像为dx→1-dx，详见[当前布局](docs/SEALED_HOME_V1215.md) |
 | [app/server.py](app/server.py) | `serve(port, settings=None)` | 绑定0.0.0.0并阻塞服务 |
 | 同上 | `AgentServer(address, service)` | HTTP服务器与复用TurnService绑定 |
 | 同上 | `Handler.do_POST/do_GET/send_json` | 请求处理、健康检查、编码输出 |
@@ -164,7 +166,7 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | [src/agent/vehicle.py](src/agent/vehicle.py) | `move_targets(turn,role,route,goals)` | 已驾驶白天两段真实路线、普通或夜间一步 |
 | [src/agent/grid.py](src/agent/grid.py) | `Routes(turn, role, reserved=None, danger=None, allowed=None)` | BFS或风险优先Dijkstra；保存步数、累计风险和第一步，allowed限制巡护区域 |
 | [src/agent/worker_safety.py](src/agent/worker_safety.py) | `robot_danger(turn)` | 机器人射程及警戒缓冲的风险图，供工人寻路与矿点筛选 |
-| [src/agent/wall_guard.py](src/agent/wall_guard.py) | `WallGuard(strategy)`、`daytime/nighttime` | 单人夜修/完成后白天经济、双人夜修，均衡备包、轮流采购与墙内阈值维修 |
+| [src/agent/wall_guard.py](src/agent/wall_guard.py) | `WallGuard(strategy)`、`daytime/nighttime` | 单人夜修/完成后白天经济、双人夜修，均衡备包、轮流采购及实际可达外侧邻墙阈值维修 |
 | [src/agent/imp_policy.py](src/agent/imp_policy.py) | `ImpController(strategy).decide(role)` | 捣乱鬼独立选敌方矿、合法步行、连续destroy和复活恢复 |
 | 同上 | `Routes.nearest(goals)/step(goals)/path(goals,limit=None)` | 最近可达站位、第一步或真实路径；limit限制返回步数 |
 | 同上 | `adjacent_cells(turn, targets)` | 建筑或矿点周围的候选交互格 |
@@ -190,9 +192,12 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | [src/agent/raid_diagnostics.py](src/agent/raid_diagnostics.py) | `RaidDiagnostics(strategy).set/event/finish` | 复用观测和路径检查，记录目标、移动/攻击反馈与最终指令；字段/参数见[诊断说明](docs/ROBOT_DIAGNOSTICS.md) |
 | [src/agent/first_night_defense.py](src/agent/first_night_defense.py) | `FirstNightDefense(strategy).closed/construction_ready/prepared/worker` | 区分实际施工和出发批准；首日白天只计去程交互、不提前回防，夜间保持原维护 |
 | [src/agent/raid_scouts.py](src/agent/raid_scouts.py) | `RaidScouts(strategy).imp/worker/post` | 墙完派非留守工人、12格扫描/实际三炮、持续操炮区视野；参数见[布局侦察](docs/LAYOUT_SCOUTING.md) |
-| [src/agent/boss_raid.py](src/agent/boss_raid.py) | `departure_budget(role)/departure_due(role)` | 真实赴店、拆门、腾包、批购、逐张use及两轮余量；返回字段见[购物截止](docs/BUYER_DEADLINE_V1213.md) |
+| [src/agent/boss_raid.py](src/agent/boss_raid.py) | `departure_budget(role)/departure_due(role)` | 真实赴店、腾包、批购、逐张use及两轮余量，opening=0仅保留兼容字段；返回字段见[购物截止](docs/BUYER_DEADLINE_V1213.md) |
 | [src/agent/boss_raid.py](src/agent/boss_raid.py) | `buyer_role/dispatch_ready/worker_mission_active` | 稳定采购工，真实施工条件与购物截止分别批准，使命持续锁定 |
-| [src/agent/day_gate.py](src/agent/day_gate.py) | `DayGate.worker(role)/day_ready()` | 17墙白天通路、封口石及门券；首日不提前叫工人回家，R70仅实际就位时封口 |
+| [src/agent/day_gate.py](src/agent/day_gate.py) | `DayGate.worker(role)/day_ready()` | 已退休兼容对象：worker始终False，无门石、拆墙或临时封门动作 |
+| [src/agent/sealed_home.py](src/agent/sealed_home.py) | `builder_posts/safe_wall/evacuate/repair_cells` | 未来完整墙体外部分类、真实工人撤出、同轮施工安全及可达维修站位 |
+| 同上 | `needs_operator/pioneer_yield/wait_for_operator` | 白天实际持券工人请求操炮位交互，先锋真实让位后再用券；夜里不让炮手退出 |
+| [src/agent/stone_planner.py](src/agent/stone_planner.py) | `targets/needs_material/can_build_now/mine` | 实际墙材缺口、稳定独立配额、邻墙优先施工、同矿不同站位采集 |
 | [src/agent/first_day_tasks.py](src/agent/first_day_tasks.py) | `record_attempt/finish_attempt/finished_count/success_count` | 用领取回合区分重复Task1，幂等计3次结束和0～3次成功 |
 | [src/agent/summoning.py](src/agent/summoning.py) | `scouted_spawn_position(turn, settings, remembered=(), pending=(), failed=(), surveyed=())` | 真实炮阵/墙/操炮位选择合法出生点；旧rear仅买前可行性 |
 | [src/agent/server.py](src/agent/server.py) | `Handler/serve` | 转发新网络层，兼容demo旧导入 |
@@ -239,4 +244,4 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 
 0.4.2接入用户提供的`print_log.py`格式：每个新回合记录`[TASK-DEBUG]`，完整打印phaseTask、llmResp、lastCmdResult、本轮prompt和executeCmd。stderr为默认输出，具体映射见[任务日志](docs/TASK_LOGGING.md)。
 
-当前验证仅覆盖第一天，见[首日验证报告](../reports/VALIDATION-v1.2.14.md)。v1.2.9的全量回归为历史证据；本轮未运行新官方对局。
+当前验证仅覆盖第一天，见[首日验证报告](../reports/VALIDATION-v1.2.15.md)。v1.2.9的全量回归为历史证据；本轮未运行新官方对局。

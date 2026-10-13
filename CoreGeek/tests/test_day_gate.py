@@ -1,13 +1,16 @@
-"""Temporary entrance keeps the user's sealed night drawing usable by workers."""
-import copy
+"""First-day compatibility facade for retired automatic entrance behavior."""
 import unittest
 
 from agent.protocol import Pos, Turn
 from agent.grid import Routes
-from app.service.turn_service import TurnService
 from app.config import Settings
 from tests.test_maintenance import fortified, setup
 from tests.test_u_layout import point, WALLS, LANE
+from app.service.memory import GameMemory
+from agent.actions import ActionPlan
+from agent.brain import Strategy
+from app.config import Settings
+from tests.fixtures import unit
 
 
 def gate_request(round_no=150, mirrored=False, closed=False, final=False):
@@ -24,201 +27,103 @@ def gate_request(round_no=150, mirrored=False, closed=False, final=False):
 
 
 class DayGateTests(unittest.TestCase):
-    def test_closed_drawing_has_no_outside_to_inside_path(self):
+    def test_facade_retires_old_state_and_never_reopens_complete_daytime_walls(self):
         for mirrored in (False, True):
-            raw = gate_request(mirrored=mirrored, closed=True)
+            raw = gate_request(round_no=40, mirrored=mirrored, closed=True)
+            raw['teamOur']['roles'][2]['pos'] = point(4, 9, mirrored).dump()
+            memory = GameMemory(opening_complete=True, day_gate={
+                'worker_id': 501, 'pos': point(5, 9, mirrored).dump(),
+                'status': 'opening', 'coupon_pending': True})
             turn = Turn.load(raw)
+            plan = ActionPlan(turn, Settings(enable_boss_raid=False))
+            s = Strategy(turn, plan, memory)
+            facade = s.day_gate
+            self.assertFalse(facade.enabled)
+            self.assertIsNone(facade.worker_id)
+            self.assertIsNone(facade.pos)
+            self.assertNotIn('coupon_pending', memory.day_gate)
+            self.assertEqual(memory.day_gate['status'], 'retired_permanent_walls')
             worker = turn.workers()[0]
-            lane = {point(x, y, mirrored) for x, y in LANE}
-            self.assertIsNone(Routes(turn, worker).nearest(lane))
+            self.assertFalse(facade.worker(worker))
+            self.assertFalse(facade.closing())
+            self.assertFalse(facade.can_seal(worker))
+            self.assertFalse(facade.prepare_coupon(worker))
+            self.assertEqual(facade.reserve_stone(worker), 0)
+            self.assertEqual(len(turn.walls()), 17)
+            self.assertEqual(plan.commands, {})
+            self.assertEqual(plan.used, set())
 
-    def test_open_gate_reconnects_shop_mine_and_each_repair_post(self):
-        for mirrored in (False, True):
-            raw = gate_request(mirrored=mirrored)
-            s, plan = setup(raw)
-            worker = s.turn.workers()[0]
-            reached = set(s.route(worker).cost)
-            self.assertTrue(s.guard.inner_cells() <= reached)
-            self.assertIsNotNone(s.route(worker).nearest({point(3, 7, mirrored)}))
-            for wall in s.turn.walls():
-                self.assertTrue(any(distance == 1 for distance in
-                                    [max(abs(wall.pos.x-p.x), abs(wall.pos.y-p.y))
-                                     for p in s.guard.inner_cells()]))
-            self.assertNotIn(s.day_gate.pos, s.movement_reserved(worker))
-            self.assertEqual(plan.rejections, [])
-
-    def test_construction_ready_requires_seal_stone_and_keeps_physical_closed_false(self):
+    def test_former_gate_requires_a_real_wall_before_construction_dispatch(self):
         raw = gate_request(round_no=40)
-        s, _ = setup(raw)
+        raw['teamOur']['roles'][2].update(pos=point(4, 9).dump(), backpack=['stone'])
+        s, plan = setup(raw)
+        worker = s.turn.workers()[0]
+        gate = point(5, 9)
+        self.assertIn(gate, s.missing_walls())
+        self.assertIn(gate, s.construction_walls())
         self.assertFalse(s.day_gate.day_ready())
-        raw['teamOur']['roles'][2]['backpack'] = ['stone']
-        s, _ = setup(raw)
+        self.assertFalse(s.day_gate.dispatch_ready())
+        self.assertTrue(plan.add(worker.unit_id, {'action': 'build', 'name': 'wall',
+                                                  'targetPos': [gate.dump()]}))
+        # A reservation is not an observed seventeenth wall.
+        self.assertFalse(s.day_gate.dispatch_ready())
+        raw['roundNo'] += 1
+        raw['teamOur']['roles'].append(unit(900, 'wall', gate.x, gate.y, health=1000))
+        s, plan = setup(raw)
         self.assertTrue(s.day_gate.day_ready())
-        self.assertTrue(s.first_defense.construction_ready())
-        self.assertFalse(s.first_defense.closed())
-        # An unrelated missing front wall cannot be dismissed as the gate.
-        raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles']
-                                  if not (u['roleType'] == 'wall' and u['pos'] == {'x': 9, 'y': 7})]
-        s, _ = setup(raw)
-        self.assertFalse(s.day_gate.day_ready())
+        self.assertTrue(s.day_gate.dispatch_ready())
+        self.assertFalse(s.missing_walls())
+        self.assertFalse(plan.rejections)
 
-    def test_owner_collects_one_seal_stone_before_optional_supplies(self):
+    def test_dispatch_ignores_only_a_current_living_enemy_controllable_occupant(self):
+        gate = point(5, 9)
+        for kind, hp, expected in (('worker', 500, True), ('pioneer', 500, True),
+                                   ('worker', 0, False), ('rocket', 1000, False)):
+            with self.subTest(kind=kind, hp=hp):
+                raw = gate_request(round_no=40)
+                raw['teamEnemy']['roles'] = [unit(900, kind, gate.x, gate.y, health=hp)]
+                s, _ = setup(raw)
+                self.assertFalse(s.day_gate.dispatch_ready())
+                self.assertEqual(s.day_gate.dispatch_ready({gate}), expected)
+                self.assertFalse(s.day_gate.diagnostic()['all_planned_walls_present'])
         raw = gate_request(round_no=40)
-        raw['teamOur']['roles'][2]['pos'] = {'x': 4, 'y': 9}
-        s, plan = setup(raw)
-        s.run_worker(s.turn.workers()[0])
-        self.assertEqual(plan.commands['501'], {'action': 'collect',
-                                               'targetPos': [{'x': 3, 'y': 9}]})
+        s, _ = setup(raw)
+        # A coordinate remembered from an earlier enemy occupation is not enough.
+        self.assertFalse(s.day_gate.dispatch_ready({gate}))
 
-    def test_sell_retains_only_one_stone_for_gate_owner(self):
-        raw = gate_request()
-        raw['teamOur']['roles'][2].update(pos={'x': 3, 'y': 7}, backpack=['stone']*4)
+    def test_complete_first_day_facade_never_reserves_an_extra_stone_for_selling(self):
+        raw = gate_request(round_no=40, closed=True)
+        raw['teamOur']['roles'][2].update(pos=point(3, 7).dump(), backpack=['stone'] * 4)
         s, plan = setup(raw)
-        self.assertTrue(s.sell(s.turn.workers()[0]))
-        self.assertEqual(plan.commands['501']['num'], 3)
-        raw['teamOur']['roles'][2]['backpack'] = ['stone']
-        s, plan = setup(raw)
-        self.assertFalse(s.sell(s.turn.workers()[0]))
+        worker = s.turn.workers()[0]
+        self.assertEqual(s.day_gate.reserve_stone(worker), 0)
+        self.assertTrue(s.sell(worker))
+        self.assertEqual(plan.commands['501'], {'action': 'sell', 'name': 'stone', 'num': 4})
+        self.assertFalse(plan.rejections)
 
-    def test_owner_seals_from_inside_and_move_is_separate_action(self):
+    def test_first_night_facade_keeps_the_exact_seventeen_wall_template(self):
         for mirrored in (False, True):
-            raw = gate_request(round_no=70, mirrored=mirrored)
-            raw['teamOur']['roles'][2].update(pos=point(6, 8, mirrored).dump(), backpack=['stone'])
-            s, plan = setup(raw)
-            worker = s.turn.workers()[0]
-            self.assertTrue(s.day_gate.can_seal(worker))
-            s.run_worker(worker)
-            self.assertEqual(plan.commands[str(worker.unit_id)],
-                             {'action': 'build', 'name': 'wall',
-                              'targetPos': [point(5, 9, mirrored).dump()]})
-            self.assertEqual(plan.rejections, [])
-            raw['teamOur']['roles'][2]['pos'] = point(4, 8, mirrored).dump()
+            raw = gate_request(round_no=71, mirrored=mirrored, closed=True)
+            raw['teamOur']['roles'][2].update(pos=point(4, 9, mirrored).dump(), backpack=['stone'])
             s, plan = setup(raw)
             self.assertFalse(s.day_gate.worker(s.turn.workers()[0]))
-            self.assertNotIn('501',plan.commands)
-            self.assertFalse(any(c['action'] == 'build' for c in plan.commands.values()))
+            self.assertFalse(s.day_gate.can_seal(s.turn.workers()[0]))
+            self.assertEqual({(w.pos.x, w.pos.y) for w in s.turn.walls()},
+                             {(point(x, y, mirrored).x, y) for x, y in WALLS})
+            s.run()
+            self.assertFalse(any(c['action'] in ('remove', 'build') for c in plan.commands.values()))
+            self.assertFalse(plan.rejections)
 
-    def test_dual_guards_wait_until_both_inside_before_sealing(self):
-        raw = gate_request(round_no=328, final=True)
-        raw['teamOur']['roles'][2].update(pos={'x': 6, 'y': 8}, backpack=['stone', 'WallFixer'])
-        raw['teamOur']['roles'][3].update(pos={'x': 3, 'y': 7}, backpack=['WallFixer'])
-        s, plan = setup(raw)
-        self.assertTrue(s.guard.full_time)
-        self.assertFalse(s.day_gate.can_seal(s.turn.workers()[0]))
-        s.run_worker(s.turn.workers()[0])
-        self.assertEqual(plan.commands['501']['action'], 'move')
-        s.run_worker(s.turn.workers()[1])
-        if '504' in plan.commands:
-            self.assertEqual(plan.commands['504']['action'], 'move')
-        self.assertFalse(any(c['action'] == 'build' for c in plan.commands.values()))
-
-    def test_next_morning_reopens_gate_without_changing_other_wall_sites(self):
-        raw = gate_request(round_no=131, closed=True)
-        raw['teamOur']['roles'][2]['pos'] = {'x': 6, 'y': 8}
-        s, plan = setup(raw)
-        s.run_worker(s.turn.workers()[0])
-        self.assertEqual(plan.commands['501'], {'action': 'remove', 'targetPos': [{'x': 5, 'y': 9}]})
-        self.assertEqual(len(s.settings.build_cells(s.turn, 'wall')), 17)
-
-    def test_night_never_opens_gate_and_complete_template_matches_blueprint(self):
-        raw = gate_request(round_no=71, closed=True)
-        raw['teamOur']['roles'][2].update(pos={'x': 6, 'y': 8}, backpack=['stone'])
-        s, plan = setup(raw)
-        self.assertFalse(s.day_gate.worker(s.turn.workers()[0]))
-        self.assertEqual({(w.pos.x, w.pos.y) for w in s.turn.walls()}, WALLS)
-        self.assertFalse(any(c['action'] == 'remove' for c in plan.commands.values()))
-
-    def test_two_workers_pass_entry_and_restore_seventeen_walls_before_night(self):
+    def test_closed_template_leaves_outside_worker_access_to_shop_but_not_inside_lane(self):
         for mirrored in (False, True):
-            raw = gate_request(round_no=319, mirrored=mirrored, final=True)
-            raw['teamOur']['roles'][2].update(pos=point(6, 8, mirrored).dump(),
-                                            backpack=['stone', 'WallFixer', 'WallUpgradeVoucher1'])
-            raw['teamOur']['roles'][3].update(pos=point(3, 7, mirrored).dump(), backpack=['WallFixer'])
-            service = TurnService(Settings(enable_boss_raid=False))
-            sealed_round = None
-            for number in range(319, 332):
-                raw['roundNo'] = number
-                before = Turn.load(raw)
-                reply = service.decide(copy.deepcopy(raw))
-                roles = {str(u['id']): u for u in raw['teamOur']['roles']}
-                moved_to = set()
-                for uid, command in reply['roleCommandMap'].items():
-                    actor = roles[uid]
-                    if actor['roleType'] != 'worker':
-                        continue
-                    if command['action'] == 'move':
-                        target = Pos.load(command['targetPos'][0])
-                        self.assertNotIn(target, before.occupied_cells())
-                        self.assertNotIn(target, moved_to)
-                        moved_to.add(target)
-                        actor['pos'] = target.dump()
-                    elif command['action'] == 'build':
-                        self.assertLessEqual(number, 330)
-                        self.assertEqual(command['targetPos'][0], point(5, 9, mirrored).dump())
-                        actor['backpack'].remove('stone')
-                        p = Pos.load(command['targetPos'][0])
-                        from tests.fixtures import unit
-                        raw['teamOur']['roles'].append(unit(2000, 'wall', p.x, p.y, health=1000))
-                        sealed_round = number
-                    elif command['action'] == 'use':
-                        self.assertEqual(command['name'], 'WallUpgradeVoucher1')
-                        actor['backpack'].remove(command['name'])
-                        gate = next(u for u in raw['teamOur']['roles'] if u['id'] == 2000)
-                        gate.update(level=2, health=1500)
-                if sealed_round is not None and next(u for u in raw['teamOur']['roles'] if u['id'] == 2000)['level'] == 2:
-                    break
-            self.assertIsNotNone(sealed_round, 'both workers must enter and seal rather than wait forever')
-            turn = Turn.load(raw)
-            self.assertEqual({w.pos for w in turn.walls()}, {point(x,y,mirrored) for x,y in WALLS})
-            gate = next(w for w in turn.walls() if w.pos == point(5,9,mirrored))
-            self.assertEqual((gate.level, gate.health), (2, 1500))
+            raw = gate_request(round_no=40, mirrored=mirrored, closed=True)
+            raw['teamOur']['roles'][2]['pos'] = point(4, 9, mirrored).dump()
+            s, _ = setup(raw)
+            worker = s.turn.workers()[0]
+            route = s.day_gate.access_route(worker)
+            self.assertIsNone(route.nearest({point(x, y, mirrored) for x, y in LANE}))
+            self.assertIsNotNone(route.nearest({point(3, 7, mirrored)}))
 
-    def test_coupon_preparation_waits_for_all_other_upgrades_and_de_duplicates(self):
-        raw = gate_request(final=True)
-        raw['teamOur']['roles'][2].update(pos={'x': 3, 'y': 7}, backpack=['stone'])
-        s, plan = setup(raw)
-        s.run_worker(s.turn.workers()[0])
-        self.assertEqual(plan.commands['501'], {'action': 'buy', 'name': 'WallUpgradeVoucher1', 'num': 1})
-        raw['teamOur']['roles'][2]['backpack'].append('WallUpgradeVoucher1')
-        s, plan = setup(raw)
-        self.assertFalse(s.day_gate.prepare_coupon(s.turn.workers()[0]))
-        raw['teamOur']['roles'][2]['backpack'].remove('WallUpgradeVoucher1')
-        next(w for w in raw['teamOur']['roles'] if w['roleType'] == 'rocket')['level'] = 2
-        s, plan = setup(raw)
-        self.assertFalse(s.day_gate.prepare_coupon(s.turn.workers()[0]))
 
-    def test_coupon_does_not_ignore_gold_capacity_or_return_window(self):
-        for gold, bag, round_no in ((19,['stone'],150), (20,['stone']+['WallFixer']*99,150),
-                                    (1000,['stone'],200)):
-            raw = gate_request(round_no=round_no, final=True)
-            raw['teamOur']['goldNum'] = gold
-            raw['teamOur']['roles'][2].update(pos={'x': 3, 'y': 7}, backpack=bag)
-            s, plan = setup(raw)
-            self.assertFalse(s.day_gate.prepare_coupon(s.turn.workers()[0]))
-            self.assertEqual(plan.commands, {})
-
-    def test_opponent_on_gate_keeps_existing_body_relay_and_releases_it_next_day(self):
-        from agent.actions import ActionPlan
-        from agent.brain import Strategy
-        from tests.fixtures import unit
-        raw = gate_request(round_no=40)
-        raw['teamOur']['roles'][2].update(pos={'x':4,'y':8}, backpack=['stone'])
-        raw['teamEnemy']['roles'] = [unit(901, 'worker', 5, 9)]
-        s, plan = setup(raw)
-        self.assertIn(Pos(5,9), s.gap_guard.gaps)
-        self.assertTrue(s.day_gate.day_ready(s.gap_guard.gaps))
-        self.assertFalse(s.day_gate.worker(s.turn.workers()[0]))
-        memory = s.memory
-        raw.update(roundNo=71)
-        raw['teamEnemy']['roles'] = []
-        turn = Turn.load(raw)
-        plan = ActionPlan(turn, Settings(enable_boss_raid=False))
-        s = Strategy(turn, plan, memory)
-        self.assertTrue(s.gap_guard.worker(s.turn.workers()[0]))
-        self.assertEqual(plan.commands['501'], {'action':'move','targetPos':[{'x':5,'y':9}]})
-        raw.update(roundNo=131)
-        raw['teamOur']['roles'][2]['pos'] = {'x':5,'y':9}
-        turn = Turn.load(raw)
-        s = Strategy(turn, ActionPlan(turn, Settings(enable_boss_raid=False)), memory)
-        self.assertFalse(s.gap_guard.gaps)
-        self.assertEqual(len(s.settings.build_cells(s.turn, 'wall')), 17)
+if __name__ == '__main__':
+    unittest.main()

@@ -69,9 +69,9 @@ class BossRaid:
     def departure_budget(self, role):
         """Reserve actual outbound actions; no first-day return-home allowance.
 
-        Three orders are the worst case until the task ledger settles. A sealed
-        entrance is removed only in this forecast, never in the live map. Two
-        spare rounds cover ordinary coworker yielding and route changes.
+        Three orders are the worst case until the task ledger settles. Permanent
+        walls are never removed or virtually opened. Two spare rounds cover
+        ordinary coworker yielding and route changes; opening stays zero.
         """
         key = ('departure',role.unit_id,role.pos)
         if key in self.trip:
@@ -101,23 +101,6 @@ class BossRaid:
         offer(route)
         if not options:
             offer(self.s.coordinator.diagnostic_route(role),mode='coworker_yield')
-        gate = self.s.day_gate
-        wall = gate.wall() if gate.enabled else None
-        if not options and wall is not None and gate.worker_id==role.unit_id:
-            entries = adjacent_cells(self.turn,[gate.pos])
-            if distance(role.pos,gate.pos)<=1:
-                entries.add(role.pos)
-            entry = route.nearest(entries)
-            if entry is not None:
-                before = route.cost[entry]
-                driving_after = role.is_driving and before%2==0
-                moved = replace(role,pos=entry,is_driving=driving_after)
-                simulated = replace(self.turn,ours=tuple(moved if u.unit_id==role.unit_id else u
-                    for u in self.turn.ours if u.unit_id!=wall.unit_id))
-                reserved = self.s.movement_reserved(role)-{gate.pos}
-                after = Routes(simulated,moved,reserved)
-                approach = (before+1)//2 if role.is_driving else before
-                offer(after,opening=1,approach=approach,mode='remove_entrance',driving=driving_after)
         self.trip[key] = min(options,key=lambda p:(p['total'],p['post'])) if options else None
         return self.trip[key]
 
@@ -491,22 +474,13 @@ class BossRaid:
             return self.s.coordinator.move_to(role,{goal},'boss_shop',BOSS_ORDER)
         if self.s.coordinator.move_to(role,goals,'boss_shop',BOSS_ORDER):
             return True  # Diagnose/yield a real coworker blocking the entrance.
-        # A full enclosure must really open before an interior buyer can exit.
-        # Do not keep issuing an impossible route while suppressing DayGate.
-        gate = self.s.day_gate
-        if gate.enabled and gate.worker_id==role.unit_id and gate.wall() is not None:
-            if self.s.interact(role,gate.pos,{'action':'remove','targetPos':[gate.pos.dump()]}):
-                self.state['status'] = 'opening_buyer_exit'
-                if self.plan.commands.get(str(role.unit_id),{}).get('action')=='remove':
-                    gate.state['status'] = 'opening'
-                return True
         self.state['decision']['reason'] = 'shop_route_blocked'
         return self.hold_worker(role,'shop_route_blocked')
 
     def free_capacity(self, role, needed):
         if len(role.backpack)+needed<=role.capacity:
             return False
-        reserve = self.s.day_gate.reserve_stone(role)+int(bool(self.s.gap_guard.gaps)
+        reserve = int(bool(self.s.gap_guard.gaps)
                     and role.unit_id==self.s.gap_guard.worker_id)
         candidates = [name for name in MINERALS if name in role.backpack
                       and (name!='stone' or role.backpack.count(name)>reserve)]

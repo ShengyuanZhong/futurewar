@@ -86,6 +86,8 @@ class WorkerCoordinator:
             # Keep this separate from route obstacles: reserving the entire
             # future enclosure trapped both opening workers in real logs.
             goals -= set(self.s.construction_walls()) | set(self.s.layout.tower_sites)
+            if kind=='build:wall':
+                goals = self.s.sealed_home.builder_posts(goals)
         if allowed is not None:
             goals &= allowed
         route = route if route is not None else self.s.route(role,allowed)

@@ -93,6 +93,7 @@ class TurnService:
                         {w.unit_id: {'position': w.pos, 'job': memory.worker_tasks.get(w.unit_id, {}).get('kind'),
                          'target': memory.worker_tasks.get(w.unit_id, {}).get('target'),
                          'goal': memory.worker_tasks.get(w.unit_id, {}).get('goal'),
+                         'stone_quota': memory.worker_tasks.get(w.unit_id, {}).get('stone_quota'),
                          'command': plan.commands.get(str(w.unit_id)),
                          'last_action_ok': turn.action_results.get(str(w.unit_id)),
                          'oscillating': memory.worker_tasks.get(w.unit_id, {}).get('oscillating', False)}
@@ -114,6 +115,8 @@ class TurnService:
                 LOGGER.info('raid_survey %s',json.dumps(plain(strategy.raid_scouts.diagnostic()),
                     ensure_ascii=False,separators=(',',':')))
             if turn.day == 1:
+                LOGGER.info('home_construction %s',json.dumps(plain(strategy.sealed_home.diagnostic()),
+                    ensure_ascii=False,separators=(',',':')))
                 LOGGER.info('first_day_policy %s',json.dumps(plain(strategy.boss_raid.diagnostic()),
                     ensure_ascii=False,separators=(',',':')))
                 LOGGER.info('defense_diagnostic %s',json.dumps(plain(strategy.first_defense.diagnostic()),

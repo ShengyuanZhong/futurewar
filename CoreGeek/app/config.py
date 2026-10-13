@@ -10,9 +10,8 @@ def base_surrounding_offsets(kind: str, mirrored: bool = False) -> tuple[Pos, ..
     """User's revised drawing relative to the 2x2 base's top-left.
 
     Reflection is about the base centre x=0.5, so dx becomes 1-dx.
-    Seventeen walls protect the front, top, bottom and lower rear; the upper
-    rear entry and the one-cell inner repair lane stay open. Rear guns and P
-    retain the original positions.
+    Seventeen walls and the three rear guns close the inner base region.
+    Workers finish construction from outside; P remains outside the guns.
     """
     if kind == "wall":
         cells = [Pos(x, 2) for x in range(-1, 4)]

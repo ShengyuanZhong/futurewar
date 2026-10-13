@@ -50,10 +50,8 @@ def worker_raid_scene(round_no=40, lower_right=False, finished=3, successes=2):
     raw['teamOur']['roles'][2]['pos'] = operator.dump()
     for uid, p in enumerate(settings.build_cells(turn, 'rocket'), 600):
         raw['teamOur']['roles'].append(unit(uid, 'rocket', p.x, p.y, health=1000))
-    gate = Pos(base.x + (2 if lower_right else -1), base.y + 2)
     for uid, p in enumerate(settings.build_cells(turn, 'wall'), 700):
-        if p != gate:
-            raw['teamOur']['roles'].append(unit(uid, 'wall', p.x, p.y, health=1000))
+        raw['teamOur']['roles'].append(unit(uid, 'wall', p.x, p.y, health=1000))
     gun_x = enemy.x + (-1 if lower_right else 2)
     raw['teamEnemy']['roles'] = [unit(990, 'station', enemy.x, enemy.y, health=2000)]
     raw['teamEnemy']['roles'] += [unit(991 + i, 'rocket', gun_x, enemy.y + dy, health=1000)
@@ -61,7 +59,6 @@ def worker_raid_scene(round_no=40, lower_right=False, finished=3, successes=2):
     memory = GameMemory(opening_complete=True)
     memory.raid_scouts.update(worker_id=SCOUT, home_worker_id=BUYER)
     memory.boss_raid['buyer_id'] = BUYER
-    memory.day_gate['worker_id'] = BUYER
     for index, (accepted, ended, point, kind) in enumerate((
             (1, 4, (15, 14), '自进化类2'),
             (8, 11, (13, 14), '自进化类1'),
@@ -123,6 +120,12 @@ class WorkerBossBuyerTests(unittest.TestCase):
         raw,memory,settings = worker_raid_scene(finished=2)
         base = Pos(8,24)
         gate = Pos(7,26)
+        # This is an explicitly unfinished construction passage, not a gate
+        # retained in the finished blueprint. The deadline has already granted
+        # this worker's outbound purchase mission.
+        raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles']
+            if not (u['roleType']=='wall' and u['pos']==gate.dump())]
+        memory.boss_raid['departure_authorized'] = True
         actor(raw)['pos'] = Pos(base.x,base.y+1).dump()
         actor(raw,SCOUT)['pos'] = gate.dump()
         # Neither worker is near the enemy yet: no hidden gun may be supplied
@@ -220,22 +223,17 @@ class WorkerBossBuyerTests(unittest.TestCase):
         self.assertEqual(distance(target, SHOP), 1)
         self.assertFalse(any(c.get('action') == 'buy' for c in plan.commands.values()))
 
-    def test_interior_buyer_really_removes_closed_gate_before_exiting(self):
+    def test_already_sealed_interior_buyer_never_invents_a_gate_removal(self):
         raw, memory, settings = worker_raid_scene(round_no=20, finished=1)
         base = Pos.load(actor(raw, 503)['pos'])
-        gate = Pos(base.x - 1, base.y + 2)
-        raw['teamOur']['roles'].append(unit(800, 'wall', gate.x, gate.y, health=1000))
         actor(raw)['pos'] = Pos(base.x, base.y + 1).dump()
         s, plan = load_strategy(raw, memory, settings)
         self.assertEqual(len(s.turn.walls()), 17)
-        s.run()
-        self.assertEqual(plan.commands[str(BUYER)], dict(action='remove', targetPos=[gate.dump()]))
-        raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles'] if u['id'] != 800]
-        advance(raw, memory, s, plan)
-        s, plan = load_strategy(raw, memory, settings)
-        s.run()
-        self.assertEqual(plan.commands[str(BUYER)], dict(action='move', targetPos=[gate.dump()]))
-        self.assertEqual(len(s.turn.walls()), 16)
+        self.assertIsNone(s.boss_raid.departure_budget(role(s)))
+        s.boss_raid.worker(role(s))
+        self.assertFalse(any(c.get('action')=='remove' for c in plan.commands.values()))
+        self.assertEqual(len(s.turn.walls()),17)
+        self.assertIsNone(s.route(role(s)).nearest({Pos(17,13)}))
         self.assertEqual(plan.rejections, [])
 
     def test_unbuilt_unoccupied_wall_keeps_buyer_on_construction(self):
@@ -344,12 +342,12 @@ class WorkerBossBuyerTests(unittest.TestCase):
                 self.assertEqual(freed, 3)
                 self.assertLessEqual(len(actor(raw)['backpack']) + 3, 100)
                 break
-            # Capacity is freed with actual commands/feedback, not just an
-            # optimistic counter. The one gate stone must remain available.
+            # Capacity is freed by real drop commands and subsequent observed
+            # bags. No mineral is reserved for a recurring entrance seal.
             self.assertEqual(command.get('action'), 'drop')
-            self.assertEqual(command['name'], 'iron')
+            self.assertEqual(command['name'], 'stone' if freed==0 else 'iron')
             actor(raw)['backpack'].remove(command['name'])
-            self.assertEqual(actor(raw)['backpack'].count('stone'), 1)
+            self.assertEqual(actor(raw)['backpack'].count('stone'), 0)
             freed += 1
             advance(raw, memory, s, plan)
         else:

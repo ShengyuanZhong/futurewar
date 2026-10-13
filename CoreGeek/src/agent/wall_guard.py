@@ -65,6 +65,11 @@ class WallGuard:
         excluded.add(self.strategy.layout.operator_pos)
         return {p for p in cells if self.turn.land(p) and p not in excluded}
 
+    def duty_cells(self, role=None) -> set[Pos]:
+        """Reach repairs from outside a sealed home; retain observed inside fallback."""
+        home = getattr(self.strategy, 'sealed_home', None)
+        return home.repair_cells(role) if home is not None else self.inner_cells()
+
     def stock_missing(self, worker=None) -> int:
         worker = worker or next((w for w in self.turn.workers() if w.unit_id == self.worker_id), None)
         if worker is None:
@@ -82,7 +87,7 @@ class WallGuard:
         return min(worker.capacity,max(self.settings.repair_stock+growth,observed+2 if observed else 0))
 
     def home(self, role):
-        cells = self.inner_cells()
+        cells = self.duty_cells(role)
         base = self.turn.station()
         if not cells or not base:
             return None
@@ -101,7 +106,7 @@ class WallGuard:
             return True
         owner = workers[0] if wall.pos.y >= base.pos.y else workers[1]
         return (owner.unit_id == role.unit_id or 'WallFixer' not in owner.backpack
-                or owner.pos not in self.inner_cells())
+                or owner.pos not in self.duty_cells(owner))
 
     def budget_reserve(self) -> int:
         return self.stock_missing() * self.turn.shop_prices.get("WallFixer", 0)
@@ -116,7 +121,7 @@ class WallGuard:
         if role.unit_id != self.worker_id:
             return False
         s = self.strategy
-        cells = self.inner_cells()
+        cells = self.duty_cells(role)
         route = s.route(role)
         target = route.nearest(cells)
         if target is None:
@@ -155,7 +160,7 @@ class WallGuard:
             return
         if self.nighttime(role, urgent_only=True):
             return
-        cells = self.inner_cells()
+        cells = self.duty_cells(role)
         route = s.route(role)
         home = route.nearest(cells)
         if home is None:
@@ -193,19 +198,20 @@ class WallGuard:
                 + self.settings.return_margin < self.turn.daylight_left)
 
     def on_site_upgrade(self, role) -> bool:
-        """A guard may deliver a voucher along the inner lane without leaving duty."""
-        if role.pos not in self.inner_cells() or self.strategy.danger.get(role.pos, 0):
+        """Deliver a carried voucher within the actual accessible repair region."""
+        cells = self.duty_cells(role)
+        if role.pos not in cells or self.strategy.danger.get(role.pos, 0):
             return False
-        return self.strategy.consume(role, allowed=self.inner_cells())
+        return self.strategy.consume(role, allowed=cells)
 
     def on_duty(self, role) -> None:
-        """Repair first, finish a nearby supply stop, upgrade inside, then hold."""
+        """Repair first, finish a nearby supply stop, upgrade on duty, then hold."""
         if self.nighttime(role, urgent_only=True):
             return
         s = self.strategy
         # Do not abandon a safe shop reached at dusk without buying. No new
-        # night shopping expedition: once inside, the guard remains inside.
-        if (role.pos not in self.inner_cells() and not s.danger.get(role.pos, 0)
+        # night shopping expedition: a stocked guard stays in its repair region.
+        if (role.pos not in self.duty_cells(role) and not s.danger.get(role.pos, 0)
                 and self.plan.near_zone(role, 'weaponShop')
                 and 'WallFixer' in self.turn.shop_prices):
             missing = self.stock_missing(role)
@@ -220,12 +226,12 @@ class WallGuard:
 
     def nighttime(self, role, urgent_only=False) -> bool:
         s = self.strategy
-        cells = self.inner_cells()
-        # Once inside, all subsequent patrol paths stay inside, even with breaches.
+        cells = self.duty_cells(role)
+        # Patrol only the reachable repair band, never through the closed walls.
         route = s.route(role, allowed=cells if role.pos in cells else None)
         reachable = cells & set(route.cost)
         if not reachable:
-            # Stay assigned to the wall: a blocked entrance calls for yielding,
+            # Stay assigned to the wall: a blocked repair band calls for yielding,
             # never an unbounded escape to distant zero-risk map cells.
             return False if urgent_only else s.coordinator.move_to(role,cells,'return_guard',self.home(role),allow_risk=True)
         if "WallFixer" in role.backpack:
@@ -247,7 +253,7 @@ class WallGuard:
                     return True
         if urgent_only:
             return False
-        # No urgent repair / no kits: hold inside; relocate only to a safer lane cell.
+        # No urgent repair / no kits: remain nearby, preferring a safe repair post.
         home = self.home(role)
         home_reachable = home in reachable
         if home is not None and not home_reachable and not s.danger.get(home,0):

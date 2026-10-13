@@ -1,7 +1,8 @@
 """Day-one dispatch and scouting stay separate from a shop worker's return cost."""
 import unittest
 
-from agent.protocol import Pos, build_command
+from agent.protocol import Pos, Turn, build_command
+from app.config import Settings
 from app.service.memory import GameMemory
 from tests.test_raid_scouts import HOME_ID, WORKER_ID, role, scout_memory, scout_request
 from tests.test_worker_safety import strategy
@@ -9,8 +10,13 @@ from tests.test_worker_safety import strategy
 
 def dispatch_scene(round_no=69):
     raw = scout_request(round_no)
-    raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles']
-                             if not (u['roleType'] == 'wall' and u['pos'] == Pos(5, 9).dump())]
+    # The dispatcher starts from the completed permanent drawing, rather than
+    # the historical fixture's daytime doorway. Both workers are outside.
+    from tests.fixtures import unit
+    raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles'] if u['roleType']!='wall']
+    turn = Turn.load(raw)
+    raw['teamOur']['roles'] += [unit(700+i,'wall',p.x,p.y,health=1000)
+        for i,p in enumerate(Settings().build_cells(turn,'wall'))]
     role(raw, HOME_ID).update(pos=Pos(20, 15).dump(), backpack=['stone'])
     memory = scout_memory()
     memory.raid_scouts.update(worker_id=WORKER_ID, home_worker_id=HOME_ID)
@@ -79,13 +85,15 @@ class BuyerCoordinationTests(unittest.TestCase):
     def test_far_buyer_does_not_revoke_completed_construction_or_current_scout(self):
         raw, memory = dispatch_scene()
         s, plan = strategy(raw, memory)
-        self.assertFalse(s.day_gate.day_ready())
+        self.assertTrue(s.day_gate.day_ready())
         self.assertTrue(s.day_gate.dispatch_ready())
         self.assertTrue(s.raid_scouts.walls_ready())
         scout = next(w for w in s.turn.workers() if w.unit_id == WORKER_ID)
         self.assertTrue(s.raid_scouts.is_worker(scout))
         self.assertTrue(s.raid_scouts.worker(scout))
-        self.assertEqual(s.day_gate.worker_id, HOME_ID)
+        self.assertIsNone(s.day_gate.worker_id)
+        self.assertIsNone(s.day_gate.pos)
+        self.assertFalse(s.day_gate.enabled)
         self.assertEqual(plan.rejections, [])
         buyer = next(w for w in s.turn.workers() if w.unit_id == HOME_ID)
         # Explicit buyer exclusion also applies to stale role assignments,
@@ -98,12 +106,14 @@ class BuyerCoordinationTests(unittest.TestCase):
         s.raid_scouts.state['worker_id'] = WORKER_ID
         self.assertTrue(s.raid_scouts.is_worker(scout))
 
-    def test_dispatch_requires_actual_remaining_walls_and_retained_seal_stone(self):
+    def test_dispatch_requires_observed_wall_completion_but_no_seal_stone(self):
         raw, memory = dispatch_scene(40)
         role(raw, HOME_ID)['backpack'] = []
         s, _ = strategy(raw, memory)
-        self.assertFalse(s.day_gate.dispatch_ready())
-        role(raw, HOME_ID)['backpack'] = ['stone']
+        self.assertTrue(s.day_gate.dispatch_ready())
+        self.assertEqual(len(s.turn.walls()),17)
+        self.assertEqual(s.day_gate.reserve_stone(next(w for w in s.turn.workers()
+                                                     if w.unit_id==HOME_ID)),0)
         raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles']
                                  if not (u['roleType'] == 'wall' and u['pos'] == Pos(9, 7).dump())]
         role(raw, WORKER_ID).update(pos=Pos(8, 7).dump(), backpack=['stone'])

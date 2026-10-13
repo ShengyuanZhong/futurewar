@@ -101,8 +101,8 @@ class FirstNightDefense:
         return bool(self.enabled and self.turn.is_day and role.unit_id == self.worker_id
                     and self.construction_ready() and not self.prepared())
 
-    def home_cells(self):
-        return self.s.guard.inner_cells()
+    def home_cells(self, role=None):
+        return self.s.guard.duty_cells(role)
 
     def trip(self, role, goals, interactions=1):
         """Budget outbound, interactions and an actual return path, not distance."""
@@ -115,7 +115,7 @@ class FirstNightDefense:
                 if total <= self.turn.daylight_left:
                     options.append((total,route.cost[post],post))
             return min(options) if options else None
-        homes = self.home_cells()
+        homes = self.home_cells(role)
         if not homes:
             return None
         # Daylight normally has no robot risk. One reverse BFS provides actual
@@ -170,7 +170,7 @@ class FirstNightDefense:
             return True
         if self.s.gap_guard.active_role(role):
             self.state['status'] = 'gap_guard'
-            return self.s.gap_guard.move_or_hold(role,self.s.gap_guard.posts(),'gap_wait')
+            return self.s.gap_guard.move_or_hold(role,self.s.gap_guard.posts(role=role),'gap_wait')
         self.s.guard.nighttime(role)
         # A failed path or already holding must not fall through to distant mining.
         self.plan.used.add(role.unit_id)
@@ -185,8 +185,8 @@ class FirstNightDefense:
         for weapon in candidates:
             goals = adjacent_cells(self.turn,[weapon.pos])
             if not self.turn.is_day:
-                goals &= self.home_cells()
-                if role.pos not in self.home_cells():
+                goals &= self.home_cells(role)
+                if role.pos not in self.home_cells(role):
                     continue
             elif self.trip(role,goals) is None:
                 continue
@@ -197,7 +197,7 @@ class FirstNightDefense:
                     self.state['status'] = 'upgrading'
                     return True
             if self.s.coordinator.move_to(role,goals,'use:'+VOUCHER,weapon.pos,
-                    allowed=self.home_cells() if not self.turn.is_day else None,allow_risk=True):
+                    allowed=self.home_cells(role) if not self.turn.is_day else None,allow_risk=True):
                 self.s.maintenance_claims.add(weapon.unit_id)
                 self.state['status'] = 'delivering_voucher'
                 return True

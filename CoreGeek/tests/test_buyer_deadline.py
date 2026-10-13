@@ -58,7 +58,7 @@ class BuyerDeadlineTests(unittest.TestCase):
         self.assertEqual(len(s.construction_walls()), 7)
         quotas = s.stone_targets()
         self.assertEqual(quotas[BUYER], s.day_gate.reserve_stone(role(s)))
-        self.assertEqual(quotas[BUYER], 1)
+        self.assertEqual(quotas[BUYER], 0)
         self.assertEqual(quotas[SCOUT], 7)
         self.assertGreater(s.turn.vendor_prices['copper'], s.turn.vendor_prices['stone'])
         s.run_worker(role(s, SCOUT))
@@ -68,35 +68,19 @@ class BuyerDeadlineTests(unittest.TestCase):
         self.assertFalse(plan.rejections)
         self.assertEqual(actor(raw)['backpack'].count('stone'), 8)
 
-    def test_odd_driving_approach_to_sealed_gate_forecasts_walking_after_dismount(self):
+    def test_driving_inside_already_sealed_home_does_not_invent_a_remove_route(self):
         raw, memory, settings = worker_raid_scene(round_no=1, finished=2)
-        gate = Pos(7, 26)
         actor(raw).update(pos=Pos(8, 22).dump(), isDriving=True)
-        raw['teamOur']['roles'].append(unit(800, 'wall', gate.x, gate.y, health=1000))
-        s, _ = load_strategy(raw, memory, settings)
+        s, plan = load_strategy(raw, memory, settings)
         buyer = role(s)
         before = Routes(s.turn, buyer)
-        entry = before.nearest(adjacent_cells(s.turn, [gate]))
-        self.assertIsNotNone(entry)
-        approach_steps = before.cost[entry]
-        self.assertGreater(approach_steps, 0)
-        self.assertEqual(approach_steps % 2, 1)
-        # One final single-step move leaves the car behind under the official
-        # vehicle rule. Its subsequent opened-gate path must use walking cost.
-        dismounted = replace(buyer, pos=entry, is_driving=False)
-        opened = replace(s.turn, ours=tuple(dismounted if u.unit_id == BUYER else u
-                                           for u in s.turn.ours if u.unit_id != 800))
-        after = Routes(opened, dismounted)
-        post = after.nearest(adjacent_cells(opened, [SHOP]))
-        self.assertIsNotNone(post)
-        walking_steps = after.cost[post]
-        budget = s.boss_raid.departure_budget(buyer)
-        self.assertEqual(budget['route_mode'], 'remove_entrance')
-        self.assertEqual(budget['opening'], 1)
-        self.assertEqual(budget['travel'], (approach_steps + 1)//2 + walking_steps)
-        self.assertGreater(budget['travel'], (approach_steps + 1)//2 + (walking_steps + 1)//2)
+        self.assertIsNone(before.nearest(adjacent_cells(s.turn, [SHOP])))
+        self.assertIsNone(s.boss_raid.departure_budget(buyer))
+        s.boss_raid.worker(buyer)
+        self.assertFalse(any(c.get('action') == 'remove' for c in plan.commands.values()))
         self.assertTrue(buyer.is_driving)
-        self.assertTrue(any(w.unit_id == 800 for w in s.turn.walls()))
+        self.assertEqual(len(s.turn.walls()), 17)
+        self.assertEqual(plan.rejections, [])
 
     def test_authorized_buyer_stays_on_real_shop_route_through_final_three_task_settlement(self):
         for lower_right in (False, True):
@@ -402,42 +386,26 @@ class BuyerDeadlineTests(unittest.TestCase):
         self.assertIn(BUYER, plan.used)
         self.assertEqual(actor(raw)['backpack'].count(ORDER), 1)
 
-    def test_sealed_exit_consumes_a_real_remove_action_before_travel(self):
-        raw, memory, settings = worker_raid_scene(round_no=1, finished=2)
-        gate = Pos(7, 26)
+    def test_existing_sealed_home_does_not_send_an_unrequested_remove_action(self):
+        raw, memory, settings = worker_raid_scene(round_no=60, finished=2)
         actor(raw)['pos'] = Pos(8, 25).dump()
-        raw['teamOur']['roles'].append(unit(800, 'wall', gate.x, gate.y, health=1000))
-        # Independently expose the next observation after remove to calculate
-        # its real travel cost; the current observation must remain sealed.
-        opened = dict(raw, teamOur=dict(raw['teamOur'], roles=[u for u in raw['teamOur']['roles']
-                                                             if u['id'] != 800]))
-        outbound = shop_steps(opened, settings)
-        raw['roundNo'] = 71 - (1 + outbound + 1 + 3)
         s, plan = load_strategy(raw, memory, settings)
-        self.assertEqual(s.turn.daylight_left, outbound + 5)
+        self.assertIsNone(s.boss_raid.departure_budget(role(s)))
         self.assertTrue(s.boss_raid.worker(role(s)))
-        self.assertEqual(plan.commands[str(BUYER)], dict(action='remove', targetPos=[gate.dump()]))
-        self.assertTrue(any(u.unit_id == 800 for u in s.turn.walls()))
-        self.assertFalse(plan.rejections)
+        self.assertFalse(any(c.get('action') == 'remove' for c in plan.commands.values()))
+        self.assertIsNone(s.route(role(s)).nearest(adjacent_cells(s.turn, [SHOP])))
+        self.assertEqual(len(s.turn.walls()), 17)
+        self.assertEqual(plan.rejections, [])
 
-    def test_sealed_exit_deadline_budget_counts_remove_and_the_opened_path(self):
+    def test_sealed_home_deadline_budget_does_not_forecast_a_demolished_wall(self):
         raw, memory, settings = worker_raid_scene(round_no=1, finished=2)
-        gate = Pos(7, 26)
         actor(raw)['pos'] = Pos(8, 25).dump()
-        raw['teamOur']['roles'].append(unit(800, 'wall', gate.x, gate.y, health=1000))
-        opened = dict(raw, teamOur=dict(raw['teamOur'], roles=[u for u in raw['teamOur']['roles']
-                                                             if u['id'] != 800]))
-        outbound = shop_steps(opened, settings)
         s, _ = load_strategy(raw, memory, settings)
-        budget = s.boss_raid.departure_budget(role(s))
-        self.assertIsNotNone(budget)
-        self.assertEqual(budget['opening'], 1)
-        self.assertEqual(budget['travel'], outbound)
-        self.assertEqual(budget['buy'], 1)
-        self.assertEqual(budget['use'], 3)
-        self.assertGreaterEqual(budget['total'], outbound + 5)
-        # Forecasting must not mutate the current wall observation.
-        self.assertTrue(any(w.unit_id == 800 for w in s.turn.walls()))
+        self.assertIsNone(s.boss_raid.departure_budget(role(s)))
+        # Forecasting never mutates the actual permanent fortification.
+        self.assertEqual(len(s.turn.walls()), 17)
+        self.assertIsNone(s.day_gate.pos)
+        self.assertFalse(s.day_gate.enabled)
 
     def test_first_day_supply_trip_ignores_return_margin_at_the_actual_shop(self):
         raw, memory, settings = worker_raid_scene(round_no=70, successes=0)

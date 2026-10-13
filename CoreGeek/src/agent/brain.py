@@ -16,6 +16,8 @@ from .robot_raider import RobotRaider
 from .raid_scouts import RaidScouts
 from .first_night_defense import FirstNightDefense
 from .day_gate import DayGate
+from .sealed_home import SealedHome
+from .stone_planner import StonePlanner
 from .summoning import rear_spawn_position
 from . import upgrade_policy
 from .first_day_tasks import TASK_SEQUENCE, task_attempts, task_number, finished_count, finish_attempt
@@ -35,6 +37,7 @@ class Strategy:
         self.layout = select_defense_layout(turn, self.settings, memory.defense_layout)
         memory.defense_layout = self.layout
         self.danger = robot_danger(turn)
+        self.sealed_home = SealedHome(self)
         self.guard = WallGuard(self)
         self.coordinator = WorkerCoordinator(self)
         self.imp = ImpController(self)
@@ -45,6 +48,7 @@ class Strategy:
         self.boss_raid = BossRaid(self)
         self.raider = RobotRaider(self)
         self.raid_scouts = RaidScouts(self)
+        self.stone_planner = StonePlanner(self)
 
     def movement_reserved(self, role: Unit | None = None) -> set[Pos]:
         """Reserve gun slots and actual construction appointments, not an empty wall ring."""
@@ -72,7 +76,8 @@ class Strategy:
                 # The standby IMP must not use the body worker's breach as a
                 # shortcut before the actual takeover condition is observed.
                 reserved.add(guard.gap)
-        if (role is None or role.kind != PIONEER) and self.layout.operator_pos is not None:
+        courier = role is not None and self.sealed_home.needs_operator(role)
+        if (role is None or role.kind != PIONEER) and not courier and self.layout.operator_pos is not None:
             reserved.add(self.layout.operator_pos)
         if role is not None and role.unit_id == self.memory.raid_scouts.get('worker_id'):
             reserved.update(p for u in self.memory.enemy_structures.values() if u.health > 0
@@ -143,7 +148,8 @@ class Strategy:
                         and (finished_count(self.memory)>=len(TASK_SEQUENCE) or not self.settings.enable_tasks)):
                     # The shopping worker handles the raid; the pioneer returns
                     # immediately after the three actual attempts settle.
-                    self.operate_weapons(role) if not self.turn.is_day else self.move_to_control(role)
+                    if not self.sealed_home.pioneer_yield(role):
+                        self.operate_weapons(role) if not self.turn.is_day else self.move_to_control(role)
                     continue
                 if self.pioneer_should_defend(role):
                     self.operate_weapons(role)
@@ -162,6 +168,8 @@ class Strategy:
                     if self.consume(role, allow_travel=False) or self.treasure(role):
                         continue
                 if self.turn.is_day and (self.task(role) or self.sell(role)):
+                    continue
+                if self.sealed_home.pioneer_yield(role):
                     continue
                 self.move_to_control(role)
             else:
@@ -186,6 +194,10 @@ class Strategy:
     def run_worker(self, role: Unit) -> None:
         """One economic schedule; night adds safety and assigned guard duty."""
         if self.boss_raid.worker(role):
+            return
+        if self.sealed_home.evacuate(role):
+            return
+        if self.sealed_home.wait_for_operator(role):
             return
         if self.day_gate.worker(role):
             return
@@ -272,50 +284,13 @@ class Strategy:
 
     def missing_walls(self) -> list[Pos]:
         standing = {w.pos for w in self.turn.walls()}
-        gate = getattr(self, 'day_gate', None)
-        gate_pos = gate.pos if gate and gate.enabled else None
-        if gate is None and self.settings.default_operator_position(self.turn) is not None:
-            base = self.turn.station()
-            gate_pos = Pos(base.pos.x + (2 if self.settings.mirrored_layout(self.turn) else -1), base.pos.y + 2)
-        return [p for p in self.settings.build_cells(self.turn, "wall") if p not in standing
-                and not (self.turn.is_day and p == gate_pos)]
+        return [p for p in self.settings.build_cells(self.turn, "wall") if p not in standing]
 
     def construction_walls(self) -> list[Pos]:
-        gate = getattr(self, 'day_gate', None)
-        pos = gate.pos if gate and gate.enabled else None
-        if gate is None and self.settings.default_operator_position(self.turn) is not None:
-            base = self.turn.station()
-            pos = Pos(base.pos.x + (2 if self.settings.mirrored_layout(self.turn) else -1), base.pos.y + 2)
-        return [p for p in self.missing_walls() if p != pos]
+        return self.missing_walls()
 
     def stone_targets(self) -> dict[int, int]:
-        workers = self.turn.workers()
-        remaining = len(self.construction_walls())
-        targets = {}
-        capacity = {}
-        reserve = {}
-        for role in workers:
-            held = role.backpack.count("stone")
-            reserve[role.unit_id] = self.day_gate.reserve_stone(role)
-            raid = getattr(self, 'boss_raid', None)
-            if raid is not None and raid.worker_mission_active(role):
-                # Outbound shopping stone cannot supply the worker still at
-                # home. Give that builder an independent remaining quota.
-                targets[role.unit_id] = reserve[role.unit_id]
-                capacity[role.unit_id] = reserve[role.unit_id]
-                continue
-            allocated = min(max(0,held-reserve[role.unit_id]),remaining)
-            targets[role.unit_id] = allocated + reserve[role.unit_id]
-            remaining -= allocated
-            capacity[role.unit_id] = max(held, role.capacity - len(role.backpack) + held)
-        while remaining:
-            eligible = [uid for uid, quota in targets.items() if quota < capacity[uid]]
-            if not eligible:
-                break
-            uid = min(eligible, key=lambda key: (targets[key]-reserve[key], key))
-            targets[uid] += 1
-            remaining -= 1
-        return targets
+        return self.stone_planner.targets()
 
     def opening_stage(self) -> str:
         if self.memory.opening_complete:
@@ -369,6 +344,8 @@ class Strategy:
                     self.mine(role)
             return True
         quota = self.stone_targets().get(role.unit_id, 0)
+        if self.stone_planner.can_build_now(role) and self.build_wall(role,local_only=True):
+            return True
         if role.backpack.count("stone") < quota:
             if role.backpack_full:
                 self.sell(role, keep_stone=True)
@@ -408,15 +385,28 @@ class Strategy:
             self.plan.add(role.unit_id, move_command(target))
         return True
 
-    def build_wall(self, role: Unit) -> bool:
+    def build_wall(self, role: Unit, local_only: bool = False) -> bool:
         if not self.turn.is_day or role.backpack.count('stone') <= self.day_gate.reserve_stone(role):
+            return False
+        if self.sealed_home.enabled and role.pos not in self.sealed_home.outside:
             return False
         walls = [p for p in self.construction_walls() if p not in self.turn.blocked(role)
                  and p not in self.plan.reserved and p not in self.goals and p != role.pos
                  and not self.coordinator.target_owned(role, p, 'build:wall')]
+        if local_only:
+            walls = [p for p in walls if distance(role.pos,p)==1]
         job = self.coordinator.job(role)
         previous = job.get('target') if job.get('kind') == 'build:wall' else None
         for target in sorted(walls, key=lambda p: (p != previous, self.cost(role, [p]), p)):
+            if distance(role.pos,target)>1 and any(
+                    w.unit_id!=role.unit_id and w.unit_id not in self.plan.used
+                    and 'stone' in w.backpack and distance(w.pos,target)==1
+                    and w.pos in self.sealed_home.outside
+                    and not self.boss_raid.worker_mission_active(w) and not self.raid_scouts.is_worker(w)
+                    for w in self.turn.workers()):
+                # A courier must not claim the local builder's immediate wall.
+                self.coordinator.assign(role,'construction_share',None,role.pos)
+                continue
             # Do not spend the last daylight rounds walking towards illegal night work.
             if self.cost(role, [target]) + 1 > self.turn.daylight_left:
                 continue
@@ -533,6 +523,8 @@ class Strategy:
         return upgrade_policy.upgrades_complete(self)
 
     def wall_keeps_exit(self, role: Unit, target: Pos) -> bool:
+        if self.sealed_home.enabled:
+            return self.sealed_home.safe_wall(target)
         if self.day_gate.enabled and target == self.day_gate.pos:
             return self.day_gate.can_seal(role)
         # Do not close a reachable route to a vendor/task point with this wall.
@@ -635,12 +627,17 @@ class Strategy:
         return handled
 
     def mine(self, role: Unit, need_stone: bool = False, return_cells: set[Pos] | None = None) -> bool:
+        if need_stone:
+            return self.stone_planner.mine(role,return_cells=return_cells)
         if role.backpack_full:
             return False
         options = []
         for pos, kind in self.turn.zones.items():
             if kind not in MINERALS or (need_stone and kind != "stone"):
                 continue
+            if (kind=='stone' and self.turn.is_day and self.missing_walls()
+                    and not self.stone_planner.needs_material(role)):
+                continue  # Construction material is already funded by real bags.
             if self.memory.failed_mines.get(f"{pos.x},{pos.y}", 0) > self.turn.round_no:
                 continue
             if any(c["name"] == kind and c["startDay"] <= self.turn.day <= c["endDay"] for c in self.memory.mine_closures):

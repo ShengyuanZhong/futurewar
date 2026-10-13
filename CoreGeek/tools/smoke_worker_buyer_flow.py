@@ -1,4 +1,4 @@
-"""First-day HTTP evidence: an interior worker travels to a fixed real shop.
+"""First-day HTTP evidence: an exterior worker travels to a fixed real shop.
 
 Two synthetic base positions share the same shop. Ordinary observations,
 actual movement/bag feedback and Task2 -> Task1 -> Task2 drive the server's
@@ -36,8 +36,8 @@ def fixture(lower_right, unfinished=False):
     raw['teamOur'].update(teamId='worker-buyer-nonsymmetric-' + name, totalScore=0,
                           summonRobotList=[])
     base = Pos.load(actor(raw, 503)['pos'])
-    inner_start = Pos(base.x + int(lower_right), base.y + 1)
-    actor(raw, BUYER)['pos'] = inner_start.dump()
+    exterior_start = Pos(base.x+(3 if lower_right else -2),base.y+2)
+    actor(raw, BUYER)['pos'] = exterior_start.dump()
     actor(raw, PIONEER)['pos'] = Pos(16, 14).dump()
     raw['teamOur']['playerTasks'] = copy.deepcopy(request()['teamOur']['playerTasks'])
     for index, point in enumerate((Pos(15, 15), Pos(15, 14))):
@@ -53,8 +53,8 @@ def fixture(lower_right, unfinished=False):
     truth.append(unit(994, 'worker', operator.x, operator.y, health=500))
     gate = Pos(base.x + (2 if lower_right else -1), base.y + 2)
     control = settings.default_operator_position(Turn.load(raw))
-    assert len(Turn.load(raw).weapons()) == 3 and len(Turn.load(raw).walls()) == 16
-    assert inner_start not in {p for u in Turn.load(raw).ours if u.unit_id != BUYER
+    assert len(Turn.load(raw).weapons()) == 3 and len(Turn.load(raw).walls()) == 17
+    assert exterior_start not in {p for u in Turn.load(raw).ours if u.unit_id != BUYER
                                for p in Turn.load(raw).footprint(u)}
     assert SHOP not in {Pos.load(u['pos']) for u in raw['teamOur']['roles']}
     if unfinished:
@@ -73,7 +73,7 @@ def fixture(lower_right, unfinished=False):
     name += '-unfinished' if unfinished else ''
     raw['teamOur']['teamId'] = 'worker-buyer-nonsymmetric-'+name
     return raw, truth, dict(case=name, base=base.dump(), shop=SHOP.dump(),
-        gate=gate.dump(), buyer_initial=inner_start.dump(), pioneer_control=control.dump(),
+        former_gate=gate.dump(), buyer_initial=exterior_start.dump(), pioneer_control=control.dump(),
         scout_initial=copy.deepcopy(actor(raw, SCOUT)['pos']),
         pioneer_initial=copy.deepcopy(actor(raw, PIONEER)['pos']),unfinished=unfinished,
         initial_wall_count=len(Turn.load(raw).walls()))
@@ -169,7 +169,7 @@ def main():
                     first_return = number
                 if number >= 37 and pioneer_before.dump() == summary['pioneer_control'] and control_arrival is None:
                     control_arrival = number
-                if buyer_command.get('action') == 'move' and summary['gate'] in buyer_command['targetPos']:
+                if buyer_command.get('action') == 'move' and summary['former_gate'] in buyer_command['targetPos']:
                     gate_crossings.append(number)
                 rows.append(dict(case=summary['case'], round=number, status=200,
                     elapsed_ms=round(elapsed, 3), gold=raw['teamOur']['goldNum'],
@@ -188,7 +188,7 @@ def main():
             assert len({(p['x'], p['y']) for p in spawns}) == 3
             assert shop_arrival is not None and shop_arrival <= 67
             if not args.unfinished:
-                assert gate_crossings and shop_arrival < 37
+                assert not gate_crossings and shop_arrival < 37
             assert first_return == 37 and control_arrival is not None and control_arrival <= 70
             summary.update(shop_arrival_round=shop_arrival, waited_until_task_settlement=max(0,37-shop_arrival),
                 gate_crossing_rounds=gate_crossings, buys=buys, uses=uses, spawns=spawns,
@@ -223,10 +223,10 @@ def main():
             assert buys and buys[0]['observed_wall_count']<16, 'fixture must still be unfinished at purchase'
             case['walls_at_purchase'] = buys[0]['observed_wall_count']
     report = dict(scope='First-day R1..71 synthetic observations, task answers and verdicts over real HTTP; not official matches',
-        initial_conditions=('Three real guns, nine observed ordinary walls, one buyer seal stone; buyer inside, '
+        initial_conditions=('Three real guns, ten observed ordinary walls, buyer outside with ordinary stone; '
             'other worker collecting distant stone, actual IMP enemy sight, pioneer near local task fixture'
-            if args.unfinished else 'Three real guns, sixteen real ordinary walls and one seal stone; '
-            'buyer inside, scout already at enemy, pioneer near local task fixture'),
+            if args.unfinished else 'Three real guns, seventeen real ordinary walls and one ordinary stone; '
+            'buyer outside, scout already at enemy, pioneer near local task fixture'),
         task_sequence=[2, 1, 2], accepted_rounds=[1, 4, 34], no_private_memory_seed=True,
         visibility='Ordinary alive friendly range-four sight only; enemy station/wall global; summoned robots have no sight',
         fixed_shop=SHOP.dump(), requests=len(rows), cases=cases, results=rows, diagnostics=diag,

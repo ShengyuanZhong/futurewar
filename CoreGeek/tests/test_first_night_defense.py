@@ -133,7 +133,7 @@ class FirstNightDefenseTests(unittest.TestCase):
         self.assertFalse(defense.prepared())
 
     def test_supply_buys_five_kits_then_one_coupon_at_the_same_stop(self):
-        raw = open_entrance(fortified(30))
+        raw = fortified(30)
         actor(raw)['pos'] = Pos(3,7).dump()
         next(i for i in raw['weaponShopList'] if i['name']==FIXER)['price'] = 15
         memory = GameMemory(opening_complete=True)
@@ -142,7 +142,7 @@ class FirstNightDefenseTests(unittest.TestCase):
         self.assertEqual(plan.commands['501'],{'action':'buy','name':FIXER,'num':5})
         memory.record(s.turn,plan)
         raw['roundNo'] += 1
-        actor(raw)['backpack'] = [FIXER]*5+['stone']
+        actor(raw)['backpack'] = [FIXER]*5
         raw['teamOur']['goldNum'] -= 75
         raw['lastRoundRoleActionResults'] = {'501':True}
         s,plan,defense = setup(raw,memory)
@@ -167,7 +167,7 @@ class FirstNightDefenseTests(unittest.TestCase):
     def test_first_night_repairs_below_thirty_percent_even_without_day_three_guard(self):
         for mirrored in (False,True):
             raw = fortified(71,mirrored=mirrored)
-            actor(raw)['pos'] = point(8,7,mirrored).dump()
+            actor(raw)['pos'] = point(10,7,mirrored).dump()
             actor(raw)['backpack'] = [FIXER]*5
             wall = next(u for u in raw['teamOur']['roles'] if u['pos']==point(9,7,mirrored).dump())
             wall['health'] = 100
@@ -201,7 +201,7 @@ class FirstNightDefenseTests(unittest.TestCase):
             self.assertIn(Pos.load(command['targetPos'][0]),s.guard.inner_cells())
 
     def test_dusk_from_a_distant_mine_keeps_working_without_a_return_budget(self):
-        raw = open_entrance(ready(fortified(70),position=(20,7)))
+        raw = ready(fortified(70),position=(20,7))
         raw['mapInfo']['zones'].append({'neutralType':'iron','pos':Pos(20,6).dump()})
         s,plan,defense = setup(raw)
         worker = s.turn.workers()[0]
@@ -210,20 +210,35 @@ class FirstNightDefenseTests(unittest.TestCase):
         self.assertEqual(plan.commands['501'],{'action':'collect','targetPos':[Pos(20,6).dump()]})
 
     def test_blocked_shop_does_not_turn_daytime_worker_into_a_waiting_guard(self):
-        raw = ready(fortified(61),stock=0)
+        raw = ready(fortified(61),position=(10,7),stock=0)
+        actor(raw,504)['pos'] = Pos(12,9).dump()
+        # Local terrain obstruction isolates the shop while both workers stay
+        # outside the fully built wall drawing. Existing NPC/mine cells also
+        # block movement; fill only its remaining land neighbours.
+        existing = {Pos.load(zone['pos']) for zone in raw['mapInfo']['zones']}
+        shop = Pos(2,7)
+        raw['mapInfo']['zones'] += [dict(neutralType='water',pos=p.dump())
+                                    for p in shop.neighbours() if p not in existing]
         s,plan,defense = setup(raw)
-        self.assertFalse(defense.worker(s.turn.workers()[0]))
-        self.assertNotIn('501',plan.commands)
-        self.assertNotIn(501,plan.used)
+        self.assertEqual(len(s.turn.walls()),17)
+        self.assertTrue(all(w.pos in s.sealed_home.outside for w in s.turn.workers()))
+        # The shop is unreachable but the mine is reachable: continue actual
+        # economic movement rather than using a turn as a waiting home guard.
+        self.assertTrue(defense.worker(s.turn.workers()[0]))
+        self.assertEqual(plan.commands['501']['action'],'move')
+        self.assertEqual(s.memory.worker_tasks[501]['kind'],'collect:stone')
+        self.assertEqual(s.memory.worker_tasks[501]['target'],Pos(3,9))
+        self.assertFalse(plan.rejections)
 
-    def test_occupied_gap_guard_returns_to_a_legal_inner_waiting_post(self):
+    def test_occupied_gap_guard_returns_to_a_legal_exterior_waiting_post(self):
         raw,memory = self.occupied_gap(number=71)
-        actor(raw)['pos'] = Pos(6,5).dump()
+        actor(raw)['pos'] = Pos(12,6).dump()
         s,plan,defense = setup(raw,memory)
         self.assertTrue(defense.return_home(s.turn.workers()[0]))
         self.assertEqual(plan.commands['501']['action'],'move')
         goal = memory.wall_gap_defense['posts'][501]
-        self.assertIn(goal,s.gap_guard.posts())
+        self.assertIn(goal,s.gap_guard.posts(role=s.turn.workers()[0]))
+        self.assertIn(goal,s.sealed_home.outside)
         self.assertNotIn(goal,{w.pos for w in s.turn.walls()})
 
     def test_disabled_next_day_and_missing_workers_do_not_reserve_or_take_actions(self):
@@ -258,7 +273,7 @@ class FirstNightDefenseTests(unittest.TestCase):
         self.assertEqual(defense.diagnostic()['station']['hp'],0)
 
     def test_first_day_ore_trips_do_not_search_a_return_path(self):
-        raw = ready(fortified(35))
+        raw = ready(fortified(35),position=(12,7))
         raw['mapInfo']['zones'] += [{'neutralType':'iron','pos':Pos(x,y).dump()}
                                    for x in (12,15,18,21,24,27,30) for y in (2,5,8,11,14)]
         s,_,defense = setup(raw)
