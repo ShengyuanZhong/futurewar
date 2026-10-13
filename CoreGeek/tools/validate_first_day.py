@@ -25,6 +25,12 @@ MODULES = (
     'tests.test_buyer_deadline',
     'tests.test_buyer_coordination',
     'tests.test_boss_raid',
+    'tests.test_boss_formation',
+    'tests.test_robot_diagonal',
+    'tests.test_raid_efficiency',
+    'tests.test_raid_priorities',
+    'tests.test_layout_raider',
+    'tests.test_robot_diagnostics',
 )
 EXCLUDED = {
     'tests.test_first_day_order.FirstDayOrderTests.test_second_day_and_disabled_boss_do_not_lock_weapon_upgrades',
@@ -32,6 +38,7 @@ EXCLUDED = {
     'tests.test_opening_defense.OpeningDefenseTests.test_second_day_active_task_retains_previous_night_defence_priority',
     'tests.test_boss_raid.BossRaidTests.test_stun_death_new_day_and_deadline_stop_robot_orders',
     'tests.test_boss_raid.BossRaidTests.test_api_sequence_buys_once_summons_then_kills_controller_before_base',
+    'tests.test_robot_diagnostics.RobotDiagnosticTests.test_ineligible_robots_still_get_explicit_skip_records',
 }
 EXTRA = (
     'tests.test_layout_survey.LayoutSurveyTests.test_last_wall_command_is_not_actual_construction_completion',
@@ -71,7 +78,7 @@ def main():
     paths.append(ROOT/'pyproject.toml')
     rules = list((ROOT.parent/'32_docs').glob('*'))+[ROOT.parent/'DEVELOPMENT_RULES.md']
     log_hashes = {name:hashlib.sha256((ROOT.parent/'temp'/name).read_bytes()).hexdigest()
-                  for name in ('bug_log1.log','bug_log2.log')
+                  for name in ('bug_log1.log','bug_log2.log','boss_attack_log.log')
                   if (ROOT.parent/'temp'/name).is_file()}
     report = dict(created_utc=datetime.now(timezone.utc).isoformat(),python=platform.python_version(),
         scope='First day only (rounds 1-130); local regression inputs, not official match replay',

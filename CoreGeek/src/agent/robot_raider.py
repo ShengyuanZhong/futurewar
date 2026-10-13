@@ -6,6 +6,7 @@ from .grid import Routes
 from .protocol import CONTROLLABLE_TYPES, PIONEER, WORKER, TOWER_TYPES, Pos, distance, move_command
 from .robot_combat import blocking_wall, clear_attack, enemy_at, planning_building_blocker
 from .raid_diagnostics import RaidDiagnostics, LIMIT, entity
+from .boss_formation import BossFormation
 
 
 SIEGE_FOCUS_ROUNDS = 4
@@ -20,6 +21,7 @@ class RobotRaider:
         live = {r.robot_id for r in self.turn.summon_robots if r.health > 0}
         self.memory.robot_raids = {uid: job for uid, job in self.memory.robot_raids.items()
                                    if uid in live and not self.turn.is_day and self.turn.day == 1}
+        self.formation = BossFormation(self)
 
     def seen_cell(self, cell):
         # Summoned robots supply no vision; ordinary roles/buildings do (v2 §4.3).
@@ -51,13 +53,6 @@ class RobotRaider:
 
     def planning_blocker(self, start, target):
         return planning_building_blocker(self.turn,start,target,self.memory.enemy_structures.values())
-
-    def needs_close(self, robot, target):
-        old = self.memory.robot_raids.get(robot.robot_id,{})
-        victim = enemy_at(self.turn,target)
-        return (victim is not None and victim.kind == 'station'
-                and old.get('base_attack_failures',0) >= 2
-                and (robot.pos,target) != (old.get('verified_base_post'),old.get('verified_base_target')))
 
     def observe_feedback(self, robot, old):
         failed = {key:until for key,until in old.get('failed_firing',{}).items()
@@ -125,12 +120,6 @@ class RobotRaider:
                     if post == target:
                         counts['same_target'] += 1
                         continue
-                    victim = enemy_at(self.turn,target)
-                    if (victim is not None and victim.kind == 'station'
-                            and old.get('base_attack_failures',0) >= 2 and distance(post,target)>1
-                            and (post,target) != (old.get('verified_base_post'),old.get('verified_base_target'))):
-                        counts['close_required'] += 1
-                        continue
                     if post not in route.cost:
                         counts['unreachable'] += 1
                         continue
@@ -169,6 +158,7 @@ class RobotRaider:
             attack_target_id=victim.unit_id if victim else None,
             attack_health=victim.health if victim else None, **extra)
         job = self.memory.robot_raids[robot.robot_id]
+        job['formation_wait_rounds'] = 0
         job['pursuit_kind'] = extra.get('pursuit_kind', stage)
         if job['pursuit_kind'] == 'controller':
             job.pop('siege_until', None)
@@ -227,7 +217,7 @@ class RobotRaider:
             clear = self.clear_shot(robot,p,audit)
             cache = self.firing_key(p,robot.pos) in failed if clear else False
             self.diag.event(robot,'attack_check',target=p,check=audit,cache_hit=cache)
-            if clear and not cache and (not self.needs_close(robot,p) or distance(robot.pos,p)<=1):
+            if clear and not cache:
                 direct.append(p)
         if direct:
             old = self.memory.robot_raids.get(robot.robot_id,{})
@@ -265,8 +255,7 @@ class RobotRaider:
         extra = dict(fallback_reason=fallback,siege_until=focus,pursuit_rounds=0)
         failed = old.get('failed_firing', {})
         direct = [p for p in points if self.clear_shot(robot,p)
-                  and self.firing_key(p,robot.pos) not in failed
-                  and (not self.needs_close(robot,p) or distance(robot.pos,p)<=1)]
+                  and self.firing_key(p,robot.pos) not in failed]
         self.diag.set(robot,direct_base_cells=direct)
         if direct:
             # A disappeared gun outside ordinary sight is still remembered.
@@ -286,8 +275,22 @@ class RobotRaider:
                 self.diag.set(robot,selected=entity(target),secondary_reason='stationary_base_neighbour')
                 return self.issue(robot,'attack',target.pos,robot.pos,'base_nearby',
                                   nearby_role_id=target.unit_id,**extra)
+            if self.formation.advance(robot,base,route):
+                return True
             target = min(direct,key=lambda p:(p != old.get('verified_base_target'),distance(robot.pos,p),p))
             return self.issue(robot,'attack',target,robot.pos,'base',**extra)
+        # A real reachable base firing post beats dismantling a wall/gun on
+        # the current ray. In the logged opening this is a single extra step.
+        firing = self.firing_plan(robot,points,route)
+        remaining = 130-(self.turn.round_no-1)%130
+        if firing is not None and route.cost[firing[2]]+1<=remaining:
+            step = route.step({firing[2]})
+            if step is not None:
+                self.diag.set(robot,base_reposition=dict(post=firing[2],target=firing[3],
+                    cost=route.cost[firing[2]],reason='reachable_clear_base_before_obstruction'))
+                return self.issue(robot,'move',step,firing[2],'base',**extra)
+        if firing is None and self.formation.wait_for_lane(robot,base):
+            return True
         obstruction = self.base_weapon_obstruction(robot, points)
         if obstruction is not None:
             self.diag.set(robot,selected=entity(obstruction),
@@ -399,7 +402,7 @@ class RobotRaider:
                       siege_until=old.get('siege_until',0))
         failed = old['failed_firing']
         self.diag.set(robot,base_attack_failures=old.get('base_attack_failures',0),
-            base_close_required=old.get('base_attack_failures',0)>=2,
+            base_close_required=False,base_failure_scope='exact_target_and_firing_post',
             verified_base_post=old.get('verified_base_post'),verified_base_target=old.get('verified_base_target'),
             remembered_structures=[entity(u) for u in self.memory.enemy_structures.values()][:LIMIT],
             blocked_steps=[{'pos':p,'until_round':until} for p,until in old.get('blocked_steps',{}).items()][:LIMIT])

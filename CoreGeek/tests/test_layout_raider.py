@@ -181,7 +181,9 @@ class LayoutRaiderTests(unittest.TestCase):
         self.assertEqual(layout_operator_positions(turn), (OPERATOR,))
         self.assertIsNone(enemy_at(turn, OPERATOR))
         s, plan = decide(turn, settings)
-        self.assertEqual(len(plan.commands), 2)
+        # A teammate's real move may close the sole entry for this frame.
+        # Both robots are scheduled, but a coordinated wait emits no command.
+        self.assertTrue(set(BOSSES) <= plan.used)
         for command in plan.commands.values():
             if command['action'] == 'attack':
                 target = Pos.load(command['targetPos'][0])
