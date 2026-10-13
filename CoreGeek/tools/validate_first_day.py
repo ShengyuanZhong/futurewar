@@ -26,6 +26,8 @@ MODULES = (
     'tests.test_buyer_coordination',
     'tests.test_sealed_home',
     'tests.test_stone_planner',
+    'tests.test_stone_mines',
+    'tests.test_personal_construction',
     'tests.test_exterior_repair',
     'tests.test_day_gate',
     'tests.test_gate_materials',

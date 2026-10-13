@@ -5,6 +5,7 @@ next official observation must confirm both building and collecting.  Travel
 appointments live in the existing per-worker memory; a departing BOSS buyer's
 bag cannot pay for the builder who stays behind.
 """
+from itertools import product
 from .grid import adjacent_cells
 from .protocol import Pos, collect_command, distance
 
@@ -13,6 +14,7 @@ class StonePlanner:
     def __init__(self, strategy):
         self.s = strategy
         self.turn, self.plan, self.memory = strategy.turn, strategy.plan, strategy.memory
+        self.state = self.memory.stone_mining
 
     def targets(self) -> dict[int, int]:
         """Required actual bag counts, retaining an unfinished collection share.
@@ -92,15 +94,8 @@ class StonePlanner:
                 return True
         return False
 
-    def mine(self, role, return_cells: set[Pos] | None = None) -> bool:
-        """Collect only the outstanding share at a legal, separately claimed post.
-
-        An immediately usable stone mine wins over an old distant appointment.
-        Otherwise keep a valid current destination to avoid mid-route reversals.
-        Workers may share a mine; they may not share its collection position.
-        """
-        if role.backpack_full or not self.needs_material(role):
-            return False
+    def options(self, role, return_cells=None):
+        """Reachable current stone sites, using real outside posts and sight."""
         job = self.s.coordinator.job(role)
         previous = job.get('target') if job.get('kind') == 'collect:stone' else None
         unavailable = (self.s.coordinator.claimed_goals(role) | self.plan.reserved
@@ -108,6 +103,8 @@ class StonePlanner:
         options = []
         for pos, kind in self.turn.zones.items():
             if kind != 'stone':
+                continue
+            if self.turn.mine_remaining.get(pos,10)<=0:
                 continue
             if self.memory.failed_mines.get(f'{pos.x},{pos.y}', 0) > self.turn.round_no:
                 continue
@@ -132,6 +129,57 @@ class StonePlanner:
                 continue
             cost = route.cost[goal]
             options.append((role.pos not in goals, pos != previous, cost, pos, goals))
+        return options
+
+    def assignments(self):
+        """Stable first-day mine ownership; distinct mines before shared fallback.
+
+        The remaining field is an observation, never decremented by a submitted
+        collect. An established valid trip stays even if other players reduce
+        that mine's stock: collect the remainder, then reassign on disappearance.
+        """
+        quota=self.targets()
+        workers=[w for w in self.turn.workers() if not w.backpack_full
+                 and w.backpack.count('stone')<quota.get(w.unit_id,0)]
+        options={w.unit_id:{entry[3]:entry for entry in self.options(w)} for w in workers}
+        workers=[w for w in workers if options[w.unit_id]]
+        previous=self.state.get('assignments',{}) if self.state.get('round',0)>=self.turn.round_no-1 else {}
+        locks={}
+        for worker in workers:
+            job=self.s.coordinator.job(worker)
+            target=previous.get(worker.unit_id)
+            if target not in options[worker.unit_id]:
+                target=job.get('target') if job.get('kind')=='collect:stone' else None
+            if target in options[worker.unit_id] and job.get('stalled',0)<2:
+                locks[worker.unit_id]=target
+        def score(sites):
+            demands={}
+            for worker,pos in zip(workers,sites):
+                demands[pos]=demands.get(pos,0)+quota[worker.unit_id]-worker.backpack.count('stone')
+            deficit=sum(max(0,need-self.turn.mine_remaining.get(pos,10)) for pos,need in demands.items())
+            changes=sum(uid in locks and pos!=locks[uid] for uid,pos in zip((w.unit_id for w in workers),sites))
+            costs=sum(options[w.unit_id][pos][2] for w,pos in zip(workers,sites))
+            return len(sites)-len(set(sites)),changes,deficit,costs,sites
+        combinations=product(*(options[w.unit_id] for w in workers))
+        chosen=min(combinations,key=score) if workers else ()
+        assignments={w.unit_id:pos for w,pos in zip(workers,chosen)}
+        self.state.update(round=self.turn.round_no,assignments=assignments,
+            shortage={w.unit_id:quota[w.unit_id]-w.backpack.count('stone') for w in workers},
+            shared_fallback=len(set(chosen))<len(chosen))
+        return assignments
+
+    def diagnostic(self):
+        return dict(self.state,remaining={p:self.turn.mine_remaining.get(p) for p,kind in self.turn.zones.items()
+                                         if kind=='stone'},unknown_remaining_fallback=10)
+
+    def mine(self, role, return_cells: set[Pos] | None = None) -> bool:
+        """Collect a personal share; first day gives each miner its own site."""
+        if role.backpack_full or not self.needs_material(role):
+            return False
+        options=self.options(role,return_cells)
+        if self.turn.day==1 and self.turn.is_day:
+            target=self.assignments().get(role.unit_id)
+            options=[entry for entry in options if entry[3]==target]
         for _, _, _, pos, goals in sorted(options, key=lambda entry: entry[:4]):
             if role.pos in goals and self.plan.add(role.unit_id, collect_command(pos)):
                 self.s.coordinator.assign(role, 'collect:stone', pos, role.pos)

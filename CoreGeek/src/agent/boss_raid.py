@@ -51,6 +51,12 @@ class BossRaid:
         required = set(self.s.settings.build_cells(self.turn,'wall'))-ignored
         return bool(required) and len(self.turn.weapons())>=3 and required<={w.pos for w in self.turn.walls()}
 
+    def worker_dispatch_ready(self, role):
+        schedule = getattr(self.s, 'wall_schedule', None)
+        if schedule is not None and schedule.enabled:
+            return schedule.construction_ready(role)
+        return self.dispatch_ready()
+
     def worker_mission_active(self, role):
         approved_departure = self.state.get('departure_authorized') or (
             self.state.get('mission_started') and self.state.get('buyer_departed'))
@@ -58,7 +64,7 @@ class BossRaid:
                 or role.kind!=WORKER or role.health<=0 or role.unit_id!=self.buyer_id
                 or role.unit_id==self.memory.raid_scouts.get('worker_id')
                 or BOSS_ORDER not in self.turn.shop_prices
-                or (not self.dispatch_ready() and not approved_departure and not self.departure_due(role))
+                or (not self.worker_dispatch_ready(role) and not approved_departure and not self.departure_due(role))
                 or self.state.get('summon_window_closed')):
             return False
         target = self.target_orders()
@@ -284,6 +290,7 @@ class BossRaid:
             buyer=dict(id=buyer.unit_id,pos=buyer.pos,health=buyer.health,
                 held=buyer.backpack.count(BOSS_ORDER),command=self.plan.commands.get(str(buyer.unit_id))) if buyer else None,
             dispatch_ready=self.dispatch_ready(),buyer_departed=self.state.get('buyer_departed',False),
+            personal_dispatch_ready=self.worker_dispatch_ready(buyer) if buyer else False,
             construction_approved_round=self.state.get('construction_approved_round'),
             departure_authorized=self.state.get('departure_authorized',False),
             departure_reason=self.state.get('departure_reason'),
@@ -504,19 +511,24 @@ class BossRaid:
         if not self.worker_mission_active(role):
             self.state['decision']['reason'] = ('disabled' if not self.s.settings.enable_boss_raid else
                 'after_day_one' if self.turn.day!=1 else 'night' if not self.turn.is_day else
-                'waiting_for_walls' if not self.dispatch_ready() else
+                'waiting_for_personal_walls' if not self.worker_dispatch_ready(role) else
                 'summon_window_closed' if self.state.get('summon_window_closed') else
                 'purchase_closed' if self.state.get('purchase_closed') else
                 'no_successful_tasks' if self.target_orders()==0 else 'worker_mission_complete')
             return False
         if not self.state.get('mission_started'):
-            ready = self.dispatch_ready()
-            if ready:
+            ready = self.worker_dispatch_ready(role)
+            if self.dispatch_ready():
                 self.state['construction_approved_round'] = self.turn.round_no
+            if ready:
+                self.state['personal_construction_approved_round'] = self.turn.round_no
             self.state.update(departure_authorized=True,departure_round=self.turn.round_no,
-                departure_reason='walls_ready' if ready else 'shop_deadline',
+                departure_reason='personal_walls_ready' if ready else 'shop_deadline',
                 departure_budget_at_start=self.departure_budget(role))
         self.state['mission_started'] = True
+        schedule = getattr(self.s, 'wall_schedule', None)
+        if schedule is not None:
+            schedule.release(role, 'boss_buyer')
         if role.pos not in self.s.guard.inner_cells():
             self.state['buyer_departed'] = True
         if not self.tasks_finished():

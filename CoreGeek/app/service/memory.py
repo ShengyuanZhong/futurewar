@@ -63,6 +63,7 @@ class GameMemory:
     first_night_defense: dict[str, Any] = field(default_factory=dict)
     day_gate: dict[str, Any] = field(default_factory=dict)
     sealed_home: dict[str, Any] = field(default_factory=dict)
+    stone_mining: dict[str, Any] = field(default_factory=dict)
     pending_summon_positions: set[Pos] = field(default_factory=set)
     imp_home_side: int = 0
     imp_tasks: dict[int, dict[str, Any]] = field(default_factory=dict)

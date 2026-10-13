@@ -70,8 +70,11 @@ def main():
                 expected={Pos(position(x,y,mirrored).x,y+dy) for x,y in WALLS}
                 shops=[Pos.load(z['pos']) for z in raw['mapInfo']['zones'] if z['neutralType']=='weaponShop']
                 ore_sites=[Pos(position(x,y,mirrored).x,y+dy) for x,y in ((3,9),(3,3),(1,9))]
-                ore_remaining,ore_index=10,0
+                raw['mapInfo']['zones']=[z for z in raw['mapInfo']['zones'] if z['neutralType']!='stone']
+                raw['mapInfo']['zones'] += [dict(neutralType='stone',pos=p.dump(),remain=10) for p in ore_sites[:2]]
+                ore_remaining={p:10 for p in ore_sites[:2]};ore_index=1
                 collected,built={},{}
+                construction_mines={}
                 first_closed=None;collection_at_closure=None
                 for number in range(1,72):
                     raw['roundNo']=number
@@ -102,38 +105,49 @@ def main():
                         if c['action']=='collect':
                             name=before.zones[Pos.load(c['targetPos'][0])]
                             assert name=='stone'
+                            if first_closed is None:
+                                construction_mines.setdefault(uid,set()).add(Pos.load(c['targetPos'][0]))
                             collected[uid]=collected.get(uid,0)+1
-                            ore_remaining-=1
+                            ore_remaining[Pos.load(c['targetPos'][0])]-=1
                         elif c['action']=='build':
                             assert c['name']=='wall'
                             built[uid]=built.get(uid,0)+1
                     rows.append(dict(case=case,round=number,status=200,elapsed_ms=round(elapsed,3),
                         walls=len(real_walls),worker_positions={str(w.unit_id):w.pos.dump() for w in before.workers()},
                         worker_stone={str(w.unit_id):w.backpack.count('stone') for w in before.workers()},
-                        ore_remaining_before=ore_remaining+sum(c['action']=='collect' for c in commands.values()),
+                        ore_remaining_before={f'{p.x},{p.y}':before.mine_remaining[p] for p in ore_remaining},
                         commands=commands))
                     apply_commands(raw,commands,[])
-                    if ore_remaining<=0:
+                    for exhausted in [p for p,remaining in ore_remaining.items() if remaining<=0]:
                         # Each mine is finite. A final shared extraction may
                         # credit both workers, as allowed by the official rule.
-                        raw['mapInfo']['zones']=[z for z in raw['mapInfo']['zones'] if z['neutralType']!='stone']
+                        raw['mapInfo']['zones']=[z for z in raw['mapInfo']['zones'] if Pos.load(z['pos'])!=exhausted]
+                        del ore_remaining[exhausted]
                         occupied=Turn.load(raw).occupied_cells()
                         for offset in range(1,len(ore_sites)+1):
                             candidate=ore_sites[(ore_index+offset)%len(ore_sites)]
-                            if candidate not in occupied:
+                            if candidate not in occupied and candidate not in ore_remaining:
                                 ore_index=(ore_index+offset)%len(ore_sites)
-                                raw['mapInfo']['zones'].append(dict(neutralType='stone',pos=candidate.dump()))
+                                raw['mapInfo']['zones'].append(dict(neutralType='stone',pos=candidate.dump(),remain=10))
+                                ore_remaining[candidate]=10
                                 break
                         else:
                             raise AssertionError('No legal synthetic ore refresh site')
-                        ore_remaining=10
+                    for zone in raw['mapInfo']['zones']:
+                        point=Pos.load(zone['pos'])
+                        if point in ore_remaining:
+                            zone['remain']=ore_remaining[point]
                 assert first_closed is not None and first_closed<=70,(case,'failed to seal',rows[-1])
                 assert sum(built.values())==17 and set(built)=={'501','504'},built
                 assert collection_at_closure==17,(case,'redundant construction stone',collection_at_closure)
                 assert set(collected)=={'501','504'},collected
+                assert set(construction_mines)=={'501','504'}
+                assert all(len(sites)==1 for sites in construction_mines.values()),construction_mines
+                assert len(set().union(*construction_mines.values()))==2,construction_mines
                 assert {u.pos for u in Turn.load(raw).walls()}==expected
                 cases.append(dict(case=case,starts_inside=starts_inside,closed_round=first_closed,
                     construction_stone=collection_at_closure,built=built,collected_first_day=collected,
+                    construction_mines={uid:[p.dump() for p in sorted(sites)] for uid,sites in construction_mines.items()},
                     initial_three_rockets=True,night_reopens=False))
     except Exception as error:
         failure=error
@@ -147,7 +161,7 @@ def main():
         if 'home_construction ' in line:
             traces.append(json.loads(line.split('home_construction ',1)[1]))
     report=dict(scope='First-day R1..71 local construction observations over real HTTP, not official matches',
-        assumptions='Three rockets already observed; zero wall/stone; fixed local finite ore refresh; no enemies/tasks; both base orientations and one initial inner worker',
+        assumptions='Three rockets already observed; zero wall/stone; two initially visible mines with real remain10 and explicit local refresh; no enemies/tasks; both base orientations and one initial inner worker',
         requests=len(rows),cases=cases,results=rows,construction_diagnostics=traces,
         no_private_memory_seed=True,execute_cmd_executed=False,
         bind_verified=f'0.0.0.0:{port}' in logs,failure=repr(failure) if failure else None)

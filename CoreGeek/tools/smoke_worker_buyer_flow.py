@@ -212,10 +212,13 @@ def main():
         for case in cases:
             departures = [row['data'] for row in diag if row['kind']=='first_day_policy'
                           and row['data'].get('team_id')=='worker-buyer-nonsymmetric-'+case['case']
-                          and row['data'].get('departure_reason')=='shop_deadline'
+                          and row['data'].get('departure_reason') in ('shop_deadline','personal_walls_ready')
                           and row['data'].get('buyer_id')==BUYER and row['data'].get('departure_authorized')]
-            assert departures, 'unfinished construction must activate a purchase deadline'
+            assert departures, 'unfinished team construction must allow personal completion or a purchase deadline'
+            if departures[0]['departure_reason']=='personal_walls_ready':
+                assert departures[0]['personal_dispatch_ready'], 'personal departure requires actual own-wall completion'
             case.update(departure_round=departures[0]['departure_round'],
+                        departure_reason=departures[0]['departure_reason'],
                         departure_budget=departures[0]['departure_budget_at_start'])
             buys = [row for row in rows if row['case']==case['case'] and
                     row['commands'].get(str(BUYER),{}).get('name')==ORDER and

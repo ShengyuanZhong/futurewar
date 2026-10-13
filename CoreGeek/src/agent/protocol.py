@@ -177,6 +177,7 @@ class Turn:
     errors: tuple[dict[str, Any], ...] = ()
     total_score: int = 0
     summon_robots: tuple[Robot, ...] = ()
+    mine_remaining: dict[Pos, int] = field(default_factory=dict)
 
     @classmethod
     def load(cls, payload: dict[str, Any]) -> "Turn":
@@ -216,7 +217,10 @@ class Turn:
                    prices("vendorShopList"), prices("weaponShopList"),
                    {str(k): v for k, v in (payload.get("lastRoundRoleActionResults") or {}).items()},
                    int(payload.get("lastSummonTreasureResult") or 0), tuple(payload.get("errors") or ()),
-                   int(team.get("totalScore") or 0), owned)
+                   int(team.get("totalScore") or 0), owned,
+                   {Pos.load(z['pos']): integer(z['remain'],'remain')
+                    for z in info.get('zones') or () if z.get('remain') is not None
+                    and z.get('neutralType') in MINERALS})
         ids = [u.unit_id for u in turn.ours + turn.enemies] + [r.robot_id for r in turn.robots]
         if len(ids) != len(set(ids)):
             raise ValueError("unit IDs must be globally unique")

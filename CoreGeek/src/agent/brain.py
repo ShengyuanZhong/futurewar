@@ -51,6 +51,7 @@ class Strategy:
         self.raid_scouts = RaidScouts(self)
         self.wall_schedule = WallSchedule(self)
         self.stone_planner = StonePlanner(self)
+        self.raid_scouts.refresh_dispatch()
 
     def movement_reserved(self, role: Unit | None = None) -> set[Pos]:
         """Reserve gun slots and actual construction appointments, not an empty wall ring."""
@@ -209,13 +210,13 @@ class Strategy:
             return
         if self.sealed_home.wait_for_operator(role):
             return
+        if self.raid_scouts.worker(role):
+            return
         if self.day_gate.worker(role):
             return
         if self.gap_guard.worker(role):
             return
         if self.first_defense.worker(role):
-            return
-        if self.raid_scouts.worker(role):
             return
         if self.coordinator.hold_for_yield(role):
             return

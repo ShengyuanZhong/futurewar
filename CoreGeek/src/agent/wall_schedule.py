@@ -8,7 +8,7 @@ actual wall and never treat a submitted command as a completed building.
 from math import atan2, hypot
 
 from .grid import adjacent_cells
-from .protocol import Pos, distance
+from .protocol import CONTROLLABLE_TYPES, Pos, distance
 
 
 class WallSchedule:
@@ -108,7 +108,64 @@ class WallSchedule:
         raid = self.s.boss_raid
         scouts = self.s.raid_scouts
         return [w for w in self.turn.workers()
-                if not raid.worker_mission_active(w) and not scouts.is_worker(w)]
+                if w.unit_id not in self.state.get('released', {})
+                and not raid.worker_mission_active(w) and not scouts.is_worker(w)]
+
+    def departed_ids(self):
+        """Read confirmed mission state only; never call dispatch predicates."""
+        departed = set(self.state.get('released', {}))
+        raid = self.memory.boss_raid
+        if raid.get('departure_authorized') or raid.get('mission_started'):
+            departed.add(raid.get('buyer_id'))
+        scout = self.memory.raid_scouts
+        if (scout.get('personal_dispatch_round') is not None
+                and not scout.get('paused_for_construction')):
+            departed.add(scout.get('worker_id'))
+        return departed
+
+    def assigned_missing(self, role, ignore_enemy_occupied=False):
+        """Real unbuilt own walls plus walls abandoned by a dead/departed peer.
+
+        This is independent of ``active_builders`` to avoid recursion through
+        shopping/scout eligibility. A submitted build is not an observed wall.
+        Only a currently visible hostile controllable unit can defer a gap.
+        """
+        if not self.enabled or role.unit_id not in self.state.get('arcs', {}):
+            return set()
+        missing = set(self.s.construction_walls())
+        arcs = self.state['arcs']
+        builders = {w.unit_id for w in self.turn.workers()} - self.departed_ids()
+        owned = set().union(*(set(arc) for uid, arc in arcs.items() if uid in builders))
+        assigned = (set(arcs[role.unit_id]) | (missing - owned)) & missing
+        if len(builders) == 1 and role.unit_id in builders:
+            assigned = missing
+        if ignore_enemy_occupied:
+            occupied = {u.pos for u in self.turn.enemies
+                        if u.health > 0 and u.kind in CONTROLLABLE_TYPES}
+            assigned -= occupied
+        return assigned
+
+    def construction_ready(self, role):
+        """The worker's actual assigned construction is done, or hostile-held."""
+        return bool(self.enabled and self.state.get('arcs', {}).get(role.unit_id)
+                    and len(self.turn.weapons()) >= 3
+                    and not self.assigned_missing(role, ignore_enemy_occupied=True))
+
+    def release(self, role, mission):
+        """Commit the next job so the completed worker never borrows walls back."""
+        if not self.enabled:
+            return
+        unfinished = sorted(self.assigned_missing(role))
+        self.state.setdefault('released', {}).setdefault(role.unit_id,
+            dict(round=self.turn.round_no, mission=mission,
+                 unfinished=unfinished))
+        job = self.memory.worker_tasks.get(role.unit_id, {})
+        if job.get('kind') in ('build:wall', 'collect:stone'):
+            self.memory.worker_tasks.pop(role.unit_id, None)
+
+    def reclaim(self, role):
+        """A paused, sole surviving scout must resume the abandoned construction."""
+        self.state.get('released', {}).pop(role.unit_id, None)
 
     def remaining(self, role):
         """Actual unfinished personal work; callers may transfer spare material."""
@@ -159,6 +216,7 @@ class WallSchedule:
         arcs = self.state['arcs']
         own = list(arcs.get(role.unit_id, ()))
         personal = [p for p in own if p in candidates]
+        abandoned = self.assigned_missing(role) - set(own)
         job = self.s.coordinator.job(role)
         previous = job.get('target') if job.get('kind') == 'build:wall' else None
         # A peer with no stone cannot perform an immediate local build; release
@@ -166,7 +224,10 @@ class WallSchedule:
         released = {p for uid, arc in arcs.items()
                     if uid not in active or 'stone' not in active[uid].backpack for p in arc}
         available = personal + [p for p in candidates if p not in personal and (
-            p in released or not personal)]
+            p in abandoned or p in released or not personal)]
+        # Actual outgoing missions are excluded by active_builders/released.
+        # An ordinary builder with no next mission can help finish the peer's
+        # last wall, including scenarios with the BOSS workflow disabled.
         if previous in candidates and previous not in available:
             available.append(previous)  # Preserve a real trip across a policy handoff.
         costs = {p: self.cost(role, p) for p in available}

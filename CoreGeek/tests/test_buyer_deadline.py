@@ -139,12 +139,22 @@ class BuyerDeadlineTests(unittest.TestCase):
                 self.assertNotIn(ORDER, actor(raw)['backpack'])
 
     def test_departure_deadline_does_not_dispatch_unfinished_wall_scout_but_live_imp_can_supply_sight(self):
-        raw, memory, settings = unfinished_scene(round_no=66)
+        raw, memory, settings = worker_raid_scene(round_no=66, finished=2, successes=2)
         actor(raw)['pos'] = Pos(17, 13).dump()
         actor(raw, SCOUT)['pos'] = Pos(9, 25).dump()
+        # Establish the true personal arcs, then start before the scout's last
+        # observed wall exists. Clear approvals from this setup observation.
+        initial, _ = load_strategy(raw, memory, settings)
+        missing = initial.wall_schedule.state['arcs'][SCOUT][0]
+        raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles']
+            if not (u['roleType']=='wall' and u['pos']==missing.dump())]
+        memory.raid_scouts.pop('construction_verified_round',None)
+        memory.raid_scouts.pop('personal_dispatch_round',None)
+        memory.sealed_home['wall_schedule'].pop('released',None)
         raw['teamEnemy']['roles'] = [u for u in raw['teamEnemy']['roles']
                                     if u['roleType'] == 'station']
         s, plan = load_strategy(raw, memory, settings)
+        self.assertEqual(s.wall_schedule.assigned_missing(role(s, SCOUT)), {missing})
         s.run_worker(role(s))
         self.assertTrue(memory.boss_raid.get('departure_authorized'))
         self.assertFalse(s.raid_scouts.dispatch_granted())

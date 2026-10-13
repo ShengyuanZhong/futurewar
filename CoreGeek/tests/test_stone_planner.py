@@ -10,13 +10,17 @@ from app.service.memory import GameMemory
 from tests.fixtures import request, unit
 
 
-def scene(number=12, first=None, second=None, mines=None, missing=17, memory=None):
+def scene(number=12, first=None, second=None, mines=None, missing=17, memory=None, remaining=None):
     raw = request(number)
     raw['teamOur']['roles'] = [unit(503, 'station', 10, 24),
         unit(501, 'worker', 3, 8, **(first or {})),
         unit(504, 'worker', 5, 8, **(second or {}))]
     raw['mapInfo']['zones'] = [dict(neutralType=kind, pos=pos.dump())
         for kind, pos in (mines if mines is not None else [('stone', Pos(4, 8))])]
+    for zone in raw['mapInfo']['zones']:
+        pos=Pos.load(zone['pos'])
+        if remaining is not None and pos in remaining:
+            zone['remain']=remaining[pos]
     turn = Turn.load(raw)
     settings = Settings(enable_tasks=False, enable_boss_raid=False,
                         enable_first_night_defense=False, enable_news=False)
@@ -108,14 +112,16 @@ class StonePlannerTests(unittest.TestCase):
                             s.coordinator.job(s.turn.workers()[1])['goal'])
         self.assertEqual(plan.rejections, [])
 
-    def test_legal_adjacent_mine_beats_remembered_distant_mine(self):
+    def test_near_peer_mine_does_not_cancel_a_valid_independent_trip(self):
         memory = GameMemory(worker_tasks={501: dict(kind='collect:stone',
             target=Pos(14, 8), goal=Pos(13, 8), round=11, stone_quota=9)})
         _, s, plan, planner = scene(mines=[('stone', Pos(4, 8)), ('stone', Pos(14, 8))],
                                    memory=memory)
         self.assertTrue(planner.mine(s.turn.workers()[0]))
-        self.assertEqual(plan.commands['501'],
-                         dict(action='collect', targetPos=[Pos(4, 8).dump()]))
+        self.assertEqual(plan.commands['501']['action'],'move')
+        self.assertEqual(s.coordinator.job(s.turn.workers()[0])['target'],Pos(14,8))
+        self.assertTrue(planner.mine(s.turn.workers()[1]))
+        self.assertEqual(plan.commands['504'],dict(action='collect',targetPos=[Pos(4,8).dump()]))
 
     def test_valid_travel_target_is_kept_instead_of_reversing_mid_route(self):
         memory = GameMemory(worker_tasks={501: dict(kind='collect:stone',

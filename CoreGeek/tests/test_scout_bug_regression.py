@@ -34,15 +34,21 @@ class ScoutBugRegressionTests(unittest.TestCase):
 
     def test_imp_sight_does_not_release_a_worker_before_walls(self):
         raw, memory = self.log2_scout_scene()
+        # Keep the real initial assignment and remove the scout's own wall.
+        # A teammate's unfinished arc now permits independent scout departure.
+        missing = memory.sealed_home['wall_schedule']['arcs'][WORKER_ID][0]
         raw['teamOur']['roles'] = [u for u in raw['teamOur']['roles']
-            if not (u['roleType']=='wall' and u['pos']==GAP.dump())]
+            if not (u['roleType']=='wall' and u['pos']==missing.dump())]
         # This case starts before actual completion; the survey helper above
         # must not grant a historical construction approval to that scenario.
         memory.raid_scouts.pop('construction_verified_round',None)
+        memory.raid_scouts.pop('personal_dispatch_round',None)
+        memory.sealed_home['wall_schedule'].pop('released',None)
         s, _ = strategy(raw, memory)
         self.assertTrue(memory.raid_scouts['imp_ready'])
         self.assertFalse(s.raid_scouts.summon_ready())
         worker = next(w for w in s.turn.workers() if w.unit_id==WORKER_ID)
+        self.assertEqual(s.wall_schedule.assigned_missing(worker), {missing})
         self.assertFalse(s.raid_scouts.is_worker(worker))
 
     def test_imp_close_to_a_catcher_cannot_unlock_summon(self):

@@ -119,6 +119,8 @@ class TurnService:
                     ensure_ascii=False,separators=(',',':')))
                 LOGGER.info('wall_schedule %s',json.dumps(plain(strategy.wall_schedule.diagnostic()),
                     ensure_ascii=False,separators=(',',':')))
+                LOGGER.info('stone_mining %s',json.dumps(plain(strategy.stone_planner.diagnostic()),
+                    ensure_ascii=False,separators=(',',':')))
                 LOGGER.info('first_day_policy %s',json.dumps(plain(strategy.boss_raid.diagnostic()),
                     ensure_ascii=False,separators=(',',':')))
                 LOGGER.info('defense_diagnostic %s',json.dumps(plain(strategy.first_defense.diagnostic()),
