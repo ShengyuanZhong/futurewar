@@ -23,7 +23,7 @@ OPERATOR = Pos(13, 19)
 GAP = Pos(12, 19)
 
 
-def formation_arena(front=Pos(11, 19), rear=Pos(10, 19)):
+def formation_arena(front=Pos(11, 19), rear=Pos(10, 19), mixed=False):
     """A left-facing gap and three guns with exactly one shared control cell."""
     raw = request(78)
     raw['mapInfo']['zones'] = []
@@ -33,7 +33,7 @@ def formation_arena(front=Pos(11, 19), rear=Pos(10, 19)):
     raw['teamEnemy']['roles'] = [unit(BASE, 'station', 14, 20),
         unit(991, 'rocket', 13, 20, health=1000),
         unit(993, 'rocket', 13, 18, health=1000),
-        unit(994, 'rocket', 14, 18, health=1000)]
+        unit(994, 'railgun' if mixed else 'rocket', 14, 18, health=1000)]
     ring = {Pos(x, y) for x in range(12, 18) for y in range(17, 23)
             if x in (12, 17) or y in (17, 22)} - {GAP}
     raw['teamEnemy']['roles'] += [unit(2000+i, 'wall', p.x, p.y, health=1000)
@@ -170,8 +170,8 @@ class BossFormationTests(unittest.TestCase):
         self.assertEqual(plan.commands.get(str(FRONT)),
                          {'action': 'move', 'targetPos': [GAP.dump()]})
 
-    def test_single_robot_keeps_a_direct_base_attack_without_formation_pressure(self):
-        raw = formation_arena(rear=None)
+    def test_mixed_layout_single_robot_keeps_direct_base_fire(self):
+        raw = formation_arena(rear=None,mixed=True)
         strategy, plan = decide(raw)
         command = plan.commands[str(FRONT)]
         self.assertEqual(command['action'], 'attack')
@@ -179,8 +179,8 @@ class BossFormationTests(unittest.TestCase):
         self.assertIn(Pos.load(command['targetPos'][0]), strategy.turn.footprint(base))
         self.assertEqual(plan.rejections, [])
 
-    def test_faraway_second_robot_does_not_interrupt_direct_base_fire(self):
-        raw = formation_arena(rear=Pos(2, 19))
+    def test_mixed_layout_faraway_second_robot_keeps_direct_base_fire(self):
+        raw = formation_arena(rear=Pos(2, 19),mixed=True)
         strategy, plan = decide(raw)
         command = plan.commands[str(FRONT)]
         self.assertEqual(command['action'], 'attack')
@@ -203,14 +203,14 @@ class BossFormationTests(unittest.TestCase):
             self.settle(raw, strategy, plan)
         self.assertTrue(found)
 
-    def test_remembered_weapons_do_not_invent_current_control_post_vision(self):
-        raw = formation_arena()
+    def test_mixed_layout_remembered_weapons_do_not_invent_control_post_vision(self):
+        raw = formation_arena(mixed=True)
         memory = GameMemory(opening_complete=True)
         memory.enemy_structures.update((u.unit_id, u) for u in Turn.load(raw).enemies)
         memory.enemy_weapon_sites.update((u.pos, u.kind) for u in Turn.load(raw).enemies
-                                        if u.kind == 'rocket')
+                                        if u.kind in ('rocket','railgun','gatling'))
         raw['teamEnemy']['roles'] = [u for u in raw['teamEnemy']['roles']
-                                    if u['roleType'] != 'rocket']
+                                    if u['roleType'] not in ('rocket','railgun','gatling')]
         raw['teamOur']['roles'][1]['pos'] = Pos(2, 6).dump()
         strategy, plan = decide(raw, memory)
         # Buildings are remembered routing obstacles; they provide no allied sight.
@@ -250,8 +250,8 @@ class BossFormationTests(unittest.TestCase):
         self.assertEqual(strategy.memory.robot_raids[FRONT]['controller_id'], 992)
         self.assert_moves_are_actual(strategy, plan)
 
-    def test_new_live_operator_breaks_previous_base_focus(self):
-        raw = formation_arena(front=OPERATOR, rear=Pos(10, 19))
+    def test_mixed_layout_new_live_operator_breaks_previous_base_focus(self):
+        raw = formation_arena(front=OPERATOR, rear=Pos(10, 19),mixed=True)
         memory = GameMemory(opening_complete=True)
         strategy, plan = decide(raw, memory)
         self.settle(raw, strategy, plan)

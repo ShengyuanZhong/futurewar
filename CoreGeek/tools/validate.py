@@ -177,7 +177,7 @@ def independent_base_ray_guns(raw, origin):
     return guns
 
 
-def independent_contract(raw, response, controller_budget=4):
+def independent_contract(raw, response, controller_budget=4, known_weapon_sites=None):
     """Audit fresh observations; the stress service has no failed-shot history."""
     assert set(response) == {"roleCommandMap", "prompt", "executeCmd"}
     assert isinstance(response["prompt"], str) and isinstance(response["executeCmd"], str)
@@ -188,10 +188,14 @@ def independent_contract(raw, response, controller_budget=4):
     enemy_roles = raw['teamEnemy']['roles']
     enemy_weapons = [u for u in enemy_roles if u['health'] > 0
                      and u['roleType'] in ('gatling', 'railgun', 'rocket')]
+    weapon_sites=dict(known_weapon_sites or {})
+    weapon_sites.update((Pos.load(w['pos']),w['roleType']) for w in enemy_weapons)
+    three_rockets = len(weapon_sites)==3 and all(kind=='rocket' for kind in weapon_sites.values())
     cannon_crews = [u for u in enemy_roles if u['health'] > 0
-                   and u['roleType'] in ('worker', 'pioneer')
-                   and any(distance(Pos.load(u['pos']), Pos.load(w['pos'])) <= 1
-                           for w in enemy_weapons)]
+                   and u['roleType'] in (('worker','pioneer','imp') if three_rockets else ('worker','pioneer'))
+                   and (all(distance(Pos.load(u['pos']),site)<=1 for site in weapon_sites)
+                        if three_rockets else
+                        any(distance(Pos.load(u['pos']),Pos.load(w['pos']))<=1 for w in enemy_weapons))]
     crew_cells = {Pos.load(u['pos']) for u in cannon_crews}
     enemy_wall_cells = {Pos.load(u['pos']) for u in enemy_roles
                         if u['health'] > 0 and u['roleType'] == 'wall'}
@@ -269,6 +273,9 @@ def independent_contract(raw, response, controller_budget=4):
                 target = Pos.load(command['targetPos'][0]); origin = Pos.load(owned[key]['pos'])
                 assert 0 < distance(origin,target) <= 3
                 if owned[key]['roleType'] == 'bossRobot':
+                    if three_rockets and target in {Pos.load(u['pos']) for u in enemy_roles
+                            if u['health']>0 and u['roleType'] in ('worker','pioneer','imp')}:
+                        assert target in crew_cells, 'three-rocket BOSS may attack roles only at shared control cells'
                     base_cells = {p for u in enemy_roles if u['health'] > 0 and u['roleType'] == 'station'
                                   for p in independent_footprint(u)}
                     weapon_cells = {Pos.load(u['pos']) for u in enemy_weapons}

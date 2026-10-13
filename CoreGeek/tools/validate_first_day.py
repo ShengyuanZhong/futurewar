@@ -37,6 +37,7 @@ MODULES = (
     'tests.test_wall_schedule',
     'tests.test_boss_raid',
     'tests.test_boss_formation',
+    'tests.test_rocket_control_policy',
     'tests.test_robot_diagonal',
     'tests.test_raid_efficiency',
     'tests.test_raid_priorities',

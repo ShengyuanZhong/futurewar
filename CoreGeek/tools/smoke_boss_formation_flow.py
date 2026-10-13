@@ -52,6 +52,8 @@ def scene(mx,my):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output',type=Path,required=True)
+    parser.add_argument('--occupied-post',action='store_true',
+                        help='A real enemy occupies the shared control cell at R78; clear it before occupation.')
     args = parser.parse_args()
     with socket.socket() as sock:
         sock.bind(('127.0.0.1',0))
@@ -82,30 +84,44 @@ def main():
             gap = reflected_cell(Pos(7,21),mx,my)
             operator = reflected_cell(Pos(8,21),mx,my)
             rear_post = reflected_cell(Pos(6,21),mx,my)
-            case = dict(mirror_x=mx,mirror_y=my,front_moves=[],rear_moves=[],base_attacks=[],crew_attacks=[])
+            if args.occupied_post:
+                truth.append(unit(CREW+1,'worker',operator.x,operator.y,health=80))
+            case = dict(mirror_x=mx,mirror_y=my,front_moves=[],rear_moves=[],base_attacks=[],crew_attacks=[],breach_attacks=[])
+            known_weapon_sites={}
             for number in range(78,86):
                 raw['roundNo'] = number
                 if number==82:
                     # A live enemy can return to the approach, but cannot
                     # occupy the cannon control cell held by our front BOSS.
                     truth.append(unit(CREW,'pioneer',gap.x,gap.y,health=80))
+                if number==83:
+                    # A legal one-cell sidestep frees the base ray. Neither
+                    # this partial operator nor its new cell is a role target.
+                    next(u for u in truth if u['id']==CREW)['pos']=reflected_cell(Pos(6,20),mx,my).dump()
                 origins = ordinary_sight(raw)
                 raw['teamEnemy']['roles'] = [copy.deepcopy(u) for u in truth
                     if u['roleType'] in ('station','wall') or any(
                         max(abs(p.x-u['pos']['x']),abs(p.y-u['pos']['y']))<=4 for p in origins)]
                 before = Turn.load(raw)
+                known_weapon_sites.update((Pos.load(u['pos']),u['roleType']) for u in raw['teamEnemy']['roles']
+                                          if u['health']>0 and u['roleType'] in ('rocket','gatling','railgun'))
                 result,elapsed = post(port,raw)
-                independent_contract(raw,result)
+                independent_contract(raw,result,known_weapon_sites=known_weapon_sites)
                 commands = result['roleCommandMap']
                 front = commands.get(str(FRONT),{})
                 rear = commands.get(str(REAR),{})
-                if number==78:
+                entry=79 if args.occupied_post else 78
+                if args.occupied_post and number==78:
+                    assert all(commands.get(str(uid))==dict(action='attack',targetPos=[operator.dump()])
+                               for uid in (FRONT,REAR)),commands
+                if number==entry:
                     assert front==dict(action='move',targetPos=[gap.dump()]),commands
                     assert not rear,('rear must observe the lane opening before entry',commands)
-                if number==79:
+                if number==entry+1:
                     assert front==dict(action='move',targetPos=[operator.dump()]),commands
                     assert rear==dict(action='move',targetPos=[rear_post.dump()]),commands
                 base_cells = before.footprint(next(u for u in before.enemies if u.unit_id==BASE))
+                wall_cells={u.pos for u in before.enemies if u.kind=='wall' and u.health>0}
                 for uid in (FRONT,REAR):
                     command = commands.get(str(uid),{})
                     if command.get('action')=='move':
@@ -114,9 +130,11 @@ def main():
                         case['front_moves' if uid==FRONT else 'rear_moves'].append(dict(round=number,target=target.dump()))
                     elif command.get('action')=='attack':
                         target = Pos.load(command['targetPos'][0])
-                        assert target in base_cells or (number==82 and target==gap),commands
-                        case['crew_attacks' if number==82 else 'base_attacks'].append(dict(round=number,robot=uid,target=target.dump()))
-                    if number>=80:
+                        assert (target in base_cells or target in wall_cells
+                                or (args.occupied_post and number==78 and target==operator)),commands
+                        kind='base_attacks' if target in base_cells else 'breach_attacks' if target in wall_cells else 'crew_attacks'
+                        case[kind].append(dict(round=number,robot=uid,target=target.dump()))
+                    if number>=entry+2:
                         assert command.get('action')=='attack',commands
                 rows.append(dict(case=raw['teamOur']['teamId'],round=number,status=200,
                     elapsed_ms=round(elapsed,3),owned_positions={str(r.robot_id):r.pos.dump() for r in before.summon_robots},
@@ -124,7 +142,10 @@ def main():
                     visible_enemies=raw['teamEnemy']['roles'],commands=commands))
                 apply(raw,truth,commands,[])
             assert len(case['front_moves'])==2 and len(case['rear_moves'])==1
-            assert len(case['crew_attacks'])==2 and len(case['base_attacks'])==10
+            assert len(case['crew_attacks'])==(2 if args.occupied_post else 0)
+            assert len(case['base_attacks'])+len(case['breach_attacks'])==(10 if args.occupied_post else 12)
+            assert len(case['base_attacks'])>0
+            assert next(u for u in truth if u['id']==CREW)['health']==80, 'partial operator must not be chased or attacked'
             case['base_hp_final'] = next(u['health'] for u in truth if u['id']==BASE)
             cases.append(case)
     except Exception as error:
@@ -135,7 +156,8 @@ def main():
     if failure is None and 'action_rejected' in logs:
         failure = AssertionError('HTTP process logged action_rejected')
     report = dict(scope='First-night R78..85 logged geometry and four reflections over real HTTP; not official match replay',
-        assumptions='Full outer wall ring filled synthetically; base HP1500, re-entering crew HP80, damage and successful feedback local; robot/weapon/gap/observer geometry taken from boss_attack_log',
+        assumptions='Full outer wall ring filled synthetically; base HP1500; partial operator enters at R82 and remains alive; optional shared-post worker at R78; HP80, damage and successful feedback local; robot/weapon/gap/observer geometry taken from boss_attack_log',
+        occupied_shared_post=args.occupied_post,
         requests=len(rows),cases=cases,results=rows,diagnostics=diagnostics(logs),
         no_private_memory_seed=True,execute_cmd_executed=False,
         bind_verified=f'0.0.0.0:{port}' in logs,failure=repr(failure) if failure else None)
@@ -144,7 +166,8 @@ def main():
     if failure:
         raise failure
     print(json.dumps(dict(requests=len(rows),cases=len(cases),all_http_200=True,
-        front_moves=2,rear_moves=1,both_resume_base_attacks_round=80,returning_crew_attacked_round=82)))
+        front_moves=2,rear_moves=1,both_resume_base_attacks_round=81 if args.occupied_post else 80,
+        common_post_attacked_round=78 if args.occupied_post else None,partial_operator_ignored_round=82)))
 
 
 if __name__=='__main__':

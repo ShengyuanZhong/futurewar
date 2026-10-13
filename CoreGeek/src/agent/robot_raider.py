@@ -7,6 +7,7 @@ from .protocol import CONTROLLABLE_TYPES, PIONEER, WORKER, TOWER_TYPES, Pos, dis
 from .robot_combat import blocking_wall, clear_attack, enemy_at, planning_building_blocker
 from .raid_diagnostics import RaidDiagnostics, LIMIT, entity
 from .boss_formation import BossFormation
+from .summoning import enemy_weapon_cells, layout_operator_positions
 
 
 SIEGE_FOCUS_ROUNDS = 4
@@ -27,6 +28,21 @@ class RobotRaider:
         # Summoned robots supply no vision; ordinary roles/buildings do (v2 §4.3).
         return any(u.health>0 and u.kind in CONTROLLABLE_TYPES + TOWER_TYPES + ('station','wall')
                    and distance(u.pos,cell)<=4 for u in self.turn.ours)
+
+    def rocket_control_posts(self):
+        """None for ordinary targeting; a possibly empty tuple for three rockets.
+
+        Confirmed static types/positions classify the layout. Only current
+        enemy roles can become attack targets at its three-gun control posts.
+        """
+        cells=enemy_weapon_cells(self.turn)
+        known={p:kind for p,kind in self.memory.enemy_weapon_sites.items() if p in cells}
+        known.update((u.pos,u.kind) for u in self.memory.enemy_structures.values()
+                     if u.health>0 and u.kind in TOWER_TYPES and u.pos in cells)
+        if len(known)!=3 or any(kind!='rocket' for kind in known.values()):
+            return None
+        return tuple(p for p in layout_operator_positions(self.turn,self.memory.enemy_structures.values(),known)
+                     if all(distance(p,site)<=1 for site in known))
 
     def observe_structures(self):
         kinds = TOWER_TYPES + ('station', 'wall')
@@ -253,6 +269,9 @@ class RobotRaider:
         if base is None:
             return False
         extra = dict(fallback_reason=fallback,siege_until=focus,pursuit_rounds=0)
+        rocket_posts=self.rocket_control_posts() if robot.kind=='bossRobot' else None
+        if rocket_posts is not None and self.formation.occupy_rocket_post(robot,base,route,rocket_posts):
+            return True
         failed = old.get('failed_firing', {})
         direct = [p for p in points if self.clear_shot(robot,p)
                   and self.firing_key(p,robot.pos) not in failed]
@@ -266,16 +285,16 @@ class RobotRaider:
                       and u.kind in (PIONEER,WORKER)
                       and min(distance(u.pos,p) for p in points)<=1
                       and self.clear_shot(robot,u.pos)
-                      and self.firing_key(u.pos,robot.pos) not in failed] if not weapons else []
+                      and self.firing_key(u.pos,robot.pos) not in failed] if not weapons and rocket_posts is None else []
             self.diag.set(robot,base_nearby_candidates=[entity(u) for u in nearby][:LIMIT],
-                          base_nearby_allowed=not weapons)
+                          base_nearby_allowed=not weapons and rocket_posts is None)
             if nearby:
                 target = min(nearby,key=lambda u:(math.ceil(u.health/max(1,robot.attack_power)),
                                                   u.health,u.unit_id))
                 self.diag.set(robot,selected=entity(target),secondary_reason='stationary_base_neighbour')
                 return self.issue(robot,'attack',target.pos,robot.pos,'base_nearby',
                                   nearby_role_id=target.unit_id,**extra)
-            if self.formation.advance(robot,base,route):
+            if rocket_posts is None and self.formation.advance(robot,base,route):
                 return True
             target = min(direct,key=lambda p:(p != old.get('verified_base_target'),distance(robot.pos,p),p))
             return self.issue(robot,'attack',target,robot.pos,'base',**extra)
@@ -410,16 +429,22 @@ class RobotRaider:
                                          for key,until in list(failed.items())[:LIMIT]],
                       failed_cache_omitted=max(0,len(failed)-LIMIT))
         weapons = [u for u in self.memory.enemy_structures.values() if u.health > 0 and u.kind in TOWER_TYPES]
-        crew = [u for u in self.turn.enemies if u.kind in (PIONEER, WORKER)
-                and any(distance(u.pos,w.pos) <= 1 for w in weapons)]
+        rocket_posts=self.rocket_control_posts() if robot.kind=='bossRobot' else None
+        crew = ([u for u in self.turn.enemies if u.kind in CONTROLLABLE_TYPES and u.pos in rocket_posts]
+                if rocket_posts is not None else
+                [u for u in self.turn.enemies if u.kind in (PIONEER,WORKER)
+                 and any(distance(u.pos,w.pos)<=1 for w in weapons)])
         old['operator_snapshot'] = tuple((u.unit_id,u.health) for u in crew)
         operators = [u for u in crew if u.health > 0]
-        visible = [u for u in self.turn.enemies if u.kind in (PIONEER,WORKER)]
+        visible = [u for u in self.turn.enemies if u.kind in
+                   (CONTROLLABLE_TYPES if rocket_posts is not None else (PIONEER,WORKER))]
         old_id = self.diag.old_jobs.get(robot.robot_id,{}).get('controller_id')
         old_target = next((u for u in self.turn.enemies if u.unit_id==old_id),None)
         old_state = ('not_applicable' if old_id is None else 'not_visible_or_absent' if old_target is None else
                      'observed_dead' if old_target.health<=0 else 'still_at_weapon' if old_target in operators else 'moved_away')
         self.diag.set(robot,weapons=[entity(w) for w in weapons[:LIMIT]],weapons_count=len(weapons),
+            targeting_policy='three_rocket_control_posts' if rocket_posts is not None else 'weapon_neighbours',
+            rocket_control_posts=rocket_posts,
             weapons_omitted=max(0,len(weapons)-LIMIT),old_controller_state=old_state,
             old_controller_now=entity(old_target) if old_target else None,
             visible_heroes=[dict(entity(u),near_weapon_ids=[w.unit_id for w in weapons if distance(u.pos,w.pos)<=1],

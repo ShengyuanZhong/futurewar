@@ -86,6 +86,39 @@ class BossFormation:
         return self.raid.issue(robot,'move',step,post,'base',formation_goal=post,
                                formation_action=mode,pursuit_rounds=0)
 
+    def occupy_rocket_post(self, robot, base, route, posts):
+        """Claim an available shared three-rocket post, including a single BOSS.
+
+        Known sites are geometry, not live hero targets. Current occupancy and
+        reservations remain authoritative; never move into a teammate's old
+        cell just because it also received a move this frame.
+        """
+        if robot.pos in posts:
+            self.raid.diag.set(robot,formation=dict(action='holding_rocket_control_post',post=robot.pos))
+            return False
+        remaining=130-(self.turn.round_no-1)%130
+        if remaining<=1:
+            return False
+        direct=bool(self.clear_base_cells(robot,base,robot.pos))
+        occupied=self.turn.occupied_cells() | self.plan.reserved
+        old=self.memory.robot_raids.get(robot.robot_id,{})
+        options=[]
+        for post in posts:
+            if (post in occupied or post not in route.cost
+                    or route.cost[post]+1>remaining or not self.clear_base_cells(robot,base,post)):
+                continue
+            step=route.step({post})
+            if step is None or (direct and not self.clear_base_cells(robot,base,step)):
+                continue
+            options.append((post!=old.get('formation_goal'),route.cost[post],post,step))
+        if not options:
+            return False
+        _,_,post,step=min(options)
+        self.raid.diag.set(robot,formation=dict(action='occupy_rocket_control_post',post=post,next_step=step,
+            control_count=3,next_direct_base_cells=self.clear_base_cells(robot,base,step)))
+        return self.raid.issue(robot,'move',step,post,'base',formation_goal=post,
+                               formation_action='occupy_rocket_control_post',pursuit_rounds=0)
+
     def wait_for_lane(self, robot, base):
         """Wait briefly for an actually commanded teammate to clear the lane.
 
