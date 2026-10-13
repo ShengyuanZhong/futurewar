@@ -67,6 +67,7 @@ class TurnService:
             plan = ActionPlan(turn, self.settings, memory.summon_attempts, memory.pending_summon_positions)
             strategy = Strategy(turn, plan, memory)
             strategy.deadline = started + 3.5
+            strategy.imp_defense.catch_available()
             pioneer = next(iter(turn.alive(("pioneer",))), None)
             defense_due = pioneer is not None and strategy.pioneer_should_defend(pioneer)
             prompt, execute = self.tasks.active(turn, memory, plan, self.llm,
@@ -102,6 +103,9 @@ class TurnService:
                 LOGGER.info("imp_motion round=%s home_side=%s jobs=%s commands=%s", turn.round_no,
                             memory.imp_home_side, memory.imp_tasks,
                             {str(u.unit_id):plan.commands.get(str(u.unit_id)) for u in turn.imps()})
+            if strategy.imp_defense.state['roles']:
+                LOGGER.info('imp_defense %s',json.dumps(plain(strategy.imp_defense.diagnostic()),
+                    ensure_ascii=False,separators=(',',':')))
             if memory.wall_gap_defense:
                 LOGGER.info('gap_defense %s',json.dumps(plain(strategy.gap_guard.diagnostic()),
                     ensure_ascii=False,separators=(',',':')))

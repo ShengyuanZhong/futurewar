@@ -1,12 +1,14 @@
 # CoreGeek 参赛 Agent
 
-当前程序版本为 v1.2.21：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后其余11块侧后墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回到可达邻墙维修区，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
+当前程序版本为 v1.2.22：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后其余11块侧后墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回到可达邻墙维修区，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
 
 此目录可作为参赛程序目录提交。沿用示例的 `main3.py`、`src/agent/protocol.py`、`grid.py`、`brain.py`；HTTP 处理与跨回合协作放在 `app`。新增代码无第三方运行依赖。
 
 历史v1.2.8通过569项回归、320份合成压力及四种布局520次跨帧HTTP检查；证据见[验证报告](../reports/VALIDATION-v1.2.8.md)，未运行新官方对局。历史v1.2.7的529项回归、80份合成压力及跨帧HTTP证据保留在[历史报告](../reports/VALIDATION-v1.2.7.md)。
 
-v1.2.21新增[多BOSS集中破墙与攻基地](docs/COORDINATED_WALL_ASSAULT_V1221.md)：敌方炮手或最佳操炮位必须拆墙才可攻击时，不再为清炮手耗时，按实际阵型选不同侧的合法召唤位置，让本方BOSS集中攻击同一堵墙，真实破口出现后转攻基地。最佳操炮位已由本方BOSS占住，且全部存活BOSS当前均能清晰攻击基地时，全队忽略敌方角色并持续攻基地。确认炮位缓存只支持几何规划，移动单位仍依真实观测；射程三、45°弹道、同轮不移攻、实际占用与动作反馈保持。偏离浪潮方向是几何和当前风险偏好，不能保证不受浪潮影响；结果见[首日验证报告](../reports/VALIDATION-v1.2.21.md)。
+v1.2.22新增[邻格抓捕与首日回防驱离](docs/IMP_HOME_DEFENSE_V1222.md)：开拓者和工人任何时候发现八邻域内有当前存活敌捣乱鬼，优先catch；三次任务结束后的开拓者与购用券完成后的采购工追捕基地、炮台四格视野范围内的敌捣乱鬼。采购工实际返家一次后继续原补给维护；失视、逃出防区或不可达时结束追逐，不凭旧坐标盲追。抓捕独占本轮动作，活跃任务收到的LLM响应保留到同任务下一轮；不提前计入20金币。细节、函数和诊断见开发文档，结果见[首日验证](../reports/VALIDATION-v1.2.22.md)。
+
+历史v1.2.21新增[多BOSS集中破墙与攻基地](docs/COORDINATED_WALL_ASSAULT_V1221.md)：敌方炮手或最佳操炮位必须拆墙才可攻击时，不再为清炮手耗时，按实际阵型选不同侧的合法召唤位置，让本方BOSS集中攻击同一堵墙，真实破口出现后转攻基地。最佳操炮位已由本方BOSS占住，且全部存活BOSS当前均能清晰攻击基地时，全队忽略敌方角色并持续攻基地。确认炮位缓存只支持几何规划，移动单位仍依真实观测；射程三、45°弹道、同轮不移攻、实际占用与动作反馈保持。偏离浪潮方向是几何和当前风险偏好，不能保证不受浪潮影响；结果见[首日验证报告](../reports/VALIDATION-v1.2.21.md)。
 
 历史v1.2.20优化[首日直墙连续施工](docs/STRAIGHT_WALL_BUILD_V1220.md)：个人施工段按实际首缺墙逐格推进，取消两步距离插入导致的隔格建墙与回扫；直墙正对外侧站位，空闲同轴轨道轴向前进，真实障碍和转角保留八方向绕行。实际到站才建，暂时受阻且仍有个人墙任务时记build_wait，不转收入挖矿；个人最后一墙经下一轮观测确认后立即赴店或侦察，不等整圈完工。购物截止和封闭安全继续保留，根因与结果见[首日验证报告](../reports/VALIDATION-v1.2.20.md)。
 
@@ -182,6 +184,7 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | [src/agent/worker_safety.py](src/agent/worker_safety.py) | `robot_danger(turn)` | 机器人射程及警戒缓冲的风险图，供工人寻路与矿点筛选 |
 | [src/agent/wall_guard.py](src/agent/wall_guard.py) | `WallGuard(strategy)`、`daytime/nighttime` | 单人夜修/完成后白天经济、双人夜修，均衡备包、轮流采购及实际可达外侧邻墙阈值维修 |
 | [src/agent/imp_policy.py](src/agent/imp_policy.py) | `ImpController(strategy).decide(role)` | 捣乱鬼独立选敌方矿、合法步行、连续destroy和复活恢复 |
+| [src/agent/imp_defense.py](src/agent/imp_defense.py) | `ImpDefense(strategy).catch_available/catch_near/defend/diagnostic` | 先锋/工人邻格优先catch，首日任务及购用券后的近家追捕、采购工一次实际返程，见[开发文档](docs/IMP_HOME_DEFENSE_V1222.md) |
 | 同上 | `Routes.nearest(goals)/step(goals)/path(goals,limit=None)` | 最近可达站位、第一步或真实路径；limit限制返回步数 |
 | 同上 | `adjacent_cells(turn, targets)` | 建筑或矿点周围的候选交互格 |
 | 同上 | `next_step(turn, moving, goal)` | 单个精确目的地的旧兼容接口 |
@@ -260,4 +263,4 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 
 0.4.2接入用户提供的`print_log.py`格式：每个新回合记录`[TASK-DEBUG]`，完整打印phaseTask、llmResp、lastCmdResult、本轮prompt和executeCmd。stderr为默认输出，具体映射见[任务日志](docs/TASK_LOGGING.md)。
 
-当前验证仅覆盖第一天，见[首日验证报告](../reports/VALIDATION-v1.2.21.md)。v1.2.9的全量回归为历史证据；本轮未运行新官方对局。
+当前验证仅覆盖第一天，见[首日验证报告](../reports/VALIDATION-v1.2.22.md)。v1.2.9的全量回归为历史证据；本轮未运行新官方对局。

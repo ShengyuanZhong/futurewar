@@ -15,7 +15,7 @@ ACTION_FIELDS = {
     "sell": {"name", "num"}, "buy": {"name", "num"}, "build": {"name", "targetPos"},
     "remove": {"targetPos"}, "acceptTask": set(), "submitAnswer": {"taskAnswer"},
     "summonTreasure": {"targetPos", "item"}, "use": {"name", "targetPos"},
-    "drop": {"name"}, "collect": {"targetPos"}, "destroy": {"targetPos"},
+    "drop": {"name"}, "collect": {"targetPos"}, "destroy": {"targetPos"}, "catch": {"targetPos"},
 }
 
 
@@ -31,6 +31,7 @@ class ActionPlan:
         self.summon_positions = set(summon_positions)
         self.build_targets: set[Pos] = set()
         self.upgrade_targets: set[int] = set()
+        self.catch_targets: set[int] = set()
         self.units = {u.unit_id: u for u in turn.ours if u.health > 0}
         self.robots = {r.robot_id: r for r in turn.summon_robots if r.health > 0}
         self.rejections: list[str] = []
@@ -81,7 +82,7 @@ class ActionPlan:
         if action == "move":
             limit = 2 if self.turn.is_day and role.is_driving else 1
             require(1 <= len(points) <= limit, "incorrect movement path length")
-        elif action in ("build", "remove", "collect", "destroy", "summonTreasure"):
+        elif action in ("build", "remove", "collect", "destroy", "catch", "summonTreasure"):
             require(len(points) == 1, "exactly one target required")
         name = command.get("name", "")
         if action in ("buy", "sell", "build", "use", "drop"):
@@ -153,6 +154,12 @@ class ActionPlan:
             require(role.kind == IMP, "only imps destroy minerals")
             require(distance(role.pos, target) == 1 and self.turn.zones.get(target) in MINERALS,
                     "not beside a mine")
+        elif action == "catch":
+            victim = next((u for u in self.turn.enemies
+                           if u.health > 0 and u.kind == IMP and u.pos == target), None)
+            require(victim is not None and distance(role.pos, target) == 1,
+                    "not beside a visible enemy imp")
+            require(victim.unit_id not in self.catch_targets, "imp already assigned for capture")
         elif action == "acceptTask":
             require(role.kind == PIONEER and not self.turn.phase_task, "cannot accept a task")
             require(any(t.valid and t.cooldown == 0 and self.near(role, self.turn.task_cells(t)) for t in self.turn.tasks), "no available friendly task in reach")
@@ -204,3 +211,5 @@ class ActionPlan:
             self.build_targets.add(target)
         if action == "use" and (name in UPGRADES or name == "WallFixer"):
             self.upgrade_targets.add(building.unit_id)
+        if action == "catch":
+            self.catch_targets.add(victim.unit_id)

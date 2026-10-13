@@ -234,7 +234,7 @@ def independent_contract(raw, response, controller_budget=4, known_weapon_sites=
             assert target in {Pos.load(u['pos']) for u in direct if u['health'] == weakest}, \
                 'fresh BOSS attack must target a lowest-current-HP direct cannon crew'
     blocked = independent_occupied(raw)
-    used, destinations = set(), set()
+    used, destinations, caught = set(), set(), set()
     for key, command in response["roleCommandMap"].items():
         assert key in units and units[key]["health"] > 0
         if key in owned:
@@ -247,6 +247,15 @@ def independent_contract(raw, response, controller_budget=4, known_weapon_sites=
         if "targetPos" in command:
             assert isinstance(command["targetPos"], list)
             assert all(0 <= p["x"] < 41 and 0 <= p["y"] < 32 for p in command["targetPos"])
+        if command['action'] == 'catch':
+            assert key not in owned and units[key]['roleType'] in ('pioneer','worker','imp')
+            assert set(command) == {'action','targetPos'} and len(command['targetPos']) == 1
+            target = Pos.load(command['targetPos'][0])
+            victim = next((u for u in enemy_roles if u['roleType']=='imp'
+                           and u['health']>0 and Pos.load(u['pos'])==target),None)
+            assert victim is not None and distance(Pos.load(units[key]['pos']),target)==1
+            assert victim['id'] not in caught, 'duplicate capture of one enemy imp'
+            caught.add(victim['id'])
         if command["action"] == "move":
             daylight = (raw['roundNo'] - 1) % 130 < 70
             driving = (key not in owned and daylight and units[key].get('isDriving') is True)

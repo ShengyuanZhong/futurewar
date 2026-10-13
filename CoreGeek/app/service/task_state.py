@@ -32,6 +32,7 @@ class TaskAgentMemory:
     observed_description: str = ""
     suspended: bool = False
     _submit_baseline: tuple[int, int] | None = None
+    deferred_role_reply: str = ""
 
     def accept(self, task) -> None:
         """Capture the selected point, type and budget before its display changes."""

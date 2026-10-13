@@ -10,6 +10,7 @@ from .worker_safety import robot_danger
 from .worker_coordinator import WorkerCoordinator
 from .wall_guard import WallGuard
 from .imp_policy import ImpController
+from .imp_defense import ImpDefense
 from .gap_defense import WallGapDefense
 from .boss_raid import BOSS_ORDER, BossRaid
 from .robot_raider import RobotRaider
@@ -51,6 +52,7 @@ class Strategy:
         self.raid_scouts = RaidScouts(self)
         self.wall_schedule = WallSchedule(self)
         self.stone_planner = StonePlanner(self)
+        self.imp_defense = ImpDefense(self)
         self.raid_scouts.refresh_dispatch()
 
     def movement_reserved(self, role: Unit | None = None) -> set[Pos]:
@@ -135,6 +137,7 @@ class Strategy:
         return self.travel(role, cells, command['action']+':'+command.get('name',''))
 
     def run(self) -> None:
+        self.imp_defense.catch_available()
         # Resolve the pioneer first, so workers never claim its next step or control cell.
         available = sorted(self.turn.controllable(), key=lambda r: (r.kind != PIONEER, r.kind != IMP,
                            r.unit_id != self.gap_guard.worker_id,
@@ -160,6 +163,8 @@ class Strategy:
                         and (finished_count(self.memory)>=len(TASK_SEQUENCE) or not self.settings.enable_tasks)):
                     # The shopping worker handles the raid; the pioneer returns
                     # immediately after the three actual attempts settle.
+                    if self.imp_defense.defend(role):
+                        continue
                     if not self.sealed_home.pioneer_yield(role):
                         self.operate_weapons(role) if not self.turn.is_day else self.move_to_control(role)
                     continue
@@ -205,7 +210,11 @@ class Strategy:
 
     def run_worker(self, role: Unit) -> None:
         """One economic schedule; night adds safety and assigned guard duty."""
+        if self.imp_defense.catch_near(role):
+            return
         if self.boss_raid.worker(role):
+            return
+        if self.imp_defense.defend(role):
             return
         if self.sealed_home.evacuate(role):
             return

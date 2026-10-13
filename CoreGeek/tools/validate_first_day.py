@@ -41,6 +41,7 @@ MODULES = (
     'tests.test_rocket_control_policy',
     'tests.test_wall_assault_plan',
     'tests.test_wall_assault_control',
+    'tests.test_imp_defense',
     'tests.test_robot_diagonal',
     'tests.test_raid_efficiency',
     'tests.test_raid_priorities',

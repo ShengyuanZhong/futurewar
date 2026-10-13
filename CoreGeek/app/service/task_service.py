@@ -34,6 +34,12 @@ def controller_reply(reply: str | dict) -> str:
     return json.dumps({'action': action, field: payload}, ensure_ascii=False)
 
 
+class _ObservedTaskController(SelfEvolveController):
+    """Give the supplied controller the same reward evidence as our ledger."""
+    def _submission_rewarded(self):
+        return self.state.task_reward_confirmed
+
+
 class TaskService:
     def active(self, turn, memory, plan, llm, reply: str | dict,
                defense_due: bool = False) -> tuple[str, str]:
@@ -70,7 +76,10 @@ class TaskService:
             last_cmd_result=(turn.command_result.raw if (same_run or not turn.phase_task)
                              and agent.execution_round == turn.round_no - 1 and consecutive else ''),
             response_prompt='', response_execute_cmd='')
-        controller = SelfEvolveController(state)
+        controller = _ObservedTaskController(state)
+        if same_run and consecutive and agent.deferred_role_reply:
+            state.llm_resp = agent.deferred_role_reply
+        state.deferred_role_reply = ''
 
         def commit():
             for item in fields(TaskAgentMemory):
@@ -89,6 +98,7 @@ class TaskService:
                               for c in memory.last_commands.values())
         reward_evidence = (baseline is not None and
             (turn.total_score > baseline[1] or (turn.gold > baseline[0] and not income_elsewhere)))
+        state.task_reward_confirmed = reward_evidence
         successful_point = (state.accepted_task.get('task_position') if state.accepted_task else None)
         started = state.self_evolve_started_round or memory.task_started or memory.task_accept_round or turn.round_no
         attempt_day = (started-1)//130+1
@@ -163,6 +173,13 @@ class TaskService:
         if state.suspended:
             if turn.phase_task:
                 finish_attempt()
+            commit()
+            return '', ''
+        if pioneer is not None and plan.commands.get(str(pioneer.unit_id), {}).get('action') == 'catch':
+            # Catch owns this frame's role action. Keep a received answer/tool
+            # reply for the same task's next frame, without pretending it was
+            # submitted or discarding the controller's completed work.
+            state.deferred_role_reply = state.llm_resp
             commit()
             return '', ''
         if turn.errors and consecutive:
