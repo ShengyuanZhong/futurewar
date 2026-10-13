@@ -1,7 +1,7 @@
 """Direct/cheap cannon crews take priority; costly routes may attack the base."""
 import unittest
 
-from agent.protocol import Pos, TOWER_TYPES
+from agent.protocol import Pos, TOWER_TYPES, distance
 from tests.fixtures import unit
 from tests.test_boss_raid import update_robot
 from tests.test_summon_control import finished_tasks, raid_request
@@ -139,7 +139,9 @@ class RaidPriorityTests(unittest.TestCase):
     def test_operator_returning_during_base_attack_preempts_base(self):
         raw = raid_request(71, boss=True)
         raw['teamEnemy']['roles'][2]['health'] = 0
-        update_robot(raw, {'x': 36, 'y': 24})
+        # Keep a real base shot without already denying the best cannon post.
+        # An occupied best post plus whole-group base fire now locks on base.
+        update_robot(raw, {'x': 37, 'y': 24})
         memory = finished_tasks()
         s, plan = decide(raw, memory)
         self.assert_attack(plan, 34, 24)
@@ -147,6 +149,7 @@ class RaidPriorityTests(unittest.TestCase):
         raw['roundNo'] = 72
         raw['teamEnemy']['roles'][2].update(health=200, pos={'x': 36, 'y': 26})
         s, plan = decide(raw, memory)
+        self.assertFalse(s.raider.group_base_ready())
         self.assert_attack(plan, 36, 26)
         self.assertEqual(s.memory.robot_raids[BOSS_ID]['stage'], 'controller')
 
@@ -166,7 +169,7 @@ class RaidPriorityTests(unittest.TestCase):
         self.assert_attack(plan, 34, 24)
         self.assertEqual(s.memory.robot_raids[BOSS_ID]['stage'], 'base')
 
-    def test_direct_worker_preempts_previously_locked_screened_pioneer(self):
+    def test_screened_operator_switches_to_base_despite_an_exposed_worker(self):
         raw = raid_request(71, boss=True)
         memory = finished_tasks()
         s, plan = decide(raw, memory); memory.record(s.turn, plan)
@@ -176,8 +179,16 @@ class RaidPriorityTests(unittest.TestCase):
         raw['teamEnemy']['roles'] += [unit(1101, 'railgun', 38, 28),
                                      unit(1102, 'worker', 39, 28, health=40)]
         s, plan = decide(raw, memory)
-        self.assert_attack(plan, 39, 28)
-        self.assertEqual(s.memory.robot_raids[BOSS_ID]['controller_id'], 1102)
+        command=plan.commands[str(BOSS_ID)]
+        self.assertEqual(s.memory.robot_raids[BOSS_ID]['pursuit_kind'],'base')
+        self.assertNotIn('controller_id',s.memory.robot_raids[BOSS_ID])
+        self.assertNotEqual(command.get('targetPos'),[Pos(39,28).dump()])
+        self.assertEqual(command['action'],'move')
+        boss=s.turn.summon_robots[0]
+        point=Pos.load(command['targetPos'][0])
+        self.assertEqual(distance(boss.pos,point),1)
+        self.assertNotIn(point,s.turn.occupied_cells())
+        self.assertFalse(plan.rejections)
 
     def test_inaccessible_live_operator_falls_back_to_the_exposed_base_cell(self):
         raw = raid_request(71, boss=True)

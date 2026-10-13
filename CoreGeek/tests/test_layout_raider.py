@@ -58,6 +58,7 @@ class LayoutRaiderTests(unittest.TestCase):
         self.assertLessEqual(distance(robot.pos, target), 3)
         self.assertGreater(distance(robot.pos, target), 0)
         self.assertIsNotNone(enemy_at(strategy.turn, target))
+        self.assertTrue(strategy.raider.clear_shot(robot, target))
         self.assertNotIn('controllerId', command)
         self.assertEqual(plan.rejections, [])
 
@@ -65,6 +66,18 @@ class LayoutRaiderTests(unittest.TestCase):
         job = strategy.memory.robot_raids[robot.robot_id]
         self.assertEqual(job['pursuit_kind'], 'controller')
         self.assertEqual(job['controller_id'], CREW)
+
+    def assert_wall_assault(self, strategy, robot, wall):
+        state = strategy.memory.boss_raid['wall_assault']
+        self.assertEqual(state['wall_pos'], wall)
+        observed = enemy_at(strategy.turn, wall)
+        self.assertEqual(observed.kind, 'wall')
+        self.assertEqual(state['wall_id'], observed.unit_id)
+        self.assertEqual(state['observed_wall_health'], observed.health)
+        job = strategy.memory.robot_raids[robot.robot_id]
+        self.assertEqual(job['pursuit_kind'], 'base')
+        self.assertEqual(job['stage'], 'wall_assault')
+        self.assertNotIn('controller_id', job)
 
     def test_gap_pictures_and_all_mirrors_attack_real_crew_without_moving(self):
         for horizontal, vertical in ((False, False), (True, False), (False, True), (True, True)):
@@ -91,21 +104,20 @@ class LayoutRaiderTests(unittest.TestCase):
                     self.assert_attack(s, plan, robot, target)
                     self.assert_controller(s, robot)
 
-    def test_closed_picture_and_mirrors_start_on_same_wall_to_clear_crew(self):
+    def test_closed_picture_and_mirrors_start_on_shared_opposite_wall_for_base(self):
         for horizontal, vertical in ((False, False), (True, False), (False, True), (True, True)):
             with self.subTest(horizontal=horizontal, vertical=vertical):
                 turn, settings = battle(horizontal=horizontal, vertical=vertical)
-                wall = reflect(Pos(13, 15), horizontal, vertical)
+                wall = reflect(Pos(11, 12), horizontal, vertical)
                 s, plan = decide(turn, settings)
                 for robot in turn.summon_robots:
                     self.assert_attack(s, plan, robot, wall)
-                    self.assert_controller(s, robot)
-                    self.assertEqual(s.memory.robot_raids[robot.robot_id]['stage'], 'breach')
+                    self.assert_wall_assault(s, robot, wall)
 
-    def test_confirmed_damaging_wall_attacks_continue_past_four_rounds_then_hit_crew(self):
+    def test_confirmed_damaging_wall_attacks_continue_then_group_attacks_base(self):
         turn, settings = battle()
         memory = GameMemory(opening_complete=True)
-        wall = Pos(13, 15)
+        wall = Pos(11, 12)
         for number in range(71, 80):
             # Two BOSS hits per preceding turn: 40+40 damage. No movement or
             # robot-provided vision is simulated, and the wall remains alive.
@@ -117,22 +129,52 @@ class LayoutRaiderTests(unittest.TestCase):
             s, plan = decide(frame, settings, memory)
             for robot in frame.summon_robots:
                 self.assert_attack(s, plan, robot, wall)
-                self.assert_controller(s, robot)
+                self.assert_wall_assault(s, robot, wall)
+            self.assertEqual(next(u.health for u in frame.enemies if u.unit_id == CREW), 500)
             memory.record(frame, plan)
-        # On actual removal the same original spawn immediately sees a clear
-        # attack on the live gunner; no chase lock or stale wall remains.
+        # Only an actual removal starts the base phase. Apply legal issued
+        # moves over subsequent frames; the rear BOSS begins outside range.
+        # The protected live gunner stays at 500 HP and is never targeted.
         frame = replace(turn, round_no=80, action_results={str(uid): True for uid in BOSSES},
                         enemies=tuple(u for u in turn.enemies if u.pos != wall))
-        s, plan = decide(frame, settings, memory)
-        for robot in frame.summon_robots:
-            self.assert_attack(s, plan, robot, OPERATOR)
-            self.assert_controller(s, robot)
-            self.assertEqual(memory.robot_raids[robot.robot_id]['stage'], 'controller')
+        both_fired = False
+        for _ in range(5):
+            s, plan = decide(frame, settings, memory)
+            destinations = set()
+            moved = []
+            attacks = 0
+            for robot in frame.summon_robots:
+                command = plan.commands[str(robot.robot_id)]
+                target = Pos.load(command['targetPos'][0])
+                self.assertNotEqual(target, OPERATOR)
+                if command['action'] == 'attack':
+                    self.assert_attack(s, plan, robot, target)
+                    self.assertEqual(enemy_at(frame, target).kind, 'station')
+                    attacks += 1
+                    moved.append(robot)
+                else:
+                    self.assertEqual(command['action'], 'move')
+                    self.assertEqual(distance(robot.pos, target), 1)
+                    self.assertNotIn(target, frame.blocked(robot))
+                    self.assertNotIn(target, destinations)
+                    destinations.add(target)
+                    moved.append(replace(robot, pos=target))
+                self.assertEqual(memory.robot_raids[robot.robot_id]['pursuit_kind'], 'base')
+                self.assertNotIn('controller_id', memory.robot_raids[robot.robot_id])
+            self.assertEqual(memory.boss_raid['wall_assault']['phase'], 'base')
+            self.assertEqual(next(u.health for u in frame.enemies if u.unit_id == CREW), 500)
+            memory.record(frame, plan)
+            if attacks == 2:
+                both_fired = True
+                break
+            frame = replace(frame, round_no=frame.round_no + 1, robots=tuple(moved),
+                            summon_robots=tuple(moved), action_results={str(uid): True for uid in BOSSES})
+        self.assertTrue(both_fired, 'both BOSS robots must reach real base firing positions')
 
     def test_actual_wall_damage_without_command_feedback_also_preserves_breach(self):
         turn, settings = battle(two=False)
         memory = GameMemory(opening_complete=True)
-        wall = Pos(13, 15)
+        wall = Pos(11, 12)
         for number in range(71, 78):
             frame = replace(turn, round_no=number, action_results={},
                             enemies=tuple(replace(u, health=1000-40*(number-71))
@@ -140,7 +182,7 @@ class LayoutRaiderTests(unittest.TestCase):
                                           for u in turn.enemies))
             s, plan = decide(frame, settings, memory)
             self.assert_attack(s, plan, frame.summon_robots[0], wall)
-            self.assert_controller(s, frame.summon_robots[0])
+            self.assert_wall_assault(s, frame.summon_robots[0], wall)
             memory.record(frame, plan)
 
     def test_healed_crew_is_rechecked_and_attacked_every_round(self):

@@ -177,7 +177,7 @@ def independent_base_ray_guns(raw, origin):
     return guns
 
 
-def independent_contract(raw, response, controller_budget=4, known_weapon_sites=None):
+def independent_contract(raw, response, controller_budget=4, known_weapon_sites=None, base_focus=False):
     """Audit fresh observations; the stress service has no failed-shot history."""
     assert set(response) == {"roleCommandMap", "prompt", "executeCmd"}
     assert isinstance(response["prompt"], str) and isinstance(response["executeCmd"], str)
@@ -197,6 +197,20 @@ def independent_contract(raw, response, controller_budget=4, known_weapon_sites=
                         if three_rockets else
                         any(distance(Pos.load(u['pos']),Pos.load(w['pos']))<=1 for w in enemy_weapons))]
     crew_cells = {Pos.load(u['pos']) for u in cannon_crews}
+    base_cells={p for u in enemy_roles if u['health']>0 and u['roleType']=='station'
+                for p in independent_footprint(u)}
+    static={p for u in raw['teamOur']['roles']+enemy_roles if u['health']>0
+            and u['roleType'] not in ('worker','pioneer','imp') for p in independent_footprint(u)}
+    static.update(weapon_sites)
+    neutral={Pos.load(z['pos']) for z in raw['mapInfo']['zones'] if z['neutralType']!='land'}
+    positions={p for site in weapon_sites for p in site.neighbours()
+               if 0<=p.x<41 and 0<=p.y<32 and p not in static|neutral}
+    counts={p:sum(distance(p,site)<=1 for site in weapon_sites) for p in positions}
+    best={p for p,n in counts.items() if n==max(counts.values(),default=0)}
+    bosses=[r for r in owned.values() if r['roleType']=='bossRobot' and r['health']>0]
+    group_ready=bool(bosses and any(Pos.load(r['pos']) in best for r in bosses)
+                     and all(r.get('abnormalState')!='dizzy' and any(
+                         independent_planning_clear(raw,Pos.load(r['pos']),p) for p in base_cells) for r in bosses))
     enemy_wall_cells = {Pos.load(u['pos']) for u in enemy_roles
                         if u['health'] > 0 and u['roleType'] == 'wall'}
     for key, boss in owned.items():
@@ -204,6 +218,12 @@ def independent_contract(raw, response, controller_budget=4, known_weapon_sites=
                 or boss.get('abnormalState') == 'dizzy' or not 71 <= raw['roundNo'] <= 130):
             continue
         origin = Pos.load(boss['pos'])
+        if group_ready:
+            command=response['roleCommandMap'].get(key,{})
+            assert command.get('action')=='attack' and Pos.load(command['targetPos'][0]) in base_cells, 'ready occupied group must focus the base'
+            continue
+        if base_focus:
+            continue
         direct = [u for u in cannon_crews if independent_planning_clear(raw,origin,Pos.load(u['pos']))]
         if direct:
             command = response['roleCommandMap'].get(key, {})
@@ -273,6 +293,9 @@ def independent_contract(raw, response, controller_budget=4, known_weapon_sites=
                 target = Pos.load(command['targetPos'][0]); origin = Pos.load(owned[key]['pos'])
                 assert 0 < distance(origin,target) <= 3
                 if owned[key]['roleType'] == 'bossRobot':
+                    if base_focus:
+                        assert target not in {Pos.load(u['pos']) for u in enemy_roles
+                            if u['health']>0 and u['roleType'] in ('worker','pioneer','imp')}, 'committed wall/base assault must not target people'
                     if three_rockets and target in {Pos.load(u['pos']) for u in enemy_roles
                             if u['health']>0 and u['roleType'] in ('worker','pioneer','imp')}:
                         assert target in crew_cells, 'three-rocket BOSS may attack roles only at shared control cells'
@@ -285,7 +308,7 @@ def independent_contract(raw, response, controller_budget=4, known_weapon_sites=
                     if cannon_crews:
                         assert target in crew_cells | enemy_wall_cells | base_cells | weapon_cells, \
                             'BOSS target must be crew, breach wall, base or a base-ray weapon'
-                    if cannon_crews and target in base_cells | weapon_cells:
+                    if cannon_crews and target in base_cells | weapon_cells and not (base_focus or group_ready):
                         opportunity = independent_crew_opportunity(raw,owned[key],cannon_crews,controller_budget,destinations)
                         assert not opportunity['efficient'], 'fresh BOSS may siege the base or weapon only when cannon crew access exceeds its budget'
                 enemy_cells = set()

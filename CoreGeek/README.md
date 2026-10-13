@@ -1,12 +1,14 @@
 # CoreGeek 参赛 Agent
 
-当前程序版本为 v1.2.20：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后其余11块侧后墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回到可达邻墙维修区，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
+当前程序版本为 v1.2.21：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后其余11块侧后墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回到可达邻墙维修区，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
 
 此目录可作为参赛程序目录提交。沿用示例的 `main3.py`、`src/agent/protocol.py`、`grid.py`、`brain.py`；HTTP 处理与跨回合协作放在 `app`。新增代码无第三方运行依赖。
 
 历史v1.2.8通过569项回归、320份合成压力及四种布局520次跨帧HTTP检查；证据见[验证报告](../reports/VALIDATION-v1.2.8.md)，未运行新官方对局。历史v1.2.7的529项回归、80份合成压力及跨帧HTTP证据保留在[历史报告](../reports/VALIDATION-v1.2.7.md)。
 
-v1.2.20优化[首日直墙连续施工](docs/STRAIGHT_WALL_BUILD_V1220.md)：个人施工段按实际首缺墙逐格推进，取消两步距离插入导致的隔格建墙与回扫；直墙正对外侧站位，空闲同轴轨道轴向前进，真实障碍和转角保留八方向绕行。实际到站才建，暂时受阻且仍有个人墙任务时记build_wait，不转收入挖矿；个人最后一墙经下一轮观测确认后立即赴店或侦察，不等整圈完工。购物截止和封闭安全继续保留，根因与结果见[首日验证报告](../reports/VALIDATION-v1.2.20.md)。
+v1.2.21新增[多BOSS集中破墙与攻基地](docs/COORDINATED_WALL_ASSAULT_V1221.md)：敌方炮手或最佳操炮位必须拆墙才可攻击时，不再为清炮手耗时，按实际阵型选不同侧的合法召唤位置，让本方BOSS集中攻击同一堵墙，真实破口出现后转攻基地。最佳操炮位已由本方BOSS占住，且全部存活BOSS当前均能清晰攻击基地时，全队忽略敌方角色并持续攻基地。确认炮位缓存只支持几何规划，移动单位仍依真实观测；射程三、45°弹道、同轮不移攻、实际占用与动作反馈保持。偏离浪潮方向是几何和当前风险偏好，不能保证不受浪潮影响；结果见[首日验证报告](../reports/VALIDATION-v1.2.21.md)。
+
+历史v1.2.20优化[首日直墙连续施工](docs/STRAIGHT_WALL_BUILD_V1220.md)：个人施工段按实际首缺墙逐格推进，取消两步距离插入导致的隔格建墙与回扫；直墙正对外侧站位，空闲同轴轨道轴向前进，真实障碍和转角保留八方向绕行。实际到站才建，暂时受阻且仍有个人墙任务时记build_wait，不转收入挖矿；个人最后一墙经下一轮观测确认后立即赴店或侦察，不等整圈完工。购物截止和封闭安全继续保留，根因与结果见[首日验证报告](../reports/VALIDATION-v1.2.20.md)。
 
 历史v1.2.19更新[三火箭阵型的 BOSS 攻击与占位](docs/ROCKET_CONTROL_V1219.md)：敌方已确认三座火箭时，只清理同时能操控三炮的共同位置上的当前可见敌方可控单位，其它炮旁或基地旁角色不引起追击；共同位置无人时，单只或多只 BOSS 均尝试占住可达共同位置并攻击基地。炮位及类型可以使用真实观测后的缓存，人员攻击仍依当前真实视野；混合或不足三炮保留旧策略。射程三、45°弹道、实际占用和同轮不移攻保留，结果见[首日验证报告](../reports/VALIDATION-v1.2.19.md)。
 
@@ -18,7 +20,7 @@ v1.2.18更新[开局侦察、炮位记忆与车辆路线](docs/OPENING_SCOUT_V12
 
 历史v1.2.15采用[永久封闭建家与采石协调](docs/SEALED_HOME_V1215.md)：沿用两张用户图的17墙、三火箭和外侧P位，取消白天临时门、门石预留与自动拆墙；三炮建成后，工人先按真实观测撤出将被封闭的内圈，再从外侧逐块施工。建墙同时检查本轮其它施工目标，不把同轮移动当成已离开。首夜维修改用可达外侧邻墙格，旧观测中已困在内部的角色仍可就地维修。采石按真实缺墙、在家工人库存与稳定配额安排，邻近可施工时先用已有石头建墙，够材后停止额外筹石；同矿可用不同采集站位。首日购物截止、2→1→2三任务及v1.2.14 BOSS协作保持。验证范围见[首日报告](../reports/VALIDATION-v1.2.15.md)。
 
-沿用v1.2.14的[多BOSS进位与直攻基地](docs/BOSS_FORMATION_V1214.md)，三火箭人员范围和单 BOSS 占位以[v1.2.19](docs/ROCKET_CONTROL_V1219.md)为准：混合或不足三炮仍先清真实可见炮手；转攻基地后，多只BOSS中前排优先占住真实可见的共同操炮位，每次移动的落脚格均须仍有清晰基地射线；后排先寻找实际可达的基地直射位置，再考虑拆墙或炮台。仅在同伴已发出移动、通路暂时被其本轮位置占住时短等，最多3轮；不预测同伴已腾空、不合并移动攻击。历史失败只封禁原目标和原站位的射线，不再迫使其它清晰射线一律靠近。首日购物截止、工人分工及任务顺序沿用v1.2.13。
+非集中破墙场景沿用v1.2.14的[多BOSS进位与直攻基地](docs/BOSS_FORMATION_V1214.md)，三火箭人员范围和单 BOSS 占位以[v1.2.19](docs/ROCKET_CONTROL_V1219.md)为准：混合或不足三炮仍先清真实可见炮手；转攻基地后，多只BOSS中前排优先占住真实可见的共同操炮位，每次移动的落脚格均须仍有清晰基地射线；后排先寻找实际可达的基地直射位置，再考虑拆墙或炮台。仅在同伴已发出移动、通路暂时被其本轮位置占住时短等，最多3轮；不预测同伴已腾空、不合并移动攻击。历史失败只封禁原目标和原站位的射线，不再迫使其它清晰射线一律靠近。首日购物截止、工人分工及任务顺序沿用v1.2.13。
 
 历史v1.2.13更新[首日购物截止与持续工作](docs/BUYER_DEADLINE_V1213.md)：首日白天两名工人不提前回防，也不预留返程；采购工按实际赴店路径、可能拆入口、腾包、批购一轮、最多三轮用券及两轮让行余量计算出发截止，墙齐或到截止就赴店，购物优先于继续建墙。三次任务未结束仅等店，结算后仍按真实成功数购用0～3张；采购出发批准与真实施工记录分开，侦察不假设墙已完成，召唤仍需当前普通共享视野。开拓者三次任务后回防，夜间和第二天后的维护沿用原逻辑。
 
@@ -199,7 +201,8 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | 同上 | `choose_targets(turn, tower, expected_health, deadline=inf)` | 火箭按占用中心Σ(分/当前HP)最大选点、三级2+1；符合数量/范围后更新预测HP |
 | [src/agent/gap_defense.py](src/agent/gap_defense.py) | `WallGapDefense(strategy).worker/imp/other_walls_ready` | 合法墙施工、工人守缺口、捣乱鬼待命和真实死亡后的接替 |
 | [src/agent/boss_raid.py](src/agent/boss_raid.py) | `BossRaid(strategy).worker(role)` | 个人施工完成或购物出发截止时赴店，购物优先于续建；三次结算后按真实成功数购用0～3张，先锋直接回防 |
-| [src/agent/robot_raider.py](src/agent/robot_raider.py) | `RobotRaider(strategy).rocket_control_posts/decide` | 第一夜三火箭仅清共同三炮位上的当前可见单位，再占位攻基地；其它阵型保留原策略，见[三火箭 BOSS](docs/ROCKET_CONTROL_V1219.md) |
+| [src/agent/robot_raider.py](src/agent/robot_raider.py) | `RobotRaider(strategy).group_base_ready/wall_assault/rocket_control_posts/decide` | 先判全队基地直射与保护炮手突破，再执行三火箭共同位选敌及其它阵型原策略，见[集中破墙](docs/COORDINATED_WALL_ASSAULT_V1221.md) |
+| [src/agent/wall_assault.py](src/agent/wall_assault.py) | `protected_layout/plan_assault` | 已确认炮阵与当前全局墙体判定保护、选择不同侧共同墙目标及合法召唤位置，详见[开发文档](docs/COORDINATED_WALL_ASSAULT_V1221.md) |
 | [src/agent/boss_formation.py](src/agent/boss_formation.py) | `BossFormation(raider).ordered_robots/occupy_rocket_post/advance/wait_for_lane` | 单只或多只BOSS尝试安全占共同三炮位；真实占用、保持基地射线和同伴通路短等，见[三火箭 BOSS](docs/ROCKET_CONTROL_V1219.md)与[多BOSS进位](docs/BOSS_FORMATION_V1214.md) |
 | [src/agent/raid_diagnostics.py](src/agent/raid_diagnostics.py) | `RaidDiagnostics(strategy).set/event/finish` | 复用观测和路径检查，记录目标、移动/攻击反馈与最终指令；字段/参数见[诊断说明](docs/ROBOT_DIAGNOSTICS.md) |
 | [src/agent/first_night_defense.py](src/agent/first_night_defense.py) | `FirstNightDefense(strategy).closed/construction_ready/prepared/worker` | 区分实际施工和出发批准；首日白天只计去程交互、不提前回防，夜间保持原维护 |
@@ -257,4 +260,4 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 
 0.4.2接入用户提供的`print_log.py`格式：每个新回合记录`[TASK-DEBUG]`，完整打印phaseTask、llmResp、lastCmdResult、本轮prompt和executeCmd。stderr为默认输出，具体映射见[任务日志](docs/TASK_LOGGING.md)。
 
-当前验证仅覆盖第一天，见[首日验证报告](../reports/VALIDATION-v1.2.20.md)。v1.2.9的全量回归为历史证据；本轮未运行新官方对局。
+当前验证仅覆盖第一天，见[首日验证报告](../reports/VALIDATION-v1.2.21.md)。v1.2.9的全量回归为历史证据；本轮未运行新官方对局。

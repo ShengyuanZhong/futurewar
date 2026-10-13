@@ -28,6 +28,7 @@ from tests.test_worker_boss_buyer import (BUYER, ORDER, PIONEER, SCOUT, SHOP,
                                         actor, worker_raid_scene)
 from tools.smoke_first_day_flow import task_frame
 from tools.smoke_scout_flow import apply, diagnostics, ordinary_sight
+from tools.validate import independent_contract
 
 
 def fixture(lower_right, unfinished=False):
@@ -102,6 +103,8 @@ def main():
                         help='Exercise purchase deadlines before seven ordinary walls finish')
     parser.add_argument('--lost-sight', action='store_true',
                         help='After actual three-gun observations, the scout dies at R7; use must rely on cached static layout.')
+    parser.add_argument('--wall-assault',choices=('bottom','left'),
+                        help='Closed-wall image layouts; continue through R120 to verify summons and coordinated wall/base fire.')
     args = parser.parse_args()
     with socket.socket() as sock:
         sock.bind(('127.0.0.1', 0))
@@ -129,9 +132,25 @@ def main():
                 conn.close()
         for lower_right in (False, True):
             raw, truth, summary = fixture(lower_right,args.unfinished)
+            if args.wall_assault:
+                enemy=next(u for u in truth if u['roleType']=='station')
+                enemy['health']=1500  # Official level-one base for this isolated combat input.
+                bx,by=enemy['pos']['x'],enemy['pos']['y']
+                right=2*bx+1>40
+                def position(dx,dy):
+                    return Pos(bx+(1-dx if right else dx),by+(-1-dy if right else dy))
+                offsets=((-1,-1),(-1,-2),(1,-2)) if args.wall_assault=='bottom' else ((-1,1),(0,1),(-1,-1))
+                operator=position(0,-2) if args.wall_assault=='bottom' else position(-1,0)
+                truth=[enemy]+[unit(991+i,'rocket',position(x,y).x,position(x,y).y,health=1000)
+                               for i,(x,y) in enumerate(offsets)]
+                ring={(x,y) for x in range(-2,4) for y in range(-3,3) if x in (-2,3) or y in (-3,2)}
+                truth += [unit(50000+i,'wall',position(x,y).x,position(x,y).y,health=1000)
+                          for i,(x,y) in enumerate(sorted(ring))]
+                truth.append(unit(994,'worker',operator.x,operator.y,health=500))
             spawns, buys, uses, accepts, gate_crossings = [], [], [], [], []
+            wall_attacks=[];base_attacks=[];all_base_round=None
             shop_arrival, first_return, control_arrival = None, None, None
-            for number in range(1, 72):
+            for number in range(1, 121 if args.wall_assault else 72):
                 task_frame(raw, number, (True, True, True))
                 if args.lost_sight and number>=7:
                     actor(raw,SCOUT)['health']=0
@@ -149,6 +168,22 @@ def main():
                     raw['robot']['roles'] = copy.deepcopy(raw['teamOur']['summonRobotList'])
                 result, elapsed = post(port, raw)
                 commands = result['roleCommandMap']
+                if args.wall_assault:
+                    independent_contract(raw,result,base_focus=True)
+                    turn=Turn.load(raw)
+                    base=next(u for u in turn.enemies if u.kind=='station')
+                    firing=0
+                    for boss in turn.summon_robots:
+                        cmd=commands.get(str(boss.robot_id),{})
+                        if cmd.get('action')=='attack':
+                            target=Pos.load(cmd['targetPos'][0])
+                            victim=next(u for u in turn.enemies if target in turn.footprint(u) and u.health>0)
+                            assert victim.kind in ('wall','station'),cmd
+                            entry=dict(round=number,id=boss.robot_id,target=target.dump(),wall_health=victim.health)
+                            (wall_attacks if victim.kind=='wall' else base_attacks).append(entry)
+                            firing+=victim.kind=='station'
+                    if firing==3 and all_base_round is None:
+                        all_base_round=number
                 pioneer_command = commands.get(str(PIONEER), {})
                 buyer_command = commands.get(str(BUYER), {})
                 assert ORDER not in actor(raw, PIONEER)['backpack']
@@ -166,7 +201,9 @@ def main():
                                      pos=buyer_before.dump()))
                 if buyer_command.get('action') == 'use' and buyer_command.get('name') == ORDER:
                     operator = next(u for u in truth if u['id'] == 994)
-                    if args.lost_sight:
+                    if args.wall_assault:
+                        assert number<=70
+                    elif args.lost_sight:
                         assert not any(u['roleType'] in ('worker','pioneer','rocket','railgun','gatling')
                                        for u in raw['teamEnemy']['roles'])
                         assert not any(distance(p,Pos.load(operator['pos']))<=4 for p in ordinary_sight(raw))
@@ -195,6 +232,15 @@ def main():
             assert len(buys) == 1 and buys[0]['num'] == 3 and buys[0]['actor'] == BUYER, buys
             assert len(uses) == 3 and all(u['actor'] == BUYER for u in uses), uses
             assert len({(p['x'], p['y']) for p in spawns}) == 3
+            if args.wall_assault:
+                assert wall_attacks and len({tuple(sorted(a['target'].items())) for a in wall_attacks})==1
+                assert {a['id'] for a in wall_attacks}=={30005,30006,30007}
+                assert all_base_round is not None and all_base_round<=100
+                assert next(u for u in truth if u['id']==994)['health']==500
+                assert next(u for u in truth if u['roleType']=='station')['health']==0
+                summary.update(wall_assault_layout=args.wall_assault,wall_attacks=wall_attacks,
+                    base_attacks=base_attacks,all_base_fire_round=all_base_round,
+                    crew_health_final=500,base_health_final=0)
             assert shop_arrival is not None and shop_arrival <= 67
             if not args.unfinished:
                 assert not gate_crossings and shop_arrival < 37
@@ -234,7 +280,10 @@ def main():
                     row['commands'][str(BUYER)]['action']=='buy']
             assert buys and buys[0]['observed_wall_count']<16, 'fixture must still be unfinished at purchase'
             case['walls_at_purchase'] = buys[0]['observed_wall_count']
-    report = dict(scope='First-day R1..71 synthetic observations, task answers and verdicts over real HTTP; not official matches',
+    report = dict(scope='First-day synthetic observations, task answers and verdicts over real HTTP; not official matches',
+        rounds='R1..120' if args.wall_assault else 'R1..71',
+        wall_assault_layout=args.wall_assault,
+        combat_assumptions='Stationary 1000HP walls/1500HP base/500HP crew; simultaneous40 boss damage; no enemy return fire' if args.wall_assault else None,
         initial_conditions=('Three real guns, ten observed ordinary walls, buyer outside with ordinary stone; '
             'other worker collecting distant stone, actual IMP enemy sight, pioneer near local task fixture'
             if args.unfinished else 'Three real guns, seventeen real ordinary walls and one ordinary stone; '

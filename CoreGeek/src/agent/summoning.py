@@ -214,6 +214,10 @@ def scouted_spawn_candidates(turn, settings, remembered=(), pending=(), failed=(
     remembered = tuple(remembered)
     if not enemy_layout_ready(turn, remembered, surveyed, confirmed_sites):
         return ()
+    from .wall_assault import protected_layout, plan_assault
+    if protected_layout(turn,settings,remembered,confirmed_sites):
+        assault=plan_assault(turn,settings,1,remembered,confirmed_sites,pending,failed)
+        return tuple(assault['spawns']) if assault is not None else ()
     base = enemy_base_position(turn)
     if base is None:
         return ()

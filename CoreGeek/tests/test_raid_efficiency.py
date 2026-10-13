@@ -136,29 +136,38 @@ class RaidEfficiencyTests(unittest.TestCase):
         # The one-round chase budget is spent, but a new direct shot still wins.
         self.assertEqual(strategy.raider.diag.records[BOSS]['pursuit_rounds'], 1)
 
-    def test_fully_screened_crew_uses_cheap_wall_then_actual_opening(self):
+    def test_fully_screened_crew_falls_back_to_base_then_rechecks_actual_opening(self):
         raw = screened_crew(40)
         memory = GameMemory(opening_complete=True)
         strategy, plan = decide(raw, memory)
-        self.assertEqual(plan.commands[str(BOSS)],
-            {'action': 'attack', 'targetPos': [{'x': 11, 'y': 10}]})
-        self.assertEqual(memory.robot_raids[BOSS]['pursuit_kind'], 'controller')
+        self.assert_base(strategy, plan)
+        self.assertEqual(strategy.raider.diag.records[BOSS]['fallback_reason'],
+                         'protected_layout_no_shared_wall_plan')
+        self.assertNotIn('wall_assault', memory.boss_raid)
+        self.assertEqual(next(u.health for u in strategy.turn.enemies if u.pos == Pos(11, 10)), 40)
         memory.record(strategy.turn, plan)
         raw['roundNo'] = 72
         raw['lastRoundRoleActionResults'] = {str(BOSS): True}
         next(u for u in raw['teamEnemy']['roles'] if u['pos'] == {'x': 11, 'y': 10})['health'] = 0
         strategy, plan = decide(raw, memory)
+        # This remote synthetic crew screen has no legal opposite base wall,
+        # hence no committed shared breach. An externally observed opening
+        # can restore the ordinary direct-crew strategy; damage is not guessed.
         self.assertEqual(plan.commands[str(BOSS)],
             {'action': 'attack', 'targetPos': [{'x': 12, 'y': 10}]})
         self.assertEqual(memory.robot_raids[BOSS]['controller_id'], CREW)
+        self.assertNotIn('wall_assault', memory.boss_raid)
+        self.assertEqual(next(u.health for u in strategy.turn.enemies if u.unit_id == CREW), 40)
 
-    def test_thousand_hp_screen_is_not_a_quick_breach(self):
+    def test_thousand_hp_remote_screen_falls_back_to_base_without_a_shared_wall(self):
         raw = screened_crew(1000)
         strategy, plan = decide(raw)
         self.assert_base(strategy, plan)
-        self.assertEqual(strategy.raider.diag.records[BOSS]['fallback_reason'], 'controller_unreachable')
-        # 1000/40 = 25 wall hits, greater than the four-round pursuit budget.
-        self.assertEqual(strategy.raider.diag.records[BOSS]['controller_budget'], 4)
+        self.assertEqual(strategy.raider.diag.records[BOSS]['fallback_reason'],
+                         'protected_layout_no_shared_wall_plan')
+        self.assertNotIn('wall_assault', strategy.memory.boss_raid)
+        self.assertNotIn('controller_id', strategy.memory.robot_raids[BOSS])
+        self.assertEqual(next(u.health for u in strategy.turn.enemies if u.pos == Pos(11, 10)), 1000)
 
     def test_five_move_minimum_route_falls_back_at_four(self):
         raw = arena()

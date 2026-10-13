@@ -3,6 +3,7 @@ from dataclasses import replace
 from .grid import Routes, adjacent_cells
 from .protocol import PIONEER, WORKER, MINERALS, Pos, distance
 from .first_day_tasks import FIRST_DAY_LIMIT, task_attempts, finished_count, success_count
+from .wall_assault import protected_layout, plan_assault
 from .summoning import (rear_spawn_position, scouted_spawn_position,
                        enemy_base_position, summon_cell_legal)
 
@@ -310,6 +311,7 @@ class BossRaid:
             summon_window_closed=self.state.get('summon_window_closed',False),
             scout_ready=getattr(self.s,'raid_scouts',None).summon_ready() if hasattr(self.s,'raid_scouts') else False,
             spawn_ready=getattr(self.s,'raid_scouts',None).spawn_ready() if hasattr(self.s,'raid_scouts') else False,
+            wall_assault=self.state.get('wall_assault'),
             last_buyer_decision=self.state.get('decision'),last_pioneer_decision=self.state.get('decision'))
 
     def available_gold(self):
@@ -376,6 +378,19 @@ class BossRaid:
         failed = self.state.get('failed_positions', set())
         key = (count, scouted, frozenset(used), frozenset(failed))
         if key not in self.spawn_cache:
+            assault=self.state.get('wall_assault')
+            if scouted and (assault or protected_layout(self.turn,self.s.settings,
+                    self.memory.enemy_structures.values(),self.memory.enemy_weapon_sites)):
+                planned=plan_assault(self.turn,self.s.settings,count,self.memory.enemy_structures.values(),
+                    self.memory.enemy_weapon_sites,used,failed,assault.get('wall_pos') if assault else None)
+                if planned is None:
+                    self.spawn_cache[key]=[]
+                    return []
+                prior=assault.get('spawns',[]) if assault else []
+                self.state['wall_assault']=dict(planned,phase='wall',
+                    spawns=list(dict.fromkeys(prior+planned['spawns'])),planned_round=self.turn.round_no)
+                self.spawn_cache[key]=planned['spawns']
+                return self.spawn_cache[key]
             positions = []
             for _ in range(count):
                 if scouted:
@@ -607,6 +622,7 @@ class BossRaid:
             self.state['decision'].update(reason='using_scouted_order',spawn=spawn,
                 layout_weapons=scout.state.get('weapons'),weapon_sites=scout.state.get('weapon_sites'),
                 operator_cells=scout.state.get('operator_cells'),
+                wall_assault=self.state.get('wall_assault'),
                 current_shared_sight=scout.summon_ready())
             if self.plan.add(role.unit_id, {'action': 'use', 'name': BOSS_ORDER, 'targetPos': [spawn.dump()]}):
                 self.state.pop('returned', None)

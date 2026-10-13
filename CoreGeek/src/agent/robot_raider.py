@@ -8,6 +8,7 @@ from .robot_combat import blocking_wall, clear_attack, enemy_at, planning_buildi
 from .raid_diagnostics import RaidDiagnostics, LIMIT, entity
 from .boss_formation import BossFormation
 from .summoning import enemy_weapon_cells, layout_operator_positions
+from .wall_assault import protected_layout, plan_assault
 
 
 SIEGE_FOCUS_ROUNDS = 4
@@ -43,6 +44,99 @@ class RobotRaider:
             return None
         return tuple(p for p in layout_operator_positions(self.turn,self.memory.enemy_structures.values(),known)
                      if all(distance(p,site)<=1 for site in known))
+
+    def direct_base_cells(self, robot):
+        base=next((u for u in self.turn.enemies if u.kind=='station' and u.health>0),None)
+        return self.formation.clear_base_cells(robot,base,robot.pos) if base else []
+
+    def group_base_ready(self):
+        """One BOSS actually holds a best post and the whole live group can fire."""
+        bosses=[r for r in self.turn.summon_robots if r.kind=='bossRobot' and r.health>0]
+        posts=layout_operator_positions(self.turn,self.memory.enemy_structures.values(),self.memory.enemy_weapon_sites)
+        if not bosses or not any(r.pos in posts for r in bosses):
+            return False
+        return all(r.abnormal_state!='dizzy' and self.direct_base_cells(r)
+                   and (str(r.robot_id) not in self.plan.commands or
+                        self.plan.commands[str(r.robot_id)].get('action')=='attack'
+                        and Pos.load(self.plan.commands[str(r.robot_id)]['targetPos'][0]) in self.direct_base_cells(r))
+                   for r in bosses)
+
+    def fire_base_now(self, robot, reason):
+        cells=self.direct_base_cells(robot)
+        if not cells:
+            return False
+        old=self.memory.robot_raids.setdefault(robot.robot_id,{})
+        for key in ('controller_id','controller_pos','controller_health','last_seen','scouted'):
+            old.pop(key,None)
+        target=min(cells,key=lambda p:(p!=old.get('verified_base_target'),distance(robot.pos,p),p))
+        self.diag.set(robot,selected=entity(enemy_at(self.turn,target)),reason=reason,
+                      group_base_locked=reason=='group_base_ready',direct_base_cells=cells)
+        return self.issue(robot,'attack',target,robot.pos,'base',pursuit_kind='base',pursuit_rounds=0)
+
+    def wall_assault(self, robot, route):
+        """Keep one shared wall, then advance the whole group for base fire."""
+        state=self.memory.boss_raid.get('wall_assault')
+        if state is None:
+            if not protected_layout(self.turn,self.s.settings,self.memory.enemy_structures.values(),
+                                    self.memory.enemy_weapon_sites):
+                return False
+            count=sum(r.health>0 and r.kind=='bossRobot' for r in self.turn.summon_robots)
+            state=plan_assault(self.turn,self.s.settings,max(1,count),self.memory.enemy_structures.values(),
+                              self.memory.enemy_weapon_sites)
+            if state is None:
+                state=plan_assault(self.turn,self.s.settings,1,self.memory.enemy_structures.values(),
+                                   self.memory.enemy_weapon_sites)
+            if state is None:
+                handled=self.attack_base(robot,route,'protected_layout_no_shared_wall_plan',base_only=True)
+                if not handled:
+                    self.plan.used.add(robot.robot_id)
+                return True
+            self.memory.boss_raid['wall_assault']=state
+        base=next((u for u in self.turn.enemies if u.kind=='station' and u.health>0),None)
+        if base is None:
+            self.plan.used.add(robot.robot_id)
+            self.diag.set(robot,reason='wall_assault_base_destroyed')
+            return True
+        wall=next((u for u in self.turn.enemies if u.kind=='wall' and u.health>0
+                   and u.pos==state['wall_pos']),None)
+        self.diag.set(robot,wall_assault=state,reason='shared_wall_assault')
+        if wall is not None:
+            state.update(phase='wall',wall_id=wall.unit_id,observed_wall_health=wall.health)
+            failed=self.memory.robot_raids.get(robot.robot_id,{}).get('failed_firing',{})
+            if self.clear_shot(robot,wall.pos) and self.firing_key(wall.pos,robot.pos) not in failed:
+                return self.issue(robot,'attack',wall.pos,robot.pos,'wall_assault',
+                                  pursuit_kind='base',pursuit_rounds=0)
+            firing=self.firing_plan(robot,[wall.pos],route)
+            if firing is not None and (step:=route.step({firing[2]})) is not None:
+                return self.issue(robot,'move',step,firing[2],'wall_assault',pursuit_kind='base',pursuit_rounds=0)
+            self.plan.used.add(robot.robot_id)
+            self.diag.set(robot,reason='shared_wall_no_reachable_firing_post')
+            return True
+        state.update(phase='base')
+        state.setdefault('breached_round',self.turn.round_no)
+        bosses=[r for r in self.turn.summon_robots if r.kind=='bossRobot' and r.health>0]
+        direct=self.direct_base_cells(robot)
+        if all(self.direct_base_cells(r) for r in bosses):
+            return self.fire_base_now(robot,'wall_assault_group_base_fire')
+        # Make space for robots behind the breach. Every move is checked
+        # against current occupancy; commanded departures are never empty yet.
+        steps=[p for p in robot.pos.neighbours() if route.cost.get(p)==1
+               and self.formation.base_distance(p,base)<self.formation.base_distance(robot.pos,base)
+               and (not direct or self.formation.clear_base_cells(robot,base,p))]
+        wall_pos=state['wall_pos']
+        lateral=lambda p: abs(p.x-wall_pos.x) if state.get('side') in ('north','south') else abs(p.y-wall_pos.y)
+        if steps:
+            step=min(steps,key=lambda p:(lateral(p),self.formation.base_distance(p,base),p))
+            return self.issue(robot,'move',step,step,'base',pursuit_kind='base',pursuit_rounds=0,
+                              assault_phase='enter_breach')
+        if direct:
+            return self.fire_base_now(robot,'wall_assault_base_fire')
+        firing=self.firing_plan(robot,self.turn.footprint(base),route)
+        if firing is not None and (step:=route.step({firing[2]})) is not None:
+            return self.issue(robot,'move',step,firing[2],'base',pursuit_kind='base',pursuit_rounds=0)
+        self.plan.used.add(robot.robot_id)
+        self.diag.set(robot,reason='wall_assault_wait_for_actual_lane')
+        return True
 
     def observe_structures(self):
         kinds = TOWER_TYPES + ('station', 'wall')
@@ -254,7 +348,7 @@ class RobotRaider:
             return False
         return self.issue_breach(robot, breach, route, stage, **extra)
 
-    def attack_base(self, robot, route, fallback=None):
+    def attack_base(self, robot, route, fallback=None, base_only=False):
         old = self.memory.robot_raids.setdefault(robot.robot_id, {})
         for key in ('controller_id','controller_pos','controller_health','last_seen','scouted'):
             old.pop(key, None)
@@ -285,16 +379,16 @@ class RobotRaider:
                       and u.kind in (PIONEER,WORKER)
                       and min(distance(u.pos,p) for p in points)<=1
                       and self.clear_shot(robot,u.pos)
-                      and self.firing_key(u.pos,robot.pos) not in failed] if not weapons and rocket_posts is None else []
+                      and self.firing_key(u.pos,robot.pos) not in failed] if not weapons and rocket_posts is None and not base_only else []
             self.diag.set(robot,base_nearby_candidates=[entity(u) for u in nearby][:LIMIT],
-                          base_nearby_allowed=not weapons and rocket_posts is None)
+                          base_nearby_allowed=not weapons and rocket_posts is None and not base_only)
             if nearby:
                 target = min(nearby,key=lambda u:(math.ceil(u.health/max(1,robot.attack_power)),
                                                   u.health,u.unit_id))
                 self.diag.set(robot,selected=entity(target),secondary_reason='stationary_base_neighbour')
                 return self.issue(robot,'attack',target.pos,robot.pos,'base_nearby',
                                   nearby_role_id=target.unit_id,**extra)
-            if rocket_posts is None and self.formation.advance(robot,base,route):
+            if not base_only and rocket_posts is None and self.formation.advance(robot,base,route):
                 return True
             target = min(direct,key=lambda p:(p != old.get('verified_base_target'),distance(robot.pos,p),p))
             return self.issue(robot,'attack',target,robot.pos,'base',**extra)
@@ -392,6 +486,10 @@ class RobotRaider:
         self.observe_feedback(robot, old)
         remembered = {p for u in self.memory.enemy_structures.values() for p in self.turn.footprint(u)}
         route = Routes(self.turn, robot, self.plan.reserved | remembered | set(old.get('blocked_steps',{})))
+        if self.group_base_ready():
+            return self.fire_base_now(robot,'group_base_ready')
+        if self.wall_assault(robot,route):
+            return True
         if self.diag.enabled:
             neighbours = [p for p in robot.pos.neighbours() if self.turn.in_bounds(p)]
             occupants = {p:[] for p in neighbours}

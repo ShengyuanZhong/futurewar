@@ -180,20 +180,24 @@ class RocketControlPolicyTests(unittest.TestCase):
     def test_mixed_weapons_keep_existing_partial_operator_priority(self):
         for kind in ('gatling', 'railgun'):
             with self.subTest(kind=kind):
-                raw = formation_arena(front=OPERATOR, rear=None)
+                # No BOSS occupies the best control post, so the new group
+                # base lock must not suppress ordinary mixed-layout targeting.
+                raw = formation_arena(front=Pos(11, 19), rear=None)
                 next(u for u in raw['teamEnemy']['roles'] if u['id'] == 994)['roleType'] = kind
                 raw['teamEnemy']['roles'].append(unit(HERO, 'worker', GAP.x, GAP.y, health=1))
                 strategy, plan = decide(raw)
                 self.assertIsNone(strategy.raider.rocket_control_posts())
+                self.assertFalse(strategy.raider.group_base_ready())
                 self.assertEqual(plan.commands[str(FRONT)],
                                  {'action': 'attack', 'targetPos': [GAP.dump()]})
 
     def test_two_known_rockets_keep_existing_partial_operator_priority(self):
-        raw = formation_arena(front=OPERATOR, rear=None)
+        raw = formation_arena(front=Pos(11, 19), rear=None)
         raw['teamEnemy']['roles'] = [u for u in raw['teamEnemy']['roles'] if u['id'] != 994]
         raw['teamEnemy']['roles'].append(unit(HERO, 'worker', GAP.x, GAP.y, health=1))
         strategy, plan = decide(raw)
         self.assertIsNone(strategy.raider.rocket_control_posts())
+        self.assertFalse(strategy.raider.group_base_ready())
         self.assertEqual(plan.commands[str(FRONT)],
                          {'action': 'attack', 'targetPos': [GAP.dump()]})
 
@@ -237,7 +241,7 @@ class RocketControlPolicyTests(unittest.TestCase):
             self.assertNotEqual(command['targetPos'], [OPERATOR.dump()])
 
     def test_current_mixed_rebuild_overrides_remembered_three_rocket_mode(self):
-        raw = formation_arena(front=OPERATOR, rear=None)
+        raw = formation_arena(front=Pos(11, 19), rear=None)
         state = GameMemory(opening_complete=True)
         old_turn = Turn.load(raw)
         state.enemy_structures.update((u.unit_id, u) for u in old_turn.enemies)
@@ -247,6 +251,7 @@ class RocketControlPolicyTests(unittest.TestCase):
         raw['teamEnemy']['roles'].append(unit(HERO, 'worker', GAP.x, GAP.y, health=1))
         strategy, plan = decide(raw, state)
         self.assertIsNone(strategy.raider.rocket_control_posts())
+        self.assertFalse(strategy.raider.group_base_ready())
         self.assertEqual(state.enemy_weapon_sites[Pos(14, 18)], 'gatling')
         self.assertEqual(plan.commands[str(FRONT)],
                          {'action': 'attack', 'targetPos': [GAP.dump()]})

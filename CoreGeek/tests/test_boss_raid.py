@@ -4,7 +4,7 @@ import time
 import unittest
 
 from agent.protocol import Pos, Turn, distance, station_footprint
-from agent.summoning import rear_spawn_position, summon_cell_legal
+from agent.summoning import rear_spawn_position, scouted_spawn_position, summon_cell_legal
 from app.config import Settings
 from app.service.turn_service import Session, TurnService
 from tests.fixtures import robot, unit
@@ -156,22 +156,47 @@ class BossRaidTests(unittest.TestCase):
         self.assertEqual(command['action'], 'move')
         self.assertNotEqual(command['targetPos'], [{'x': 38, 'y': 25}])
 
-    def test_completely_screened_controller_causes_breach_then_resumes_attack(self):
+    def test_completely_screened_controller_causes_shared_flank_breach_then_base_attack(self):
         raw = raid_request(71, boss=True)
         raw['teamEnemy']['roles'] = [unit(990, 'station', 33, 25),
-                                   unit(991,'rocket',35,25),unit(992,'pioneer',36,25,health=500)]
-        # The whole ring blocks every firing line to the controller.
-        for i, pos in enumerate(Pos(36, 25).neighbours(), 1001):
-            if pos != Pos(35,25):  # Cannon occupies one ring cell; other cells are walls.
-                raw['teamEnemy']['roles'].append(unit(i, 'wall', pos.x, pos.y, health=40))
+                                   unit(991, 'rocket', 32, 24),
+                                   unit(995, 'rocket', 32, 23),
+                                   unit(996, 'rocket', 34, 23),
+                                   unit(992, 'pioneer', 33, 23, health=500)]
+        base_cells = station_footprint(Pos(33, 25))
+        for i, pos in enumerate(sorted(Pos(x, y) for x in range(31, 37) for y in range(22, 28)
+                if min(distance(Pos(x, y), cell) for cell in base_cells) == 2), 1001):
+            raw['teamEnemy']['roles'].append(unit(i, 'wall', pos.x, pos.y,
+                                                   health=40 if pos == Pos(33, 27) else 1000))
+        # Ordinary friendly sight covers the real cannon crew. Deploy using
+        # the public planner at the opposite north flank, outside build zones.
+        observer = next(u for u in raw['teamOur']['roles'] if u['roleType'] == 'worker')
+        observer['pos'] = Pos(33, 21).dump()
+        spawn = scouted_spawn_position(Turn.load(raw), Settings())
+        self.assertEqual(spawn, Pos(33, 28))
+        update_robot(raw, spawn.dump())
         memory = finished_tasks(); s, plan = strategy(raw, memory); s.run()
         command = plan.commands['30005']
         self.assertEqual(command['action'], 'attack')
-        self.assertEqual(command['targetPos'], [{'x': 37, 'y': 25}])
+        self.assertEqual(command['targetPos'], [{'x': 33, 'y': 27}])
+        self.assertTrue(s.raider.clear_shot(s.turn.summon_robots[0], Pos(33, 27)))
+        self.assertEqual(memory.boss_raid['wall_assault']['wall_pos'], Pos(33, 27))
+        self.assertEqual(memory.boss_raid['wall_assault']['observed_wall_health'], 40)
+        self.assertNotIn('controller_id', memory.robot_raids[30005])
+        self.assertEqual(next(u.health for u in s.turn.enemies if u.unit_id == 992), 500)
         memory.record(s.turn, plan)
-        next(u for u in raw['teamEnemy']['roles'] if u['pos'] == {'x': 37, 'y': 25})['health'] = 0
-        raw['roundNo'] = 72; s, plan = strategy(raw, memory); s.run()
-        self.assertEqual(plan.commands['30005']['targetPos'], [{'x': 36, 'y': 25}])
+        next(u for u in raw['teamEnemy']['roles'] if u['pos'] == {'x': 33, 'y': 27})['health'] = 0
+        raw['roundNo'] = 72; raw['lastRoundRoleActionResults'] = {'30005': True}
+        s, plan = strategy(raw, memory); s.run()
+        command = plan.commands['30005']
+        self.assertEqual(command['action'], 'attack')
+        target = Pos.load(command['targetPos'][0])
+        self.assertIn(target, base_cells)
+        self.assertTrue(s.raider.clear_shot(s.turn.summon_robots[0], target))
+        self.assertEqual(memory.boss_raid['wall_assault']['phase'], 'base')
+        self.assertEqual(memory.robot_raids[30005]['pursuit_kind'], 'base')
+        self.assertEqual(next(u.health for u in s.turn.enemies if u.unit_id == 992), 500)
+        self.assertEqual(plan.rejections, [])
 
     def test_departed_controller_releases_priority_and_returns_to_base(self):
         raw = raid_request(71, boss=True); memory = finished_tasks()
