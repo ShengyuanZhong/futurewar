@@ -28,6 +28,8 @@ class ImpDefense:
     def catch_near(self, role):
         if role.kind not in (PIONEER, WORKER) or role.health <= 0 or role.unit_id in self.plan.used:
             return False
+        if role.kind == PIONEER and self.turn.day == 1 and not self.pioneer_ready():
+            return False  # Finish all three attempts before spending a task turn on capture.
         targets = [u for u in self.turn.enemies if u.kind == IMP and u.health > 0
                    and distance(role.pos, u.pos) == 1 and u.unit_id not in self.plan.catch_targets]
         if not targets:
@@ -50,6 +52,9 @@ class ImpDefense:
         return not self.turn.phase_task and (not self.s.settings.enable_tasks
                 or finished_count(self.memory) >= FIRST_DAY_LIMIT)
 
+    def pioneer_ready(self):
+        return not self.turn.phase_task and finished_count(self.memory) >= FIRST_DAY_LIMIT
+
     def buyer_ready(self, role):
         raid = self.s.boss_raid
         state = raid.state
@@ -69,7 +74,7 @@ class ImpDefense:
         if (self.turn.day != 1 or not self.protected_cells or role.health <= 0
                 or role.unit_id in self.plan.used):
             return False
-        eligible = (self.tasks_done() if role.kind == PIONEER else
+        eligible = (self.pioneer_ready() if role.kind == PIONEER else
                     self.buyer_ready(role) if role.kind == WORKER else False)
         if not eligible:
             return False

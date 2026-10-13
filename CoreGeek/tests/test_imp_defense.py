@@ -9,12 +9,12 @@ from dataclasses import replace
 
 from agent.actions import ActionPlan
 from agent.brain import Strategy
-from agent.first_day_tasks import finish_attempt, record_attempt
+from agent.first_day_tasks import finish_attempt, finished_count, record_attempt, TASK_SEQUENCE
 from agent.imp_defense import ImpDefense
 from agent.protocol import Pos, Turn, distance, move_command
 from app.config import Settings
 from app.service.memory import GameMemory
-from app.service.turn_service import TurnService
+from app.service.turn_service import Session, TurnService
 from tests.fixtures import request, robot, unit
 from tests.test_worker_boss_buyer import (
     BUYER, ORDER, PIONEER, SCOUT, actor, load_strategy, role, worker_raid_scene,
@@ -65,7 +65,7 @@ def policy(raw, memory, settings):
 
 class ImpCaptureTests(unittest.TestCase):
     def test_pioneer_and_worker_capture_every_adjacent_direction_day_and_night(self):
-        for number in (1, 71):
+        for number in (40, 71):
             for uid in (PIONEER, BUYER):
                 for delta in Pos(0, 0).neighbours():
                     with self.subTest(round=number, actor=uid, direction=delta):
@@ -247,13 +247,43 @@ class FirstDayImpDefenseTests(unittest.TestCase):
         self.assertFalse(defense.defend(role(s, PIONEER)))
         self.assertNotIn(str(PIONEER), plan.commands)
 
-    def test_adjacent_capture_still_preempts_an_unfinished_task_itinerary(self):
-        raw, memory, settings = scene(finished=1)
+    def test_adjacent_imp_does_not_interrupt_any_unfinished_pioneer_itinerary(self):
+        for ended in (0, 1, 2):
+            for number in (40, 70, 71):
+                with self.subTest(finished=ended, round=number):
+                    raw, memory, settings = scene(number, finished=ended)
+                    add_imp(raw, Pos(6, 24))
+                    s, plan, defense = policy(raw, memory, settings)
+                    self.assertFalse(defense.catch_near(role(s, PIONEER)))
+                    self.assertFalse(defense.defend(role(s, PIONEER)))
+                    self.assertNotIn(PIONEER, plan.used)
+                    # The independent worker keeps the immediate-neighbour rule.
+                    self.assertTrue(defense.catch_near(role(s, BUYER)))
+                    self.assertEqual(plan.commands[str(BUYER)]['action'], 'catch')
+
+    def test_three_actual_failed_attempts_still_enable_pioneer_capture(self):
+        raw, memory, settings = scene()
+        for job in memory.task_attempts.values():
+            job['succeeded'] = False
+        memory.task_points_succeeded.clear()
         add_imp(raw, Pos(6, 24))
-        s, plan = load_strategy(raw, memory, settings)
+        s, plan, defense = policy(raw, memory, settings)
+        self.assertEqual(finished_count(memory), 3)
+        self.assertTrue(defense.catch_near(role(s, PIONEER)))
+        self.assertEqual(plan.commands[str(PIONEER)]['action'], 'catch')
+
+    def test_disabled_tasks_do_not_waive_the_three_finished_attempt_requirement(self):
+        raw, memory, settings = scene(finished=0)
+        settings = replace(settings, enable_tasks=False)
+        add_imp(raw, Pos(6, 24))
+        s, plan, defense = policy(raw, memory, settings)
+        self.assertFalse(defense.catch_near(role(s, PIONEER)))
+        self.assertFalse(defense.defend(role(s, PIONEER)))
         s.run()
-        self.assertEqual(plan.commands[str(PIONEER)],
-            dict(action='catch', targetPos=[Pos(6, 24).dump()]))
+        self.assertEqual(plan.commands[str(PIONEER)]['action'], 'move')
+        self.assertEqual(plan.commands[str(BUYER)]['action'], 'catch')
+        self.assertEqual(finished_count(memory), 0)
+        self.assertEqual(plan.rejections, [])
 
     def test_buyer_only_chases_after_its_coupon_mission_is_complete(self):
         raw, memory, settings = scene()
@@ -407,6 +437,61 @@ class FirstDayImpDefenseTests(unittest.TestCase):
 
 
 class TaskCaptureIntegrationTests(unittest.TestCase):
+    def test_before_each_first_day_task_neighbour_imp_does_not_replace_acceptance(self):
+        for ended in (0, 1, 2):
+            for number in (40, 70, 71):
+                with self.subTest(finished=ended, round=number):
+                    raw = request(number)
+                    memory = GameMemory()
+                    tasks = Turn.load(raw).tasks
+                    for index in range(ended):
+                        selected = tasks[1 if TASK_SEQUENCE[index] == 2 else 0]
+                        key = record_attempt(memory, 1, 1 + index * 7,
+                            (selected.pos.x, selected.pos.y), selected.kind)
+                        finish_attempt(memory, key, 4 + index * 7, succeeded=False)
+                    memory.task_active_attempt = None
+                    source = Pos(16, 16) if TASK_SEQUENCE[ended] == 2 else Pos(14, 13)
+                    actor(raw, PIONEER)['pos'] = source.dump()
+                    add_imp(raw, Pos(source.x - 1, source.y))
+                    service = TurnService(Settings(enable_news=False))
+                    session_key = (raw['teamOur']['teamId'], raw['teamOur']['type'])
+                    service.sessions[session_key] = Session(memory=memory)
+                    response = service.decide(copy.deepcopy(raw))
+                    self.assertEqual(response['roleCommandMap'][str(PIONEER)], dict(action='acceptTask'))
+                    self.assertEqual(finished_count(service.sessions[session_key].memory), ended)
+
+    def live_task(self, ended, number):
+        """The current question follows 0/1/2 settled Task2/Task1 attempts."""
+        raw = request(number - 1)
+        tasks = Turn.load(raw).tasks
+        memory = GameMemory()
+        for index in range(ended):
+            selected = tasks[1 if TASK_SEQUENCE[index] == 2 else 0]
+            point = (selected.pos.x, selected.pos.y)
+            key = record_attempt(memory, 1, 1 + index * 7, point, selected.kind)
+            finish_attempt(memory, key, 4 + index * 7, succeeded=index % 2 == 0)
+        selected = tasks[1 if TASK_SEQUENCE[ended] == 2 else 0]
+        point = (selected.pos.x, selected.pos.y)
+        memory.task_agent.accept(selected)
+        record_attempt(memory, 1, number - 2, point, selected.kind)
+        memory.task_accept_round = memory.last_round = number - 2
+        memory.last_task_point = point
+        memory.last_commands = {str(PIONEER): dict(action='acceptTask')}
+        source = Pos(16, 16) if TASK_SEQUENCE[ended] == 2 else Pos(14, 13)
+        actor(raw, PIONEER)['pos'] = source.dump()
+        target = Pos(source.x - 1, source.y)
+        add_imp(raw, target)
+        raw.update(phaseTask='Read the active first-day task fixture',
+                   lastRoundRoleActionResults={str(PIONEER): True})
+        service = TurnService(Settings(enable_news=False))
+        key = (raw['teamOur']['teamId'], raw['teamOur']['type'])
+        service.sessions[key] = Session(memory=memory)
+        response = service.decide(copy.deepcopy(raw))
+        self.assertTrue(response['prompt'])
+        self.assertNotEqual(response['roleCommandMap'].get(str(PIONEER), {}).get('action'), 'catch')
+        raw.update(roundNo=number, lastRoundRoleActionResults={})
+        return raw, service, key
+
     def start_active_task(self):
         raw = request()
         service = TurnService(Settings(enable_news=False))
@@ -417,66 +502,52 @@ class TaskCaptureIntegrationTests(unittest.TestCase):
         key = (raw['teamOur']['teamId'], raw['teamOur']['type'])
         return raw, service, key
 
-    def test_neighbor_capture_delays_final_answer_then_submits_it_without_a_new_llm_reply(self):
-        raw, service, key = self.start_active_task()
-        raw.update(roundNo=3, llmResp='{"action":"final_answer","answer":"verified task result"}')
-        add_imp(raw, Pos(15, 13))
-        caught = service.decide(copy.deepcopy(raw))
-        self.assertEqual(caught['roleCommandMap'][str(PIONEER)],
-            dict(action='catch', targetPos=[Pos(15, 13).dump()]))
-        self.assertEqual(caught['executeCmd'], '')
-        self.assertFalse(any(c['action'] == 'submitAnswer' for c in caught['roleCommandMap'].values()))
-        attempts = copy.deepcopy(service.sessions[key].memory.task_attempts)
-        self.assertFalse(any(job['finished'] for job in attempts.values()))
-        # Duplicate HTTP delivery cannot produce a second action or discard the answer.
-        self.assertEqual(service.decide(copy.deepcopy(raw)), caught)
-        raw.update(roundNo=4, llmResp='', lastRoundRoleActionResults={str(PIONEER): True})
-        raw['teamEnemy']['roles'] = []
-        resumed = service.decide(copy.deepcopy(raw))
-        self.assertEqual(resumed['roleCommandMap'][str(PIONEER)],
-            dict(action='submitAnswer', taskAnswer='verified task result'))
-        self.assertEqual(len(service.sessions[key].memory.task_attempts), len(attempts))
-        self.assertFalse(any(job['succeeded'] for job in service.sessions[key].memory.task_attempts.values()))
+    def test_current_final_answer_precedes_neighbour_capture_until_three_attempts_end(self):
+        for ended in (0, 1, 2):
+            for number in (40, 70, 71):
+                with self.subTest(finished=ended, round=number):
+                    raw, service, key = self.live_task(ended, number)
+                    raw['llmResp'] = '{"action":"final_answer","answer":"verified task result"}'
+                    submitted = service.decide(copy.deepcopy(raw))
+                    self.assertEqual(submitted['roleCommandMap'][str(PIONEER)],
+                        dict(action='submitAnswer', taskAnswer='verified task result'))
+                    self.assertEqual(submitted['executeCmd'], '')
+                    self.assertEqual(service.sessions[key].memory.task_agent.deferred_role_reply, '')
+                    self.assertEqual(finished_count(service.sessions[key].memory), ended)
+                    self.assertEqual(service.decide(copy.deepcopy(raw)), submitted)
 
-    def test_two_consecutive_captures_do_not_overwrite_the_saved_final_answer(self):
-        raw, service, key = self.start_active_task()
-        raw.update(roundNo=3, llmResp='{"action":"final_answer","answer":"saved across two catches"}')
-        add_imp(raw, Pos(15, 13))
-        response = service.decide(copy.deepcopy(raw))
-        self.assertEqual(response['roleCommandMap'][str(PIONEER)]['action'], 'catch')
-        raw.update(roundNo=4, llmResp='', lastRoundRoleActionResults={str(PIONEER): True})
-        raw['teamEnemy']['roles'] = []
-        add_imp(raw, Pos(13, 13), uid=906)
-        response = service.decide(copy.deepcopy(raw))
-        self.assertEqual(response['roleCommandMap'][str(PIONEER)]['action'], 'catch')
-        raw.update(roundNo=5, llmResp='', lastRoundRoleActionResults={str(PIONEER): True})
-        raw['teamEnemy']['roles'] = []
-        response = service.decide(copy.deepcopy(raw))
-        self.assertEqual(response['roleCommandMap'][str(PIONEER)],
-            dict(action='submitAnswer', taskAnswer='saved across two catches'))
+    def test_task_tool_call_is_not_postponed_by_an_adjacent_imp(self):
+        for ended in (0, 1, 2):
+            for number in (70, 71):
+                with self.subTest(finished=ended, round=number):
+                    raw, service, key = self.live_task(ended, number)
+                    raw['llmResp'] = '{"action":"execute_command","command":"read_task_fixture"}'
+                    response = service.decide(copy.deepcopy(raw))
+                    self.assertEqual(response['executeCmd'], 'read_task_fixture')
+                    self.assertNotEqual(response['roleCommandMap'].get(str(PIONEER), {}).get('action'), 'catch')
+                    self.assertEqual(service.sessions[key].memory.task_agent.deferred_role_reply, '')
+                    self.assertEqual(finished_count(service.sessions[key].memory), ended)
 
-    def test_saved_answer_is_discarded_when_the_task_ends_or_changes(self):
-        for next_phase in ('', 'Read task_2_new_capture_fixture.md'):
-            with self.subTest(next_phase=next_phase):
-                raw, service, key = self.start_active_task()
-                raw.update(roundNo=3,
-                    llmResp='{"action":"final_answer","answer":"old task answer must expire"}')
-                add_imp(raw, Pos(15, 13))
-                caught = service.decide(copy.deepcopy(raw))
-                self.assertEqual(caught['roleCommandMap'][str(PIONEER)]['action'], 'catch')
-                self.assertTrue(service.sessions[key].memory.task_agent.deferred_role_reply)
-                raw.update(roundNo=4, llmResp='', phaseTask=next_phase,
-                    lastRoundRoleActionResults={str(PIONEER): True})
-                raw['teamEnemy']['roles'] = []
-                resumed = service.decide(copy.deepcopy(raw))
-                self.assertFalse(any(c.get('action') == 'submitAnswer'
-                    for c in resumed['roleCommandMap'].values()))
-                self.assertEqual(service.sessions[key].memory.task_agent.deferred_role_reply, '')
-                self.assertFalse(any(job['succeeded']
-                    for job in service.sessions[key].memory.task_attempts.values()))
-                if next_phase:
-                    self.assertTrue(resumed['prompt'])
-                    self.assertNotIn('old task answer must expire', resumed['prompt'])
+    def test_three_accepts_do_not_enable_capture_while_third_question_is_delayed(self):
+        raw, service, key = self.live_task(2, 40)
+        # Reconstruct the confirmed-accept frame before its question becomes
+        # visible. No active question is not proof that the attempt has ended.
+        memory = copy.deepcopy(service.sessions[key].memory)
+        memory.task_agent.self_evolve_active = False
+        memory.task_agent.observed_description = ''
+        memory.task_description = ''
+        memory.last_round = 39
+        memory.last_commands = {}
+        raw.update(roundNo=40, phaseTask='', llmResp='')
+        pending_key = memory.task_active_attempt
+        self.assertEqual(len(memory.task_attempts), 3)
+        self.assertEqual(finished_count(memory), 2)
+        service = TurnService(Settings(enable_news=False))
+        service.sessions[key] = Session(memory=memory)
+        response = service.decide(copy.deepcopy(raw))
+        self.assertNotIn(str(PIONEER), response['roleCommandMap'])
+        self.assertEqual(finished_count(service.sessions[key].memory), 2)
+        self.assertFalse(service.sessions[key].memory.task_attempts[pending_key]['finished'])
 
     def test_worker_capture_income_does_not_turn_an_unrewarded_answer_into_task_success(self):
         raw, service, key = self.start_active_task()

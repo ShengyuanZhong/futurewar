@@ -98,7 +98,7 @@ def compact(raw, result, elapsed, name):
 
 
 def catch_scenarios(port, rows, cases):
-    """Fresh teams isolate day/night, task interaction and shop-side priority."""
+    """Workers catch immediately; unfinished pioneer tasks keep their action."""
     for lower_right in (False, True):
         for who, number, context in ((PIONEER, 1, 'day'), (BUYER, 71, 'night'),
                                      (PIONEER, 3, 'task'), (BUYER, 40, 'shop')):
@@ -114,22 +114,30 @@ def catch_scenarios(port, rows, cases):
             if context=='shop':
                 actor(raw, who)['backpack'] += [ORDER]
             if context=='task':
-                raw['phaseTask']='Synthetic active task; nearby catch has priority'
+                raw['phaseTask']='Synthetic active task; unfinished pioneer must keep working'
                 raw['llmResp']=json.dumps(dict(action='final_answer', answer='fixture-answer'))
             target = Pos(source.x+1, source.y+1)
             truth.append(unit(ENEMY_IMP, 'imp', target.x, target.y, health=500))
             reveal(raw, truth)
             result, elapsed = post(port, raw)
             independent_contract(raw, result)
-            assert result['roleCommandMap'].get(str(who))==dict(
-                action='catch', targetPos=[target.dump()]), (name,result)
+            if who == PIONEER:
+                assert result['roleCommandMap'].get(str(who),{}).get('action')!='catch', (name,result)
+                if context == 'task':
+                    assert result['prompt'], (name,'active pioneer task must continue')
+            else:
+                assert result['roleCommandMap'].get(str(who))==dict(
+                    action='catch', targetPos=[target.dump()]), (name,result)
             assert not result['executeCmd']
             rows.append(compact(raw,result,elapsed,name))
             gold = raw['teamOur']['goldNum']
-            assert apply_public(raw, truth, result['roleCommandMap'], [])==[ENEMY_IMP]
-            assert raw['teamOur']['goldNum'] >= gold+20
-            cases.append(dict(case=name, actor=who, captured=ENEMY_IMP,
-                              diagonal_neighbour=True))
+            captured=apply_public(raw, truth, result['roleCommandMap'], [])
+            if who==PIONEER:
+                assert not captured, (name,'unfinished tasks must not spend a capture turn')
+            else:
+                assert captured==[ENEMY_IMP] and raw['teamOur']['goldNum'] >= gold+20
+            cases.append(dict(case=name, actor=who, captured=captured,
+                              pioneer_task_priority=who==PIONEER, diagonal_neighbour=True))
 
 
 def return_flow(port, lower_right, mode, rows, cases):
