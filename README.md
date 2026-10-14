@@ -2,7 +2,9 @@
 
 以初赛基线为基础，按 `32_docs/` v2.0 文档逐项扩展的参赛 HTTP Agent；规则来源见 `DEVELOPMENT_RULES.md`。保留 CoreGeek 的 `main3.py → src/agent` 基础结构，新增 `CoreGeek/app` 应用层。运行仅依赖 Python 标准库，Python 3.10 及以上。
 
-当前程序版本为 `v1.2.25`，基于用户确认的v0.4基准，版本声明见 [CoreGeek/pyproject.toml](CoreGeek/pyproject.toml)。开局仍为三火箭→采石→17墙蓝图（工人先撤出，随后从外侧完整封闭），第一夜后拆除新增5墙并恢复12墙U形和内侧维修通道；第二天起先集中升满一台火箭，再依次强化正中两墙3级、第二台火箭2级、正面其余四墙2→3级、所有火箭3级，最后把上下两翼六墙升2级；不升级基地。全部目标达成后，两名工人白天继续采矿售矿、批量购包，黄昏回防，夜间双人维修。阈值仍为严格低于30%。详细坐标、镜像、购买规则和关键函数见[建筑维护](CoreGeek/docs/MAINTENANCE.md)。沿用工人独立任务、让行、城墙掩护与动态备货，见[工人协作](CoreGeek/docs/WORKER_COORDINATION.md)。沿用昼夜统一工人经济流程，夜间可继续采购与配送升级券，维修工在实际可达维修区域兼顾升级，详见[昼夜统一调度](CoreGeek/docs/WORKER_SCHEDULE.md)。根据bug_log1/bug_log2进一步拆分通行与施工预约，修复虚拟墙环封路并避免预建位驱离引起的折返；历史问题见[日志定位与修复](CoreGeek/docs/WORKER_PATH_FIX.md)，当前实现见[首日修复](CoreGeek/docs/OPENING_BUG_V1210.md)。v0.4基准已[归档](reports/BASELINE-v0.4.md)。0.4.1根据teamA(2)失败记录修正任务经验：过滤退出码0的业务/脚本失败、保留真实JSON层级及字段、补充解析/引号诊断并压缩短任务步骤；详见[失败任务修正](CoreGeek/docs/TASK_FAILURE_LEARNING.md)。战斗和工人策略沿用基准。0.4.2接入用户提供的任务交互日志格式，见[日志开发文档](CoreGeek/docs/TASK_LOGGING.md)。0.4.3整合新版任务控制器与提示词，包含分类经验、临期预算、占位答案拦截和按奖励增量判定成功；双任务点调度沿用上一版，详见[任务模块接入](CoreGeek/docs/TASK_INTEGRATION.md)。
+当前程序版本为 `v1.2.26`，基于用户确认的v0.4基准，版本声明见 [CoreGeek/pyproject.toml](CoreGeek/pyproject.toml)。开局仍为三火箭→采石→17墙蓝图（工人先撤出，随后从外侧完整封闭），第一夜后拆除新增5墙并恢复12墙U形和内侧维修通道；第二天起先集中升满一台火箭，再依次强化正中两墙3级、第二台火箭2级、正面其余四墙2→3级、所有火箭3级，最后把上下两翼六墙升2级；不升级基地。全部目标达成后，两名工人白天继续采矿售矿、批量购包，黄昏回防，夜间双人维修。阈值仍为严格低于30%。详细坐标、镜像、购买规则和关键函数见[建筑维护](CoreGeek/docs/MAINTENANCE.md)。沿用工人独立任务、让行、城墙掩护与动态备货，见[工人协作](CoreGeek/docs/WORKER_COORDINATION.md)。沿用昼夜统一工人经济流程，夜间可继续采购与配送升级券，维修工在实际可达维修区域兼顾升级，详见[昼夜统一调度](CoreGeek/docs/WORKER_SCHEDULE.md)。根据bug_log1/bug_log2进一步拆分通行与施工预约，修复虚拟墙环封路并避免预建位驱离引起的折返；历史问题见[日志定位与修复](CoreGeek/docs/WORKER_PATH_FIX.md)，当前实现见[首日修复](CoreGeek/docs/OPENING_BUG_V1210.md)。v0.4基准已[归档](reports/BASELINE-v0.4.md)。0.4.1根据teamA(2)失败记录修正任务经验：过滤退出码0的业务/脚本失败、保留真实JSON层级及字段、补充解析/引号诊断并压缩短任务步骤；详见[失败任务修正](CoreGeek/docs/TASK_FAILURE_LEARNING.md)。战斗和工人策略沿用基准。0.4.2接入用户提供的任务交互日志格式，见[日志开发文档](CoreGeek/docs/TASK_LOGGING.md)。0.4.3整合新版任务控制器与提示词，包含分类经验、临期预算、占位答案拦截和按奖励增量判定成功；双任务点调度沿用上一版，详见[任务模块接入](CoreGeek/docs/TASK_INTEGRATION.md)。
+
+v1.2.26更新最后一天防守：第10天全部炮台仅瞄准己方半区的存活机器人，三级火箭三发全部防守，不再分一发到敌半区；己区无合法目标则保留攻击。火箭九宫格Σ(分/当前HP)也仅计算己区机器人，中线归防守侧。第1～9天保持原攻击分配。详见[火箭半区策略](CoreGeek/docs/ROCKET_SECTORS.md#最后一天全力防守v1226)。
 
 v1.2.25明确[首日结束后的运营恢复](CoreGeek/docs/OPERATING_RESUME_V1225.md)：近期侦察、三任务、工人购券/BOSS集火和占墙补位只在第一天生效。R131起默认恢复v1.1.2的12墙U形，由一名可达工人逐块拆掉首日新增5墙，另一人继续运营；仅真实墙消失才推进。第二天起用内侧维修通道、原升级顺序与正常返程预算，完成升级后仍白天采矿售矿买包、晚上双工人维修；不升级基地。源码、函数、参数和边界见开发文档，结果见[验证报告](reports/VALIDATION-v1.2.25.md)。
 
@@ -894,7 +896,7 @@ Strategy.run() -> None
 | `pair_weapons(turn, roles)` | 当前观测、可用角色元组 | 返回`((角色, 武器), ...)`；优先减少不可达匹配，再最小化总路径成本，ID用于稳定打破平局 |
 | `segment_entry(start, end, cell)` | 起点、终点、待检查格中心 | 线段第一次进入闭区间方格的归一化参数；不相交为None |
 | `damage_for(turn, tower, target, health)` | 炮台、落点、预测剩余HP字典 | 返回`机器人ID → 本发预计伤害`，不修改真实HP；适用于单发伤害估值 |
-| `choose_targets(turn, tower, expected_health, deadline=inf)` | 当前观测、炮台、全队本轮预测HP、绝对软截止时间 | 所有火箭占用中心按九宫格Σ(分/当前HP)最大；三级2+1或全防守；完整方案后才更新expected_health |
+| `choose_targets(turn, tower, expected_health, deadline=inf)` | 当前观测、炮台、全队本轮预测HP、绝对软截止时间 | 所有火箭占用中心按九宫格Σ(分/当前HP)最大；第1～9天三级2+1或全防守，第10天仅己区；完整方案后才更新expected_health |
 | `protected_layout(turn, settings, remembered=(), confirmed_sites=())` | 当前Turn、Settings、真实建筑记忆与炮位缓存 | 判定炮手或最佳操炮位是否需破墙才能攻击；不创建移动单位，详见[集中破墙](CoreGeek/docs/COORDINATED_WALL_ASSAULT_V1221.md) |
 | `plan_assault(turn, settings, count, remembered=(), confirmed_sites=(), pending=(), failed=(), preferred_wall=None, preferred_side=None)` | 当前布局、追加召唤数量、炮位知识、已预约/失败位置与可选旧墙目标 | 统一墙目标、进攻侧与合法召唤点；签名及字段见[集中破墙](CoreGeek/docs/COORDINATED_WALL_ASSAULT_V1221.md) |
 | `RobotRaider.group_base_ready()` | 无→bool | 最佳位已被本方BOSS占住且每只存活BOSS当前均有合法基地射线时启用全队基地攻击优先 |

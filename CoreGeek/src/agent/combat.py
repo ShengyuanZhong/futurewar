@@ -135,6 +135,11 @@ def _occupied_rocket_target(turn, tower, centres, scores):
 
 def choose_targets(turn: Turn, tower: Unit, expected_health: dict[int, int], deadline=float("inf")) -> list[Pos]:
     robots = [r for r in turn.hostile_robots() if r.health > 0]
+    if turn.day >= 10:
+        # The final day spends every shot defending our half, even when only
+        # opposing-half targets remain. Score splash clusters within our half.
+        side = base_side(turn) or diagonal_side(tower.pos, turn.width, turn.height)
+        robots = [r for r in robots if side and diagonal_side(r.pos, turn.width, turn.height)*side >= 0]
     if not robots or time.monotonic() >= deadline:
         return []
     count = 1 if tower.kind == "railgun" else max(1, min(3, tower.level))
