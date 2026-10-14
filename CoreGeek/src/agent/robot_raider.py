@@ -24,6 +24,83 @@ class RobotRaider:
         self.memory.robot_raids = {uid: job for uid, job in self.memory.robot_raids.items()
                                    if uid in live and not self.turn.is_day and self.turn.day == 1}
         self.formation = BossFormation(self)
+        self.focus_cache = {}
+
+    def live_group(self):
+        return [r for r in self.turn.summon_robots if r.kind=='bossRobot'
+                and r.health>0 and r.abnormal_state!='dizzy']
+
+    def group_shot(self, robot, target):
+        old=self.memory.robot_raids.get(robot.robot_id,{})
+        failed=old.get('failed_firing',{})
+        just_failed=(old.get('round')==self.turn.round_no-1 and old.get('action')=='attack'
+                     and old.get('attack_target_id')==target.unit_id
+                     and old.get('target')==target.pos and old.get('position')==robot.pos
+                     and self.turn.action_results.get(str(robot.robot_id)) is False)
+        return (not just_failed and self.firing_key(target.pos,robot.pos) not in failed
+                and self.clear_shot(robot,target.pos))
+
+    def shared_controller(self, operators):
+        """Select once per observed turn, before any predicted damage/death."""
+        bosses=self.live_group()
+        if len(bosses)<2 or not operators:
+            return None
+        if 'controller' not in self.focus_cache:
+            previous=self.memory.boss_raid.get('group_focus',{}).get('target_id')
+            options=[]
+            for target in operators:
+                ready=[r for r in bosses if self.group_shot(r,target)]
+                # Physical reach is checked per robot before its command. Rank
+                # the group first, rather than letting each pick a different HP.
+                score=(-len(ready),target.unit_id!=previous,
+                       math.ceil(target.health/max(1,sum(r.attack_power for r in ready))),
+                       target.health,sum(distance(r.pos,target.pos) for r in bosses),target.unit_id)
+                options.append((score,target))
+            target=min(options,key=lambda entry:entry[0])[1]
+            self.focus_cache['controller']=target
+            self.memory.boss_raid['group_focus']=dict(round=self.turn.round_no,
+                kind='controller',target_id=target.unit_id,target=target.pos)
+        return self.focus_cache['controller']
+
+    def shared_obstruction(self, robot, route, base):
+        """Only dismantle a common obstacle when no short base shot exists."""
+        bosses=self.live_group()
+        if len(bosses)<2 or any(self.direct_base_cells(r) for r in bosses):
+            return False
+        if 'obstruction' not in self.focus_cache:
+            obstacles={}
+            for member in bosses:
+                remembered={p for u in self.memory.enemy_structures.values()
+                            for p in self.turn.footprint(u)}
+                paths=Routes(self.turn,member,self.plan.reserved|remembered)
+                firing=self.firing_plan(member,self.turn.footprint(base),paths)
+                if firing is not None and firing[0]<=3:
+                    self.focus_cache['obstruction']=None
+                    return False
+                for target in self.turn.footprint(base):
+                    block=self.planning_blocker(member.pos,target)
+                    if block is not None:
+                        actual=next((u for u in self.turn.enemies if u.unit_id==block[1].unit_id
+                                     and u.health>0 and u.kind in TOWER_TYPES+('wall',)),None)
+                        if actual is not None:
+                            obstacles[actual.unit_id]=actual
+            candidates=[u for u in obstacles.values() if any(self.group_shot(r,u) for r in bosses)]
+            old=self.memory.boss_raid.get('group_focus',{}).get('target_id')
+            self.focus_cache['obstruction']=min(candidates,key=lambda u:(
+                -sum(self.group_shot(r,u) for r in bosses),u.unit_id!=old,u.health,u.unit_id)) if candidates else None
+        target=self.focus_cache['obstruction']
+        if target is None:
+            return False
+        self.memory.boss_raid['group_focus']=dict(round=self.turn.round_no,
+            kind='obstruction',target_id=target.unit_id,target=target.pos)
+        self.diag.set(robot,group_focus=entity(target))
+        if self.group_shot(robot,target):
+            return self.issue(robot,'attack',target.pos,robot.pos,
+                'weapon' if target.kind in TOWER_TYPES else 'breach',pursuit_kind='base',pursuit_rounds=0)
+        firing=self.firing_plan(robot,[target.pos],route)
+        if firing is not None and (step:=route.step({firing[2]})) is not None:
+            return self.issue(robot,'move',step,firing[2],'base',pursuit_kind='base',pursuit_rounds=0)
+        return False
 
     def seen_cell(self, cell):
         # Summoned robots supply no vision; ordinary roles/buildings do (v2 §4.3).
@@ -362,6 +439,8 @@ class RobotRaider:
                              'fallback_to_base' if fallback else 'no_visible_operators_try_base')
         if base is None:
             return False
+        if self.shared_obstruction(robot,route,base):
+            return True
         extra = dict(fallback_reason=fallback,siege_until=focus,pursuit_rounds=0)
         rocket_posts=self.rocket_control_posts() if robot.kind=='bossRobot' else None
         if rocket_posts is not None and self.formation.occupy_rocket_post(robot,base,route,rocket_posts):
@@ -534,6 +613,11 @@ class RobotRaider:
                  and any(distance(u.pos,w.pos)<=1 for w in weapons)])
         old['operator_snapshot'] = tuple((u.unit_id,u.health) for u in crew)
         operators = [u for u in crew if u.health > 0]
+        shared=self.shared_controller(operators)
+        focused_operators=operators
+        if shared is not None:
+            focused_operators=[shared]
+            self.diag.set(robot,group_focus=entity(shared))
         visible = [u for u in self.turn.enemies if u.kind in
                    (CONTROLLABLE_TYPES if rocket_posts is not None else (PIONEER,WORKER))]
         old_id = self.diag.old_jobs.get(robot.robot_id,{}).get('controller_id')
@@ -551,7 +635,7 @@ class RobotRaider:
             operator_count=len(operators),candidates=[])
         if operators:
             choices = []
-            for target in operators:
+            for target in focused_operators:
                 now = time.monotonic()
                 if now >= self.s.deadline:
                     self.diag.set(robot,reason='deadline_during_candidates',deadline_remaining_ms=(self.s.deadline-now)*1000)

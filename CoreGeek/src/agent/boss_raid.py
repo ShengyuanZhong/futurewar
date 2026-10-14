@@ -4,7 +4,7 @@ from .grid import Routes, adjacent_cells
 from .protocol import PIONEER, WORKER, MINERALS, Pos, distance
 from .first_day_tasks import FIRST_DAY_LIMIT, task_attempts, finished_count, success_count
 from .wall_assault import protected_layout, plan_assault
-from .summoning import (rear_spawn_position, scouted_spawn_position,
+from .summoning import (rear_spawn_position, scouted_spawn_position, spawn_side,
                        enemy_base_position, summon_cell_legal)
 
 
@@ -312,6 +312,7 @@ class BossRaid:
             scout_ready=getattr(self.s,'raid_scouts',None).summon_ready() if hasattr(self.s,'raid_scouts') else False,
             spawn_ready=getattr(self.s,'raid_scouts',None).spawn_ready() if hasattr(self.s,'raid_scouts') else False,
             wall_assault=self.state.get('wall_assault'),
+            group_spawn=self.state.get('group_spawn'),group_focus=self.state.get('group_focus'),
             last_buyer_decision=self.state.get('decision'),last_pioneer_decision=self.state.get('decision'))
 
     def available_gold(self):
@@ -379,16 +380,23 @@ class BossRaid:
         key = (count, scouted, frozenset(used), frozenset(failed))
         if key not in self.spawn_cache:
             assault=self.state.get('wall_assault')
+            group=self.state.get('group_spawn',{}) if scouted else {}
+            base=enemy_base_position(self.turn)
+            if group.get('base') != base:
+                group={}
+            anchor=group.get('anchor') or (self.state['spawns'][0] if scouted and self.state['spawns'] else None)
+            side=group.get('side') or (spawn_side(anchor,base) if anchor is not None and base is not None else None)
             if scouted and (assault or protected_layout(self.turn,self.s.settings,
                     self.memory.enemy_structures.values(),self.memory.enemy_weapon_sites)):
                 planned=plan_assault(self.turn,self.s.settings,count,self.memory.enemy_structures.values(),
-                    self.memory.enemy_weapon_sites,used,failed,assault.get('wall_pos') if assault else None)
+                    self.memory.enemy_weapon_sites,used,failed,assault.get('wall_pos') if assault else None,side)
                 if planned is None:
                     self.spawn_cache[key]=[]
                     return []
                 prior=assault.get('spawns',[]) if assault else []
                 self.state['wall_assault']=dict(planned,phase='wall',
                     spawns=list(dict.fromkeys(prior+planned['spawns'])),planned_round=self.turn.round_no)
+                self.state['group_spawn']=dict(base=base,side=planned['side'],anchor=anchor or planned['spawns'][0])
                 self.spawn_cache[key]=planned['spawns']
                 return self.spawn_cache[key]
             positions = []
@@ -396,7 +404,7 @@ class BossRaid:
                 if scouted:
                     pos = scouted_spawn_position(self.turn,self.s.settings,
                         self.memory.enemy_structures.values(),used,failed,
-                        self.memory.raid_scouts.get('surveyed',()),self.memory.enemy_weapon_sites)
+                        self.memory.raid_scouts.get('surveyed',()),self.memory.enemy_weapon_sites,side,anchor)
                 else:
                     # Purchase feasibility only. Actual use needs a confirmed
                     # layout and uses its geometry, never this template.
@@ -409,7 +417,12 @@ class BossRaid:
                         pos = min(legal,key=lambda p:(distance(p,base),p)) if legal else None
                 if pos is None:
                     break
+                if scouted:
+                    side=side or spawn_side(pos,base)
+                    anchor=anchor or pos
                 positions.append(pos); used.add(pos)
+            if scouted and len(positions)==count:
+                self.state['group_spawn']=dict(base=base,side=side,anchor=anchor)
             self.spawn_cache[key] = positions
         return self.spawn_cache[key]
 

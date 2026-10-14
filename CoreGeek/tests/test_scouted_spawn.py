@@ -121,14 +121,17 @@ class ScoutedSpawnTests(unittest.TestCase):
         self.assertIn(replacement, merged)
         self.assertNotIn(known[0], merged)
 
-    def test_closed_first_picture_chooses_right_side_shared_single_wall_breach(self):
+    def test_closed_first_picture_chooses_one_opposite_side_shared_wall(self):
         turn = scene(visible_operator=True)
         first = scouted_spawn_position(turn, Settings())
         second = scouted_spawn_position(turn, Settings(), pending=(first,))
-        self.assertEqual(first, Pos(14, 15))
-        self.assertEqual(second, Pos(15, 15))
-        self.assertEqual(blocking_wall(turn, first, OPERATOR).pos, Pos(13, 15))
-        self.assertEqual(blocking_wall(turn, second, OPERATOR).pos, Pos(13, 15))
+        from agent.summoning import spawn_side, enemy_base_position
+        self.assertEqual((first,second),(Pos(11,11),Pos(11,10)))
+        self.assertEqual(spawn_side(first,enemy_base_position(turn)),'south')
+        self.assertEqual(spawn_side(second,enemy_base_position(turn)),'south')
+        self.assertTrue(any(w.kind=='wall' and w.pos==Pos(11,12) for w in turn.enemies))
+        self.assertTrue(all(distance(p,Pos(11,12))<=3 for p in (first,second)))
+        self.assertTrue(all(blocking_wall(turn,p,Pos(11,12)) is None for p in (first,second)))
 
     def test_diagonal_gap_pictures_choose_two_direct_45_degree_points(self):
         turn = scene(gap=Pos(13, 14), visible_operator=True)

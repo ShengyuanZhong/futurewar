@@ -42,7 +42,9 @@ class ImpOpeningScoutTests(unittest.TestCase):
         self.assertEqual(command['action'], 'move')
         step = Pos.load(command['targetPos'][0])
         self.assertEqual(distance(initial, step), 1)
-        self.assertLess(distance(step, ENEMY_BASE), distance(initial, ENEMY_BASE))
+        flank=memory.raid_scouts['imp_flanks'][IMP_ID]
+        self.assertLess(distance(step,flank['waypoint']),distance(initial,flank['waypoint']))
+        self.assertEqual(flank['phase'],'outbound')
         post = memory.raid_scouts['posts'][IMP_ID]
         self.assertEqual(post['mode'], 'survey')
         self.assertGreater(sum(distance(post['goal'], p) <= 4

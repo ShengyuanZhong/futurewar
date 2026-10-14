@@ -3,6 +3,7 @@ from dataclasses import replace
 from .protocol import CONTROLLABLE_TYPES, IMP, TOWER_TYPES, Pos, distance, move_command, station_footprint
 from .grid import Routes
 from .worker_safety import wall_shelters
+from .scout_flank import flank_step
 from .summoning import (enemy_base_position, enemy_weapon_cells, enemy_layout_weapons,
                        enemy_layout_ready, layout_operator_positions)
 
@@ -23,7 +24,7 @@ class RaidScouts:
             self.state['seen_boss'] = True
         enemy = next((u for u in self.turn.enemies if u.kind == 'station'), None)
         if self.state.get('base') not in (None,self.base):
-            for key in ('surveyed','posts','opening_scout_complete','opening_scout_completed_round'):
+            for key in ('surveyed','posts','opening_scout_complete','opening_scout_completed_round','imp_flanks'):
                 self.state.pop(key,None)
         self.state.update(base=self.base,round=self.turn.round_no)
         self.update_survey()
@@ -128,6 +129,7 @@ class RaidScouts:
         if self.opening_active:
             imps={u.unit_id for u in self.turn.imps()}
             knowledge['posts']={uid:job for uid,job in self.state.get('posts',{}).items() if uid in imps}
+            knowledge['imp_flanks']=self.state.get('imp_flanks',{})
         self.state.clear()
         self.state.update(knowledge)
         if finished:
@@ -357,7 +359,7 @@ class RaidScouts:
                 best = (rounds,cell)
         return best
 
-    def scout_route(self, role, ignore_workers=frozenset()):
+    def scout_route(self, role, ignore_workers=frozenset(), allowed=None):
         reserved = self.s.movement_reserved(role)
         reserved.update(self.spawn_cells() | self.attack_lanes())
         # Previously seen hidden weapons still block paths until real sight clears them.
@@ -379,7 +381,7 @@ class RaidScouts:
                 for y in range(max(0,u.pos.y-2),min(self.turn.height,u.pos.y+3))
                 if Pos(x,y) not in exits)
         return Routes(self.turn,role,reserved,self.s.danger if role.kind!=IMP else None,
-                      self.s.worker_region(role),ignore_workers)
+                      self.s.worker_region(role) if allowed is None else allowed,ignore_workers)
 
     def observe_from(self, role):
         post = self.post(role)
@@ -417,7 +419,7 @@ class RaidScouts:
             if post==role.pos:
                 self.plan.used.add(role.unit_id)
                 return True
-            step = route.step({post})
+            step = flank_step(self,role,post) or route.step({post})
             if step is not None:
                 self.plan.add(role.unit_id,move_command(step))
             return True
@@ -461,5 +463,5 @@ class RaidScouts:
     def diagnostic(self):
         return {key:self.state.get(key) for key in ('round','worker_id','home_worker_id','worker_status',
             'walls_ready','personal_dispatch_round','paused_for_construction','surveyed_count','weapon_cells','weapons','weapon_sites','layout_ready','operator_cells',
-            'opening_scout_complete','opening_scout_completed_round',
+            'opening_scout_complete','opening_scout_completed_round','imp_flanks',
             'worker_near','imp_ready','observer_ids','uncovered_operators','summon_ready','readiness_reason','posts')} | dict(spawn_ready=self.spawn_ready())

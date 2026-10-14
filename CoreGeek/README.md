@@ -1,12 +1,14 @@
 # CoreGeek 参赛 Agent
 
-当前程序版本为 v1.2.23：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后其余11块侧后墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回到可达邻墙维修区，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
+当前程序版本为 v1.2.24：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后其余11块侧后墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回到可达邻墙维修区，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
 
 此目录可作为参赛程序目录提交。沿用示例的 `main3.py`、`src/agent/protocol.py`、`grid.py`、`brain.py`；HTTP 处理与跨回合协作放在 `app`。新增代码无第三方运行依赖。
 
 历史v1.2.8通过569项回归、320份合成压力及四种布局520次跨帧HTTP检查；证据见[验证报告](../reports/VALIDATION-v1.2.8.md)，未运行新官方对局。历史v1.2.7的529项回归、80份合成压力及跨帧HTTP证据保留在[历史报告](../reports/VALIDATION-v1.2.7.md)。
 
-v1.2.23按用户更正保护首日开拓者的任务时间：三次任务尝试全部实际结束且没有活跃任务后，才允许邻格抓捕与近家追捕。任务失败也计一次结束；第三次仅接取、仍在等待题目或提交反馈时均不解锁。工人随时邻格抓捕、采购工用券后回防与其它策略保持，关闭任务配置也不伪造三次尝试。细节见[回防开发文档](docs/IMP_HOME_DEFENSE_V1222.md)，结果见[首日验证](../reports/VALIDATION-v1.2.23.md)。
+v1.2.24更新[侧翼侦察、同侧召唤和共同目标](docs/FLANK_AND_GROUP_FOCUS_V1224.md)：捣乱鬼初次侦察优先分段从上/下侧绕行，保留可见抓捕者避让及路线记忆；同批BOSS固定一个召唤方向并优先靠近首个点。多BOSS优先共同攻击更多成员可直接命中的当前炮手，按实际血量、视野和可命中成员数持续复核目标；需要拆障时尽量集中同一设施，短路直攻基地、共同墙和已占位全队攻基地优先级保留。结果见[首日验证](../reports/VALIDATION-v1.2.24.md)。
+
+历史v1.2.23按用户更正保护首日开拓者的任务时间：三次任务尝试全部实际结束且没有活跃任务后，才允许邻格抓捕与近家追捕。任务失败也计一次结束；第三次仅接取、仍在等待题目或提交反馈时均不解锁。工人随时邻格抓捕、采购工用券后回防与其它策略保持，关闭任务配置也不伪造三次尝试。细节见[回防开发文档](docs/IMP_HOME_DEFENSE_V1222.md)，结果见[首日验证](../reports/VALIDATION-v1.2.23.md)。
 
 历史v1.2.22新增[邻格抓捕与首日回防驱离](docs/IMP_HOME_DEFENSE_V1222.md)：开拓者和工人任何时候发现八邻域内有当前存活敌捣乱鬼，优先catch；三次任务结束后的开拓者与购用券完成后的采购工追捕基地、炮台四格视野范围内的敌捣乱鬼。采购工实际返家一次后继续原补给维护；失视、逃出防区或不可达时结束追逐，不凭旧坐标盲追。抓捕独占本轮动作，活跃任务收到的LLM响应保留到同任务下一轮；不提前计入20金币。细节、函数和诊断见开发文档，结果见[首日验证](../reports/VALIDATION-v1.2.22.md)。
 
@@ -186,6 +188,7 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | [src/agent/worker_safety.py](src/agent/worker_safety.py) | `robot_danger(turn)` | 机器人射程及警戒缓冲的风险图，供工人寻路与矿点筛选 |
 | [src/agent/wall_guard.py](src/agent/wall_guard.py) | `WallGuard(strategy)`、`daytime/nighttime` | 单人夜修/完成后白天经济、双人夜修，均衡备包、轮流采购及实际可达外侧邻墙阈值维修 |
 | [src/agent/imp_policy.py](src/agent/imp_policy.py) | `ImpController(strategy).decide(role)` | 捣乱鬼独立选敌方矿、合法步行、连续destroy和复活恢复 |
+| [src/agent/scout_flank.py](src/agent/scout_flank.py) | `flank_step(scouts,role,post)` | 初次侦察的上下侧路线阶段、通道限制和安全回退，见[开发文档](docs/FLANK_AND_GROUP_FOCUS_V1224.md) |
 | [src/agent/imp_defense.py](src/agent/imp_defense.py) | `ImpDefense(strategy).catch_available/catch_near/defend/diagnostic` | 先锋/工人邻格优先catch，首日任务及购用券后的近家追捕、采购工一次实际返程，见[开发文档](docs/IMP_HOME_DEFENSE_V1222.md) |
 | 同上 | `Routes.nearest(goals)/step(goals)/path(goals,limit=None)` | 最近可达站位、第一步或真实路径；limit限制返回步数 |
 | 同上 | `adjacent_cells(turn, targets)` | 建筑或矿点周围的候选交互格 |
@@ -207,6 +210,7 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | [src/agent/gap_defense.py](src/agent/gap_defense.py) | `WallGapDefense(strategy).worker/imp/other_walls_ready` | 合法墙施工、工人守缺口、捣乱鬼待命和真实死亡后的接替 |
 | [src/agent/boss_raid.py](src/agent/boss_raid.py) | `BossRaid(strategy).worker(role)` | 个人施工完成或购物出发截止时赴店，购物优先于续建；三次结算后按真实成功数购用0～3张，先锋直接回防 |
 | [src/agent/robot_raider.py](src/agent/robot_raider.py) | `RobotRaider(strategy).group_base_ready/wall_assault/rocket_control_posts/decide` | 先判全队基地直射与保护炮手突破，再执行三火箭共同位选敌及其它阵型原策略，见[集中破墙](docs/COORDINATED_WALL_ASSAULT_V1221.md) |
+| 同上 | `shared_controller/group_shot/shared_obstruction` | 当前可见共同目标及真实失败射线、共同障碍，见[侧翼与集火](docs/FLANK_AND_GROUP_FOCUS_V1224.md) |
 | [src/agent/wall_assault.py](src/agent/wall_assault.py) | `protected_layout/plan_assault` | 已确认炮阵与当前全局墙体判定保护、选择不同侧共同墙目标及合法召唤位置，详见[开发文档](docs/COORDINATED_WALL_ASSAULT_V1221.md) |
 | [src/agent/boss_formation.py](src/agent/boss_formation.py) | `BossFormation(raider).ordered_robots/occupy_rocket_post/advance/wait_for_lane` | 单只或多只BOSS尝试安全占共同三炮位；真实占用、保持基地射线和同伴通路短等，见[三火箭 BOSS](docs/ROCKET_CONTROL_V1219.md)与[多BOSS进位](docs/BOSS_FORMATION_V1214.md) |
 | [src/agent/raid_diagnostics.py](src/agent/raid_diagnostics.py) | `RaidDiagnostics(strategy).set/event/finish` | 复用观测和路径检查，记录目标、移动/攻击反馈与最终指令；字段/参数见[诊断说明](docs/ROBOT_DIAGNOSTICS.md) |
@@ -265,4 +269,4 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 
 0.4.2接入用户提供的`print_log.py`格式：每个新回合记录`[TASK-DEBUG]`，完整打印phaseTask、llmResp、lastCmdResult、本轮prompt和executeCmd。stderr为默认输出，具体映射见[任务日志](docs/TASK_LOGGING.md)。
 
-当前验证仅覆盖第一天，见[首日验证报告](../reports/VALIDATION-v1.2.23.md)。v1.2.9的全量回归为历史证据；本轮未运行新官方对局。
+当前验证仅覆盖第一天，见[首日验证报告](../reports/VALIDATION-v1.2.24.md)。v1.2.9的全量回归为历史证据；本轮未运行新官方对局。

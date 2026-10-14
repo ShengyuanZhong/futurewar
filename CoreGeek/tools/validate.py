@@ -213,6 +213,17 @@ def independent_contract(raw, response, controller_budget=4, known_weapon_sites=
                          independent_planning_clear(raw,Pos.load(r['pos']),p) for p in base_cells) for r in bosses))
     enemy_wall_cells = {Pos.load(u['pos']) for u in enemy_roles
                         if u['health'] > 0 and u['roleType'] == 'wall'}
+    active_bosses=[r for r in bosses if r.get('abnormalState')!='dizzy']
+    shared_crew=None
+    if len(active_bosses)>1 and not group_ready and not base_focus:
+        crew_hits={Pos.load(u['pos']) for u in cannon_crews}
+        chosen={Pos.load(c['targetPos'][0]) for key,c in response['roleCommandMap'].items()
+                if key in owned and c['action']=='attack' and Pos.load(c['targetPos'][0]) in crew_hits}
+        assert len(chosen)<=1, 'BOSS group must not split its cannon-crew fire'
+        if chosen:
+            shared_crew=next(iter(chosen))
+            count=lambda p: sum(independent_planning_clear(raw,Pos.load(r['pos']),p) for r in active_bosses)
+            assert count(shared_crew)==max(count(p) for p in crew_hits), 'prefer a jointly hittable observed crew'
     for key, boss in owned.items():
         if (boss['roleType'] != 'bossRobot' or boss['health'] <= 0
                 or boss.get('abnormalState') == 'dizzy' or not 71 <= raw['roundNo'] <= 130):
@@ -223,6 +234,10 @@ def independent_contract(raw, response, controller_budget=4, known_weapon_sites=
             assert command.get('action')=='attack' and Pos.load(command['targetPos'][0]) in base_cells, 'ready occupied group must focus the base'
             continue
         if base_focus:
+            continue
+        if shared_crew is not None:
+            if independent_planning_clear(raw,origin,shared_crew):
+                assert response['roleCommandMap'].get(key)==dict(action='attack',targetPos=[shared_crew.dump()]), 'available group shot must share its target'
             continue
         direct = [u for u in cannon_crews if independent_planning_clear(raw,origin,Pos.load(u['pos']))]
         if direct:

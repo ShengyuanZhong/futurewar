@@ -2,11 +2,13 @@
 
 以初赛基线为基础，按 `32_docs/` v2.0 文档逐项扩展的参赛 HTTP Agent；规则来源见 `DEVELOPMENT_RULES.md`。保留 CoreGeek 的 `main3.py → src/agent` 基础结构，新增 `CoreGeek/app` 应用层。运行仅依赖 Python 标准库，Python 3.10 及以上。
 
-当前程序版本为 `v1.2.21`，基于用户确认的v0.4基准，版本声明见 [CoreGeek/pyproject.toml](CoreGeek/pyproject.toml)。开局仍为三火箭→采石→17墙蓝图（工人先撤出，随后从外侧完整封闭），随后集中升满一台火箭；第二天起依次强化正中两墙3级、第二台火箭2级、正面其余四墙2→3级、所有火箭3级，最后把其余11块侧后墙升2级；不升级基地。全部目标达成后，两名工人白天继续采矿售矿、批量购包，黄昏回防，夜间双人维修。阈值仍为严格低于30%。详细坐标、镜像、购买规则和关键函数见[建筑维护](CoreGeek/docs/MAINTENANCE.md)。沿用工人独立任务、让行、城墙掩护与动态备货，见[工人协作](CoreGeek/docs/WORKER_COORDINATION.md)。沿用昼夜统一工人经济流程，夜间可继续采购与配送升级券，维修工在实际可达维修区域兼顾升级，详见[昼夜统一调度](CoreGeek/docs/WORKER_SCHEDULE.md)。根据bug_log1/bug_log2进一步拆分通行与施工预约，修复虚拟墙环封路并避免预建位驱离引起的折返；历史问题见[日志定位与修复](CoreGeek/docs/WORKER_PATH_FIX.md)，当前实现见[首日修复](CoreGeek/docs/OPENING_BUG_V1210.md)。v0.4基准已[归档](reports/BASELINE-v0.4.md)。0.4.1根据teamA(2)失败记录修正任务经验：过滤退出码0的业务/脚本失败、保留真实JSON层级及字段、补充解析/引号诊断并压缩短任务步骤；详见[失败任务修正](CoreGeek/docs/TASK_FAILURE_LEARNING.md)。战斗和工人策略沿用基准。0.4.2接入用户提供的任务交互日志格式，见[日志开发文档](CoreGeek/docs/TASK_LOGGING.md)。0.4.3整合新版任务控制器与提示词，包含分类经验、临期预算、占位答案拦截和按奖励增量判定成功；双任务点调度沿用上一版，详见[任务模块接入](CoreGeek/docs/TASK_INTEGRATION.md)。
+当前程序版本为 `v1.2.24`，基于用户确认的v0.4基准，版本声明见 [CoreGeek/pyproject.toml](CoreGeek/pyproject.toml)。开局仍为三火箭→采石→17墙蓝图（工人先撤出，随后从外侧完整封闭），随后集中升满一台火箭；第二天起依次强化正中两墙3级、第二台火箭2级、正面其余四墙2→3级、所有火箭3级，最后把其余11块侧后墙升2级；不升级基地。全部目标达成后，两名工人白天继续采矿售矿、批量购包，黄昏回防，夜间双人维修。阈值仍为严格低于30%。详细坐标、镜像、购买规则和关键函数见[建筑维护](CoreGeek/docs/MAINTENANCE.md)。沿用工人独立任务、让行、城墙掩护与动态备货，见[工人协作](CoreGeek/docs/WORKER_COORDINATION.md)。沿用昼夜统一工人经济流程，夜间可继续采购与配送升级券，维修工在实际可达维修区域兼顾升级，详见[昼夜统一调度](CoreGeek/docs/WORKER_SCHEDULE.md)。根据bug_log1/bug_log2进一步拆分通行与施工预约，修复虚拟墙环封路并避免预建位驱离引起的折返；历史问题见[日志定位与修复](CoreGeek/docs/WORKER_PATH_FIX.md)，当前实现见[首日修复](CoreGeek/docs/OPENING_BUG_V1210.md)。v0.4基准已[归档](reports/BASELINE-v0.4.md)。0.4.1根据teamA(2)失败记录修正任务经验：过滤退出码0的业务/脚本失败、保留真实JSON层级及字段、补充解析/引号诊断并压缩短任务步骤；详见[失败任务修正](CoreGeek/docs/TASK_FAILURE_LEARNING.md)。战斗和工人策略沿用基准。0.4.2接入用户提供的任务交互日志格式，见[日志开发文档](CoreGeek/docs/TASK_LOGGING.md)。0.4.3整合新版任务控制器与提示词，包含分类经验、临期预算、占位答案拦截和按奖励增量判定成功；双任务点调度沿用上一版，详见[任务模块接入](CoreGeek/docs/TASK_INTEGRATION.md)。
 
 已进入32强。用户提供的 [32进16需求变更](32_docs/2026云核心网第十届编程大赛-32进16-需求变更.md)、[v2.0任务书](32_docs/任务书.md)、[v2.0接口文档](32_docs/接口文档.md)及[新版报文样例](32_docs/request.txt)是**后续复赛开发**的参照，优先于根目录初赛 v1.0 文档中的冲突条款。v1.0 是变更前封版；当前已接入捣乱鬼move/destroy、召唤坐标和本方机器人move/attack，新增第一夜BOSS策略。小车已解析并用于首日侦察，其它复赛改动继续逐项开发，范围见[复赛规则接入索引](CoreGeek/docs/ROUND_OF_32_RULES.md)，封版证据见[v1.0基准记录](reports/BASELINE-v1.0.md)。
 
-v1.2.23按用户更正保护首日开拓者的任务时间：三次任务尝试全部实际结束且没有活跃任务后，才允许邻格抓捕与近家追捕。任务失败也计一次结束；第三次仅接取、仍在等待题目或提交反馈时均不解锁。工人随时邻格抓捕、采购工用券后回防与其它策略保持，关闭任务配置也不伪造三次尝试。细节见[回防开发文档](CoreGeek/docs/IMP_HOME_DEFENSE_V1222.md)，结果见[首日验证](reports/VALIDATION-v1.2.23.md)。
+v1.2.24更新[侧翼侦察、同侧召唤和共同目标](CoreGeek/docs/FLANK_AND_GROUP_FOCUS_V1224.md)：捣乱鬼初次侦察优先分段从上/下侧绕行，保留可见抓捕者避让及路线记忆；同批BOSS固定一个召唤方向并优先靠近首个点。多BOSS优先共同攻击更多成员可直接命中的当前炮手，按实际血量、视野和可命中成员数持续复核目标；需要拆障时尽量集中同一设施，短路直攻基地、共同墙和已占位全队攻基地优先级保留。结果见[首日验证](reports/VALIDATION-v1.2.24.md)。
+
+历史v1.2.23按用户更正保护首日开拓者的任务时间：三次任务尝试全部实际结束且没有活跃任务后，才允许邻格抓捕与近家追捕。任务失败也计一次结束；第三次仅接取、仍在等待题目或提交反馈时均不解锁。工人随时邻格抓捕、采购工用券后回防与其它策略保持，关闭任务配置也不伪造三次尝试。细节见[回防开发文档](CoreGeek/docs/IMP_HOME_DEFENSE_V1222.md)，结果见[首日验证](reports/VALIDATION-v1.2.23.md)。
 
 历史v1.2.22新增[邻格抓捕与首日回防驱离](CoreGeek/docs/IMP_HOME_DEFENSE_V1222.md)：开拓者和工人任何时候发现八邻域内有当前存活敌捣乱鬼，优先catch；三次任务结束后的开拓者与购用券完成后的采购工追捕基地、炮台四格视野范围内的敌捣乱鬼。采购工实际返家一次后继续原补给维护；失视、逃出防区或不可达时结束追逐，不凭旧坐标盲追。抓捕独占本轮动作，活跃任务收到的LLM响应保留到同任务下一轮；不提前计入20金币。细节、函数和诊断见开发文档，结果见[首日验证](reports/VALIDATION-v1.2.22.md)。
 
@@ -238,6 +240,7 @@ futurewar/
     │       ├── robot_combat.py      # 机器人射程/可见目标/城墙遮挡检查
     │       ├── raid_diagnostics.py  # BOSS逐回合候选/移动/攻击事实与原因日志
     │       ├── raid_scouts.py       # 捣乱鬼先探敌、炮阵扫描、工人取车、召唤/视野分离
+    │       ├── scout_flank.py       # 初次侦察上下侧绕行、阶段记忆、受阻安全回退
     │       ├── first_night_defense.py # 先保留BOSS费用后的首日补给、回防与维修
     │       ├── summoning.py         # 实际/镜像敌基地、后排出生点与召唤区域约束
     │       ├── brain.py             # 昼夜策略、经济、建造、回防、接任务、宝藏行动
@@ -887,8 +890,10 @@ Strategy.run() -> None
 | `damage_for(turn, tower, target, health)` | 炮台、落点、预测剩余HP字典 | 返回`机器人ID → 本发预计伤害`，不修改真实HP；适用于单发伤害估值 |
 | `choose_targets(turn, tower, expected_health, deadline=inf)` | 当前观测、炮台、全队本轮预测HP、绝对软截止时间 | 所有火箭占用中心按九宫格Σ(分/当前HP)最大；三级2+1或全防守；完整方案后才更新expected_health |
 | `protected_layout(turn, settings, remembered=(), confirmed_sites=())` | 当前Turn、Settings、真实建筑记忆与炮位缓存 | 判定炮手或最佳操炮位是否需破墙才能攻击；不创建移动单位，详见[集中破墙](CoreGeek/docs/COORDINATED_WALL_ASSAULT_V1221.md) |
-| `plan_assault(turn, settings, count, remembered=(), confirmed_sites=(), pending=(), failed=(), preferred_wall=None)` | 当前布局、追加召唤数量、炮位知识、已预约/失败位置与可选旧墙目标 | 统一墙目标、进攻侧与合法召唤点；签名及字段见[集中破墙](CoreGeek/docs/COORDINATED_WALL_ASSAULT_V1221.md) |
+| `plan_assault(turn, settings, count, remembered=(), confirmed_sites=(), pending=(), failed=(), preferred_wall=None, preferred_side=None)` | 当前布局、追加召唤数量、炮位知识、已预约/失败位置与可选旧墙目标 | 统一墙目标、进攻侧与合法召唤点；签名及字段见[集中破墙](CoreGeek/docs/COORDINATED_WALL_ASSAULT_V1221.md) |
 | `RobotRaider.group_base_ready()` | 无→bool | 最佳位已被本方BOSS占住且每只存活BOSS当前均有合法基地射线时启用全队基地攻击优先 |
+| `flank_step(scouts,role,post)` | 侦察控制器、imp、真实观察位→Pos或None | 三段侧翼路线，抓捕禁区与真实障碍保持；None回到原安全路径，见[开发文档](CoreGeek/docs/FLANK_AND_GROUP_FOCUS_V1224.md) |
+| `RobotRaider.shared_controller(operators)` / `shared_obstruction(robot,route,base)` | 当前合格人员 / 机器人路线与基地 | 多BOSS共同目标、可射成员数优先和同一挡路设施，详见[函数与状态](CoreGeek/docs/FLANK_AND_GROUP_FOCUS_V1224.md) |
 | `RobotRaider.wall_assault(robot, route)` | 当前BOSS、真实Routes→bool | 按共享计划拆同一堵墙，实际破口后攻击基地；不预测当轮墙已死亡 |
 | `RobotRaider.rocket_control_posts()` | 无→tuple[Pos,...]或None | 三火箭共同位；None为旧策略，空元组仍保持三火箭人员限制，见[开发文档](CoreGeek/docs/ROCKET_CONTROL_V1219.md) |
 | `BossFormation.occupy_rocket_post(robot,base,route,posts)` | 当前BOSS、敌基地、真实路线与共同位→bool | 单只/多只安全进位；本轮只移动，后续按真实位置攻击 |
@@ -1157,4 +1162,4 @@ python CoreGeek/tools/validate.py --cases 20 --output reports/validation-v1.2.4.
 
 后续开发按`DEVELOPMENT_RULES.md`标注变更类别与R编号，保留官方原文；规则修复先保留独立失败案例。每次新增状态或策略能力时同步更新本文的目录、函数表和参数说明。
 
-v1.2.23按用户要求只验证第一天；范围、结果和源码哈希见[首日验证报告](reports/VALIDATION-v1.2.23.md)。v1.2.20使用的原始build_bug3日志保留在temp中；本版依据用户两张阵型图，运行时和测试均不依赖temp存在。v1.2.9的625项回归、320份合成压力与1105次HTTP为[历史证据](reports/VALIDATION-v1.2.9.md)，不作为当前官方对局结果。
+v1.2.24按用户要求只验证第一天；范围、结果和源码哈希见[首日验证报告](reports/VALIDATION-v1.2.24.md)。v1.2.20使用的原始build_bug3日志保留在temp中；本版依据用户两张阵型图，运行时和测试均不依赖temp存在。v1.2.9的625项回归、320份合成压力与1105次HTTP为[历史证据](reports/VALIDATION-v1.2.9.md)，不作为当前官方对局结果。

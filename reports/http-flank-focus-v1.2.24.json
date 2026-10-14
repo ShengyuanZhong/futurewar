@@ -1,0 +1,2601 @@
+{
+  "scope": "First day public synthetic observations over real localhost HTTP; not official matches",
+  "assumptions": "Prebuilt observation fixtures; stationary enemy guns and crews; 40 simultaneous BOSS damage; no enemy return fire",
+  "no_private_memory_seed": true,
+  "execute_cmd_executed": false,
+  "requests": 92,
+  "cases": [
+    {
+      "case": "flank-False",
+      "survey_all_guns_round": 39,
+      "path": [
+        {
+          "x": 11,
+          "y": 21
+        },
+        {
+          "x": 10,
+          "y": 20
+        },
+        {
+          "x": 9,
+          "y": 19
+        },
+        {
+          "x": 8,
+          "y": 18
+        },
+        {
+          "x": 7,
+          "y": 17
+        },
+        {
+          "x": 7,
+          "y": 16
+        },
+        {
+          "x": 7,
+          "y": 15
+        },
+        {
+          "x": 7,
+          "y": 14
+        },
+        {
+          "x": 7,
+          "y": 13
+        },
+        {
+          "x": 7,
+          "y": 12
+        },
+        {
+          "x": 7,
+          "y": 11
+        },
+        {
+          "x": 7,
+          "y": 10
+        },
+        {
+          "x": 7,
+          "y": 9
+        },
+        {
+          "x": 7,
+          "y": 8
+        },
+        {
+          "x": 7,
+          "y": 7
+        },
+        {
+          "x": 7,
+          "y": 6
+        },
+        {
+          "x": 8,
+          "y": 5
+        },
+        {
+          "x": 9,
+          "y": 4
+        },
+        {
+          "x": 10,
+          "y": 3
+        },
+        {
+          "x": 11,
+          "y": 3
+        },
+        {
+          "x": 12,
+          "y": 3
+        },
+        {
+          "x": 13,
+          "y": 3
+        },
+        {
+          "x": 14,
+          "y": 3
+        },
+        {
+          "x": 15,
+          "y": 3
+        },
+        {
+          "x": 16,
+          "y": 3
+        },
+        {
+          "x": 17,
+          "y": 3
+        },
+        {
+          "x": 18,
+          "y": 3
+        },
+        {
+          "x": 19,
+          "y": 3
+        },
+        {
+          "x": 20,
+          "y": 3
+        },
+        {
+          "x": 21,
+          "y": 3
+        },
+        {
+          "x": 22,
+          "y": 3
+        },
+        {
+          "x": 23,
+          "y": 3
+        },
+        {
+          "x": 24,
+          "y": 3
+        },
+        {
+          "x": 25,
+          "y": 3
+        },
+        {
+          "x": 26,
+          "y": 4
+        },
+        {
+          "x": 25,
+          "y": 5
+        },
+        {
+          "x": 26,
+          "y": 6
+        },
+        {
+          "x": 27,
+          "y": 7
+        }
+      ],
+      "gun_sites": [
+        {
+          "x": 29,
+          "y": 9
+        },
+        {
+          "x": 29,
+          "y": 10
+        },
+        {
+          "x": 29,
+          "y": 11
+        }
+      ]
+    },
+    {
+      "case": "flank-True",
+      "survey_all_guns_round": 35,
+      "path": [
+        {
+          "x": 28,
+          "y": 9
+        },
+        {
+          "x": 27,
+          "y": 8
+        },
+        {
+          "x": 26,
+          "y": 7
+        },
+        {
+          "x": 27,
+          "y": 6
+        },
+        {
+          "x": 28,
+          "y": 5
+        },
+        {
+          "x": 27,
+          "y": 4
+        },
+        {
+          "x": 26,
+          "y": 4
+        },
+        {
+          "x": 25,
+          "y": 4
+        },
+        {
+          "x": 24,
+          "y": 4
+        },
+        {
+          "x": 23,
+          "y": 4
+        },
+        {
+          "x": 22,
+          "y": 4
+        },
+        {
+          "x": 21,
+          "y": 4
+        },
+        {
+          "x": 20,
+          "y": 4
+        },
+        {
+          "x": 19,
+          "y": 4
+        },
+        {
+          "x": 18,
+          "y": 4
+        },
+        {
+          "x": 17,
+          "y": 4
+        },
+        {
+          "x": 16,
+          "y": 4
+        },
+        {
+          "x": 15,
+          "y": 4
+        },
+        {
+          "x": 14,
+          "y": 5
+        },
+        {
+          "x": 13,
+          "y": 6
+        },
+        {
+          "x": 12,
+          "y": 7
+        },
+        {
+          "x": 12,
+          "y": 8
+        },
+        {
+          "x": 12,
+          "y": 9
+        },
+        {
+          "x": 12,
+          "y": 10
+        },
+        {
+          "x": 12,
+          "y": 11
+        },
+        {
+          "x": 12,
+          "y": 12
+        },
+        {
+          "x": 12,
+          "y": 13
+        },
+        {
+          "x": 12,
+          "y": 14
+        },
+        {
+          "x": 12,
+          "y": 15
+        },
+        {
+          "x": 12,
+          "y": 16
+        },
+        {
+          "x": 12,
+          "y": 17
+        },
+        {
+          "x": 12,
+          "y": 18
+        },
+        {
+          "x": 13,
+          "y": 19
+        },
+        {
+          "x": 12,
+          "y": 20
+        }
+      ],
+      "gun_sites": [
+        {
+          "x": 8,
+          "y": 21
+        },
+        {
+          "x": 8,
+          "y": 22
+        },
+        {
+          "x": 8,
+          "y": 23
+        }
+      ]
+    },
+    {
+      "case": "focus-False-False",
+      "common_shots": [
+        {
+          "round": 71,
+          "target": {
+            "x": 12,
+            "y": 19
+          },
+          "robots": [
+            30005,
+            30006
+          ]
+        },
+        {
+          "round": 72,
+          "target": {
+            "x": 12,
+            "y": 19
+          },
+          "robots": [
+            30005,
+            30006
+          ]
+        },
+        {
+          "round": 73,
+          "target": {
+            "x": 12,
+            "y": 19
+          },
+          "robots": [
+            30005,
+            30006
+          ]
+        }
+      ],
+      "common_health_final": 0
+    },
+    {
+      "case": "focus-True-False",
+      "common_shots": [
+        {
+          "round": 71,
+          "target": {
+            "x": 28,
+            "y": 19
+          },
+          "robots": [
+            30005,
+            30006
+          ]
+        },
+        {
+          "round": 72,
+          "target": {
+            "x": 28,
+            "y": 19
+          },
+          "robots": [
+            30005,
+            30006
+          ]
+        },
+        {
+          "round": 73,
+          "target": {
+            "x": 28,
+            "y": 19
+          },
+          "robots": [
+            30005,
+            30006
+          ]
+        }
+      ],
+      "common_health_final": 0
+    },
+    {
+      "case": "focus-False-True",
+      "common_shots": [
+        {
+          "round": 71,
+          "target": {
+            "x": 12,
+            "y": 12
+          },
+          "robots": [
+            30005,
+            30006
+          ]
+        },
+        {
+          "round": 72,
+          "target": {
+            "x": 12,
+            "y": 12
+          },
+          "robots": [
+            30005,
+            30006
+          ]
+        },
+        {
+          "round": 73,
+          "target": {
+            "x": 12,
+            "y": 12
+          },
+          "robots": [
+            30005,
+            30006
+          ]
+        }
+      ],
+      "common_health_final": 0
+    },
+    {
+      "case": "focus-True-True",
+      "common_shots": [
+        {
+          "round": 71,
+          "target": {
+            "x": 28,
+            "y": 12
+          },
+          "robots": [
+            30005,
+            30006
+          ]
+        },
+        {
+          "round": 72,
+          "target": {
+            "x": 28,
+            "y": 12
+          },
+          "robots": [
+            30005,
+            30006
+          ]
+        },
+        {
+          "round": 73,
+          "target": {
+            "x": 28,
+            "y": 12
+          },
+          "robots": [
+            30005,
+            30006
+          ]
+        }
+      ],
+      "common_health_final": 0
+    }
+  ],
+  "results": [
+    {
+      "case": "flank-False",
+      "round": 1,
+      "status": 200,
+      "elapsed_ms": 52.366,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 11,
+              "y": 21
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 2,
+      "status": 200,
+      "elapsed_ms": 58.743,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 20
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 3,
+      "status": 200,
+      "elapsed_ms": 60.212,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 9,
+              "y": 19
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 4,
+      "status": 200,
+      "elapsed_ms": 46.316,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 8,
+              "y": 18
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 5,
+      "status": 200,
+      "elapsed_ms": 46.247,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 7,
+              "y": 17
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 6,
+      "status": 200,
+      "elapsed_ms": 46.215,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 7,
+              "y": 16
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 7,
+      "status": 200,
+      "elapsed_ms": 45.993,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 7,
+              "y": 15
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 8,
+      "status": 200,
+      "elapsed_ms": 36.069,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 7,
+              "y": 14
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 9,
+      "status": 200,
+      "elapsed_ms": 59.67,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 7,
+              "y": 13
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 10,
+      "status": 200,
+      "elapsed_ms": 63.466,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 7,
+              "y": 12
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 11,
+      "status": 200,
+      "elapsed_ms": 58.891,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 7,
+              "y": 11
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 12,
+      "status": 200,
+      "elapsed_ms": 47.716,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 7,
+              "y": 10
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 13,
+      "status": 200,
+      "elapsed_ms": 46.207,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 7,
+              "y": 9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 14,
+      "status": 200,
+      "elapsed_ms": 46.906,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 7,
+              "y": 8
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 15,
+      "status": 200,
+      "elapsed_ms": 47.217,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 7,
+              "y": 7
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 16,
+      "status": 200,
+      "elapsed_ms": 46.736,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 7,
+              "y": 6
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 17,
+      "status": 200,
+      "elapsed_ms": 45.037,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 8,
+              "y": 5
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 18,
+      "status": 200,
+      "elapsed_ms": 47.252,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 9,
+              "y": 4
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 19,
+      "status": 200,
+      "elapsed_ms": 45.214,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 20,
+      "status": 200,
+      "elapsed_ms": 46.5,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 11,
+              "y": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 21,
+      "status": 200,
+      "elapsed_ms": 46.669,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 22,
+      "status": 200,
+      "elapsed_ms": 46.643,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 13,
+              "y": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 23,
+      "status": 200,
+      "elapsed_ms": 46.514,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 14,
+              "y": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 24,
+      "status": 200,
+      "elapsed_ms": 45.786,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 15,
+              "y": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 25,
+      "status": 200,
+      "elapsed_ms": 46.437,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 16,
+              "y": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 26,
+      "status": 200,
+      "elapsed_ms": 46.13,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 17,
+              "y": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 27,
+      "status": 200,
+      "elapsed_ms": 49.538,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 18,
+              "y": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 28,
+      "status": 200,
+      "elapsed_ms": 43.551,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 19,
+              "y": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 29,
+      "status": 200,
+      "elapsed_ms": 33.298,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 20,
+              "y": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 30,
+      "status": 200,
+      "elapsed_ms": 44.545,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 21,
+              "y": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 31,
+      "status": 200,
+      "elapsed_ms": 45.517,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 22,
+              "y": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 32,
+      "status": 200,
+      "elapsed_ms": 46.431,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 23,
+              "y": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 33,
+      "status": 200,
+      "elapsed_ms": 45.924,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 24,
+              "y": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 34,
+      "status": 200,
+      "elapsed_ms": 46.475,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 25,
+              "y": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 35,
+      "status": 200,
+      "elapsed_ms": 47.155,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 26,
+              "y": 4
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 36,
+      "status": 200,
+      "elapsed_ms": 46.576,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 25,
+              "y": 5
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 37,
+      "status": 200,
+      "elapsed_ms": 46.048,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 26,
+              "y": 6
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-False",
+      "round": 38,
+      "status": 200,
+      "elapsed_ms": 46.761,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 27,
+              "y": 7
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 1,
+      "status": 200,
+      "elapsed_ms": 49.227,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 28,
+              "y": 9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 2,
+      "status": 200,
+      "elapsed_ms": 60.601,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 27,
+              "y": 8
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 3,
+      "status": 200,
+      "elapsed_ms": 44.126,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 26,
+              "y": 7
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 4,
+      "status": 200,
+      "elapsed_ms": 46.176,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 27,
+              "y": 6
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 5,
+      "status": 200,
+      "elapsed_ms": 50.785,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 28,
+              "y": 5
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 6,
+      "status": 200,
+      "elapsed_ms": 57.66,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 27,
+              "y": 4
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 7,
+      "status": 200,
+      "elapsed_ms": 45.532,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 26,
+              "y": 4
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 8,
+      "status": 200,
+      "elapsed_ms": 47.307,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 25,
+              "y": 4
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 9,
+      "status": 200,
+      "elapsed_ms": 46.599,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 24,
+              "y": 4
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 10,
+      "status": 200,
+      "elapsed_ms": 46.862,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 23,
+              "y": 4
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 11,
+      "status": 200,
+      "elapsed_ms": 46.852,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 22,
+              "y": 4
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 12,
+      "status": 200,
+      "elapsed_ms": 47.123,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 21,
+              "y": 4
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 13,
+      "status": 200,
+      "elapsed_ms": 46.741,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 20,
+              "y": 4
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 14,
+      "status": 200,
+      "elapsed_ms": 47.66,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 19,
+              "y": 4
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 15,
+      "status": 200,
+      "elapsed_ms": 45.805,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 18,
+              "y": 4
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 16,
+      "status": 200,
+      "elapsed_ms": 46.561,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 17,
+              "y": 4
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 17,
+      "status": 200,
+      "elapsed_ms": 45.844,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 16,
+              "y": 4
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 18,
+      "status": 200,
+      "elapsed_ms": 46.274,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 15,
+              "y": 4
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 19,
+      "status": 200,
+      "elapsed_ms": 47.784,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 14,
+              "y": 5
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 20,
+      "status": 200,
+      "elapsed_ms": 46.205,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 13,
+              "y": 6
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 21,
+      "status": 200,
+      "elapsed_ms": 51.009,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 7
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 22,
+      "status": 200,
+      "elapsed_ms": 58.114,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 8
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 23,
+      "status": 200,
+      "elapsed_ms": 45.985,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 24,
+      "status": 200,
+      "elapsed_ms": 45.559,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 10
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 25,
+      "status": 200,
+      "elapsed_ms": 45.113,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 11
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 26,
+      "status": 200,
+      "elapsed_ms": 44.871,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 12
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 27,
+      "status": 200,
+      "elapsed_ms": 46.361,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 13
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 28,
+      "status": 200,
+      "elapsed_ms": 47.311,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 14
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 29,
+      "status": 200,
+      "elapsed_ms": 46.311,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 15
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 30,
+      "status": 200,
+      "elapsed_ms": 48.26,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 16
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 31,
+      "status": 200,
+      "elapsed_ms": 46.273,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 17
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 32,
+      "status": 200,
+      "elapsed_ms": 48.349,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 18
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 33,
+      "status": 200,
+      "elapsed_ms": 46.747,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 13,
+              "y": 19
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "flank-True",
+      "round": 34,
+      "status": 200,
+      "elapsed_ms": 51.355,
+      "commands": {
+        "505": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 20
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "focus-False-False",
+      "round": 71,
+      "status": 200,
+      "elapsed_ms": 156.907,
+      "commands": {
+        "30005": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 19
+            }
+          ]
+        },
+        "30006": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 19
+            }
+          ]
+        }
+      },
+      "observed_heroes": [
+        {
+          "id": 41000,
+          "hp": 1,
+          "pos": {
+            "x": 13,
+            "y": 21
+          }
+        },
+        {
+          "id": 41001,
+          "hp": 200,
+          "pos": {
+            "x": 12,
+            "y": 19
+          }
+        }
+      ]
+    },
+    {
+      "case": "focus-False-False",
+      "round": 72,
+      "status": 200,
+      "elapsed_ms": 155.691,
+      "commands": {
+        "30005": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 19
+            }
+          ]
+        },
+        "30006": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 19
+            }
+          ]
+        }
+      },
+      "observed_heroes": [
+        {
+          "id": 41000,
+          "hp": 1,
+          "pos": {
+            "x": 13,
+            "y": 21
+          }
+        },
+        {
+          "id": 41001,
+          "hp": 120,
+          "pos": {
+            "x": 12,
+            "y": 19
+          }
+        }
+      ]
+    },
+    {
+      "case": "focus-False-False",
+      "round": 73,
+      "status": 200,
+      "elapsed_ms": 158.014,
+      "commands": {
+        "30005": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 19
+            }
+          ]
+        },
+        "30006": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 19
+            }
+          ]
+        }
+      },
+      "observed_heroes": [
+        {
+          "id": 41000,
+          "hp": 1,
+          "pos": {
+            "x": 13,
+            "y": 21
+          }
+        },
+        {
+          "id": 41001,
+          "hp": 40,
+          "pos": {
+            "x": 12,
+            "y": 19
+          }
+        }
+      ]
+    },
+    {
+      "case": "focus-False-False",
+      "round": 74,
+      "status": 200,
+      "elapsed_ms": 150.352,
+      "commands": {
+        "30005": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 13,
+              "y": 21
+            }
+          ]
+        },
+        "30006": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 18
+            }
+          ]
+        }
+      },
+      "observed_heroes": [
+        {
+          "id": 41000,
+          "hp": 1,
+          "pos": {
+            "x": 13,
+            "y": 21
+          }
+        },
+        {
+          "id": 41001,
+          "hp": 0,
+          "pos": {
+            "x": 12,
+            "y": 19
+          }
+        }
+      ]
+    },
+    {
+      "case": "focus-False-False",
+      "round": 75,
+      "status": 200,
+      "elapsed_ms": 178.781,
+      "commands": {
+        "30005": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 11,
+              "y": 20
+            }
+          ]
+        },
+        "30006": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 11,
+              "y": 17
+            }
+          ]
+        }
+      },
+      "observed_heroes": [
+        {
+          "id": 41000,
+          "hp": 0,
+          "pos": {
+            "x": 13,
+            "y": 21
+          }
+        },
+        {
+          "id": 41001,
+          "hp": 0,
+          "pos": {
+            "x": 12,
+            "y": 19
+          }
+        }
+      ]
+    },
+    {
+      "case": "focus-True-False",
+      "round": 71,
+      "status": 200,
+      "elapsed_ms": 154.403,
+      "commands": {
+        "30005": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 28,
+              "y": 19
+            }
+          ]
+        },
+        "30006": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 28,
+              "y": 19
+            }
+          ]
+        }
+      },
+      "observed_heroes": [
+        {
+          "id": 41000,
+          "hp": 1,
+          "pos": {
+            "x": 27,
+            "y": 21
+          }
+        },
+        {
+          "id": 41001,
+          "hp": 200,
+          "pos": {
+            "x": 28,
+            "y": 19
+          }
+        }
+      ]
+    },
+    {
+      "case": "focus-True-False",
+      "round": 72,
+      "status": 200,
+      "elapsed_ms": 154.419,
+      "commands": {
+        "30005": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 28,
+              "y": 19
+            }
+          ]
+        },
+        "30006": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 28,
+              "y": 19
+            }
+          ]
+        }
+      },
+      "observed_heroes": [
+        {
+          "id": 41000,
+          "hp": 1,
+          "pos": {
+            "x": 27,
+            "y": 21
+          }
+        },
+        {
+          "id": 41001,
+          "hp": 120,
+          "pos": {
+            "x": 28,
+            "y": 19
+          }
+        }
+      ]
+    },
+    {
+      "case": "focus-True-False",
+      "round": 73,
+      "status": 200,
+      "elapsed_ms": 154.343,
+      "commands": {
+        "30005": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 28,
+              "y": 19
+            }
+          ]
+        },
+        "30006": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 28,
+              "y": 19
+            }
+          ]
+        }
+      },
+      "observed_heroes": [
+        {
+          "id": 41000,
+          "hp": 1,
+          "pos": {
+            "x": 27,
+            "y": 21
+          }
+        },
+        {
+          "id": 41001,
+          "hp": 40,
+          "pos": {
+            "x": 28,
+            "y": 19
+          }
+        }
+      ]
+    },
+    {
+      "case": "focus-True-False",
+      "round": 74,
+      "status": 200,
+      "elapsed_ms": 157.253,
+      "commands": {
+        "30005": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 27,
+              "y": 21
+            }
+          ]
+        },
+        "30006": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 30,
+              "y": 18
+            }
+          ]
+        }
+      },
+      "observed_heroes": [
+        {
+          "id": 41000,
+          "hp": 1,
+          "pos": {
+            "x": 27,
+            "y": 21
+          }
+        },
+        {
+          "id": 41001,
+          "hp": 0,
+          "pos": {
+            "x": 28,
+            "y": 19
+          }
+        }
+      ]
+    },
+    {
+      "case": "focus-True-False",
+      "round": 75,
+      "status": 200,
+      "elapsed_ms": 167.783,
+      "commands": {
+        "30005": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 29,
+              "y": 20
+            }
+          ]
+        },
+        "30006": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 29,
+              "y": 17
+            }
+          ]
+        }
+      },
+      "observed_heroes": [
+        {
+          "id": 41000,
+          "hp": 0,
+          "pos": {
+            "x": 27,
+            "y": 21
+          }
+        },
+        {
+          "id": 41001,
+          "hp": 0,
+          "pos": {
+            "x": 28,
+            "y": 19
+          }
+        }
+      ]
+    },
+    {
+      "case": "focus-False-True",
+      "round": 71,
+      "status": 200,
+      "elapsed_ms": 150.275,
+      "commands": {
+        "30005": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 12
+            }
+          ]
+        },
+        "30006": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 12
+            }
+          ]
+        }
+      },
+      "observed_heroes": [
+        {
+          "id": 41000,
+          "hp": 1,
+          "pos": {
+            "x": 13,
+            "y": 10
+          }
+        },
+        {
+          "id": 41001,
+          "hp": 200,
+          "pos": {
+            "x": 12,
+            "y": 12
+          }
+        }
+      ]
+    },
+    {
+      "case": "focus-False-True",
+      "round": 72,
+      "status": 200,
+      "elapsed_ms": 152.049,
+      "commands": {
+        "30005": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 12
+            }
+          ]
+        },
+        "30006": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 12
+            }
+          ]
+        }
+      },
+      "observed_heroes": [
+        {
+          "id": 41000,
+          "hp": 1,
+          "pos": {
+            "x": 13,
+            "y": 10
+          }
+        },
+        {
+          "id": 41001,
+          "hp": 120,
+          "pos": {
+            "x": 12,
+            "y": 12
+          }
+        }
+      ]
+    },
+    {
+      "case": "focus-False-True",
+      "round": 73,
+      "status": 200,
+      "elapsed_ms": 155.135,
+      "commands": {
+        "30005": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 12
+            }
+          ]
+        },
+        "30006": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 12,
+              "y": 12
+            }
+          ]
+        }
+      },
+      "observed_heroes": [
+        {
+          "id": 41000,
+          "hp": 1,
+          "pos": {
+            "x": 13,
+            "y": 10
+          }
+        },
+        {
+          "id": 41001,
+          "hp": 40,
+          "pos": {
+            "x": 12,
+            "y": 12
+          }
+        }
+      ]
+    },
+    {
+      "case": "focus-False-True",
+      "round": 74,
+      "status": 200,
+      "elapsed_ms": 156.6,
+      "commands": {
+        "30005": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 13,
+              "y": 10
+            }
+          ]
+        },
+        "30006": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 10,
+              "y": 13
+            }
+          ]
+        }
+      },
+      "observed_heroes": [
+        {
+          "id": 41000,
+          "hp": 1,
+          "pos": {
+            "x": 13,
+            "y": 10
+          }
+        },
+        {
+          "id": 41001,
+          "hp": 0,
+          "pos": {
+            "x": 12,
+            "y": 12
+          }
+        }
+      ]
+    },
+    {
+      "case": "focus-False-True",
+      "round": 75,
+      "status": 200,
+      "elapsed_ms": 155.562,
+      "commands": {
+        "30005": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 11,
+              "y": 11
+            }
+          ]
+        },
+        "30006": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 11,
+              "y": 12
+            }
+          ]
+        }
+      },
+      "observed_heroes": [
+        {
+          "id": 41000,
+          "hp": 0,
+          "pos": {
+            "x": 13,
+            "y": 10
+          }
+        },
+        {
+          "id": 41001,
+          "hp": 0,
+          "pos": {
+            "x": 12,
+            "y": 12
+          }
+        }
+      ]
+    },
+    {
+      "case": "focus-True-True",
+      "round": 71,
+      "status": 200,
+      "elapsed_ms": 168.309,
+      "commands": {
+        "30005": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 28,
+              "y": 12
+            }
+          ]
+        },
+        "30006": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 28,
+              "y": 12
+            }
+          ]
+        }
+      },
+      "observed_heroes": [
+        {
+          "id": 41000,
+          "hp": 1,
+          "pos": {
+            "x": 27,
+            "y": 10
+          }
+        },
+        {
+          "id": 41001,
+          "hp": 200,
+          "pos": {
+            "x": 28,
+            "y": 12
+          }
+        }
+      ]
+    },
+    {
+      "case": "focus-True-True",
+      "round": 72,
+      "status": 200,
+      "elapsed_ms": 164.153,
+      "commands": {
+        "30005": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 28,
+              "y": 12
+            }
+          ]
+        },
+        "30006": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 28,
+              "y": 12
+            }
+          ]
+        }
+      },
+      "observed_heroes": [
+        {
+          "id": 41000,
+          "hp": 1,
+          "pos": {
+            "x": 27,
+            "y": 10
+          }
+        },
+        {
+          "id": 41001,
+          "hp": 120,
+          "pos": {
+            "x": 28,
+            "y": 12
+          }
+        }
+      ]
+    },
+    {
+      "case": "focus-True-True",
+      "round": 73,
+      "status": 200,
+      "elapsed_ms": 157.991,
+      "commands": {
+        "30005": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 28,
+              "y": 12
+            }
+          ]
+        },
+        "30006": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 28,
+              "y": 12
+            }
+          ]
+        }
+      },
+      "observed_heroes": [
+        {
+          "id": 41000,
+          "hp": 1,
+          "pos": {
+            "x": 27,
+            "y": 10
+          }
+        },
+        {
+          "id": 41001,
+          "hp": 40,
+          "pos": {
+            "x": 28,
+            "y": 12
+          }
+        }
+      ]
+    },
+    {
+      "case": "focus-True-True",
+      "round": 74,
+      "status": 200,
+      "elapsed_ms": 156.107,
+      "commands": {
+        "30005": {
+          "action": "attack",
+          "targetPos": [
+            {
+              "x": 27,
+              "y": 10
+            }
+          ]
+        },
+        "30006": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 30,
+              "y": 13
+            }
+          ]
+        }
+      },
+      "observed_heroes": [
+        {
+          "id": 41000,
+          "hp": 1,
+          "pos": {
+            "x": 27,
+            "y": 10
+          }
+        },
+        {
+          "id": 41001,
+          "hp": 0,
+          "pos": {
+            "x": 28,
+            "y": 12
+          }
+        }
+      ]
+    },
+    {
+      "case": "focus-True-True",
+      "round": 75,
+      "status": 200,
+      "elapsed_ms": 168.57,
+      "commands": {
+        "30005": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 29,
+              "y": 11
+            }
+          ]
+        },
+        "30006": {
+          "action": "move",
+          "targetPos": [
+            {
+              "x": 29,
+              "y": 12
+            }
+          ]
+        }
+      },
+      "observed_heroes": [
+        {
+          "id": 41000,
+          "hp": 0,
+          "pos": {
+            "x": 27,
+            "y": 10
+          }
+        },
+        {
+          "id": 41001,
+          "hp": 0,
+          "pos": {
+            "x": 28,
+            "y": 12
+          }
+        }
+      ]
+    }
+  ],
+  "failure": null,
+  "bind_verified": true
+}

@@ -30,6 +30,12 @@ def enemy_rear_position(turn):
     return Pos(base.x + (3 if right else -2), base.y)
 
 
+def spawn_side(pos, base):
+    """Classify a cell around the real 2x2 base centre, including reflections."""
+    dx, dy = 2*pos.x-(2*base.x+1), 2*pos.y-(2*base.y-1)
+    return ('north' if dy > 0 else 'south') if abs(dy) >= abs(dx) else ('east' if dx > 0 else 'west')
+
+
 def summon_cell_legal(turn, settings, pos, pending=()):
     if not turn.in_bounds(pos) or pos in pending:
         return False
@@ -202,7 +208,8 @@ def _breach_cost(turn, wall_free, start, target, remembered, weapon_sites=()):
     return sum(ceil(w.health / 40) for w in hits) if hits else None
 
 
-def scouted_spawn_candidates(turn, settings, remembered=(), pending=(), failed=(), surveyed=(), confirmed_sites=()):
+def scouted_spawn_candidates(turn, settings, remembered=(), pending=(), failed=(), surveyed=(), confirmed_sites=(),
+                             preferred_side=None, anchor=None):
     """Rank legal cells using confirmed layout, including mirror/rotation cases.
 
     Prefer a stationary shot at a visible cannon crew or an inferred common
@@ -214,13 +221,16 @@ def scouted_spawn_candidates(turn, settings, remembered=(), pending=(), failed=(
     remembered = tuple(remembered)
     if not enemy_layout_ready(turn, remembered, surveyed, confirmed_sites):
         return ()
-    from .wall_assault import protected_layout, plan_assault
-    if protected_layout(turn,settings,remembered,confirmed_sites):
-        assault=plan_assault(turn,settings,1,remembered,confirmed_sites,pending,failed)
-        return tuple(assault['spawns']) if assault is not None else ()
     base = enemy_base_position(turn)
     if base is None:
         return ()
+    if preferred_side is None and pending:
+        preferred_side = spawn_side(sorted(pending)[0],base)
+    from .wall_assault import protected_layout, plan_assault
+    if protected_layout(turn,settings,remembered,confirmed_sites):
+        assault=plan_assault(turn,settings,1,remembered,confirmed_sites,pending,failed,
+                            preferred_side=preferred_side)
+        return tuple(assault['spawns']) if assault is not None else ()
     guns = enemy_layout_weapons(turn, remembered)
     sites = layout_weapon_sites(turn, remembered, confirmed_sites)
     retained_sites = tuple(p for p in sites if p not in {g.pos for g in guns})
@@ -249,6 +259,7 @@ def scouted_spawn_candidates(turn, settings, remembered=(), pending=(), failed=(
         for y in range(max(0, base.y-7), min(turn.height, base.y+7)):
             pos = Pos(x, y)
             if (pos in failed or pos in sites
+                    or preferred_side is not None and spawn_side(pos,base) != preferred_side
                     or not summon_cell_legal(turn, settings, pos, pending)):
                 continue
             def engagement(points):
@@ -283,11 +294,15 @@ def scouted_spawn_candidates(turn, settings, remembered=(), pending=(), failed=(
                 alignment = 0 if not dx or not dy else 1 if abs(dx) == abs(dy) else 2
                 score = (pos in occupied or not turn.land(pos), 0 if crew else 1,
                          cost, controls, separate_breach, gap, alignment, pos)
+            if anchor is not None:
+                score = (score[0],distance(pos,anchor)>2,*score[1:-1],distance(pos,anchor),pos)
             scored.append((score, pos))
     return tuple(pos for _, pos in sorted(scored))
 
 
-def scouted_spawn_position(turn, settings, remembered=(), pending=(), failed=(), surveyed=(), confirmed_sites=()):
+def scouted_spawn_position(turn, settings, remembered=(), pending=(), failed=(), surveyed=(), confirmed_sites=(),
+                           preferred_side=None, anchor=None):
     """First ranked scouted cell; callers pass pending first-BOSS cells."""
-    candidates = scouted_spawn_candidates(turn, settings, remembered, pending, failed, surveyed, confirmed_sites)
+    candidates = scouted_spawn_candidates(turn, settings, remembered, pending, failed, surveyed, confirmed_sites,
+                                          preferred_side,anchor)
     return candidates[0] if candidates else None

@@ -9,7 +9,7 @@ from collections import deque
 from .protocol import CONTROLLABLE_TYPES, TOWER_TYPES, Pos, distance, station_footprint
 from .robot_combat import blocking_wall
 from .summoning import (enemy_base_position, enemy_layout_weapons, layout_operator_positions,
-                        layout_weapon_sites, summon_cell_legal)
+                        layout_weapon_sites, summon_cell_legal, spawn_side)
 from .worker_safety import wall_shelters
 
 
@@ -104,10 +104,7 @@ def protected_layout(turn, settings, remembered=(), confirmed_sites=()):
 
 
 def _side(pos, base):
-    dx, dy = 2 * pos.x - (2 * base.x + 1), 2 * pos.y - (2 * base.y - 1)
-    if abs(dy) >= abs(dx):
-        return 'north' if dy > 0 else 'south'
-    return 'east' if dx > 0 else 'west'
+    return spawn_side(pos,base)
 
 
 def _outward(pos, wall, side):
@@ -130,7 +127,7 @@ def _preferred_position(preferred):
 
 
 def plan_assault(turn, settings, count, remembered=(), confirmed_sites=(),
-                 pending=(), failed=(), preferred_wall=None):
+                 pending=(), failed=(), preferred_wall=None, preferred_side=None):
     """Plan ``count`` additional unique spawns firing at one observed wall.
 
     ``pending`` and ``failed`` are excluded cells; ``preferred_wall`` accepts a
@@ -161,13 +158,14 @@ def plan_assault(turn, settings, count, remembered=(), confirmed_sites=(),
     options = []
     for wall in walls:
         side = _side(wall.pos, base)
-        if side in excluded_sides:
+        if side in excluded_sides or preferred_side is not None and side != preferred_side:
             continue
         candidates = []
         for x in range(max(0, wall.pos.x - 3), min(turn.width, wall.pos.x + 4)):
             for y in range(max(0, wall.pos.y - 3), min(turn.height, wall.pos.y + 4)):
                 pos = Pos(x, y)
                 if (pos in excluded or not turn.land(pos) or not _outward(pos, wall.pos, side)
+                        or spawn_side(pos,base) != side
                         or not summon_cell_legal(turn, settings, pos, pending)
                         or blocking_wall(turn, pos, wall.pos) is not None
                         or _line_buildings(turn, pos, wall.pos, sites, base_cells)):
