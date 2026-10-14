@@ -18,6 +18,7 @@ from .raid_scouts import RaidScouts
 from .first_night_defense import FirstNightDefense
 from .day_gate import DayGate
 from .sealed_home import SealedHome
+from .operating_home import OperatingHome
 from .stone_planner import StonePlanner
 from .wall_schedule import WallSchedule
 from .summoning import rear_spawn_position
@@ -52,6 +53,7 @@ class Strategy:
         self.raid_scouts = RaidScouts(self)
         self.wall_schedule = WallSchedule(self)
         self.stone_planner = StonePlanner(self)
+        self.operating_home = OperatingHome(self)
         self.imp_defense = ImpDefense(self)
         self.raid_scouts.refresh_dispatch()
 
@@ -84,7 +86,7 @@ class Strategy:
         courier = role is not None and self.sealed_home.needs_operator(role)
         if (role is None or role.kind != PIONEER) and not courier and self.layout.operator_pos is not None:
             reserved.add(self.layout.operator_pos)
-        if role is not None and role.unit_id == self.memory.raid_scouts.get('worker_id'):
+        if self.turn.day == 1 and role is not None and role.unit_id == self.memory.raid_scouts.get('worker_id'):
             reserved.update(p for u in self.memory.enemy_structures.values() if u.health > 0
                             for p in self.turn.footprint(u))
             scouts = getattr(self,'raid_scouts',None)
@@ -210,6 +212,8 @@ class Strategy:
 
     def run_worker(self, role: Unit) -> None:
         """One economic schedule; night adds safety and assigned guard duty."""
+        if self.operating_home.worker(role):
+            return
         if self.imp_defense.catch_near(role):
             return
         if self.boss_raid.worker(role):
@@ -486,7 +490,7 @@ class Strategy:
             b.health / self.building_max_health(b), self.cost(role, self.turn.footprint(b)), b.unit_id))]
         # An upgrade also heals the wall; only consider a carried fixer afterwards.
         if "WallFixer" in role.backpack and not self.guard.is_guard(role):
-            repairs = [w for w in self.turn.walls() if w.health < self.building_max_health(w)]
+            repairs = [w for w in self.operating_home.retained_walls() if w.health < self.building_max_health(w)]
             choices.extend(("WallFixer", w) for w in sorted(repairs, key=lambda w: (
                 self.wall_depth(w), w.health / self.building_max_health(w), self.cost(role, [w.pos]), w.unit_id)))
         for name, building in choices:
@@ -665,7 +669,7 @@ class Strategy:
         return handled
 
     def mine(self, role: Unit, need_stone: bool = False, return_cells: set[Pos] | None = None) -> bool:
-        if need_stone:
+        if need_stone and self.turn.day == 1:
             return self.stone_planner.mine(role,return_cells=return_cells)
         if role.backpack_full:
             return False
@@ -673,7 +677,7 @@ class Strategy:
         for pos, kind in self.turn.zones.items():
             if kind not in MINERALS or (need_stone and kind != "stone"):
                 continue
-            if (kind=='stone' and self.turn.is_day and self.missing_walls()
+            if (kind=='stone' and self.turn.day == 1 and self.turn.is_day and self.missing_walls()
                     and not self.stone_planner.needs_material(role)):
                 continue  # Construction material is already funded by real bags.
             if self.memory.failed_mines.get(f"{pos.x},{pos.y}", 0) > self.turn.round_no:

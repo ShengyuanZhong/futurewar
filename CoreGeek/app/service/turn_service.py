@@ -129,6 +129,9 @@ class TurnService:
                     ensure_ascii=False,separators=(',',':')))
                 LOGGER.info('defense_diagnostic %s',json.dumps(plain(strategy.first_defense.diagnostic()),
                     ensure_ascii=False,separators=(',',':')))
+            else:
+                LOGGER.info('operating_home %s',json.dumps(plain(strategy.operating_home.diagnostic()),
+                    ensure_ascii=False,separators=(',',':')))
             if strategy.day_gate.enabled:
                 LOGGER.info('day_gate %s',json.dumps(plain(strategy.day_gate.diagnostic()),
                     ensure_ascii=False,separators=(',',':')))

@@ -4,7 +4,7 @@ import copy
 from agent.protocol import Pos
 from app.service.turn_service import TurnService
 from tests.test_maintenance import fortified, setup
-from tests.test_u_layout import point, WALLS
+from tests.test_u_layout import point, OPERATING_WALLS
 
 
 def set_wall(raw, x, y, level, mirrored=False, health=None):
@@ -18,11 +18,6 @@ def finished(round_no=331, mirrored=False):
     for y in range(4, 10): set_wall(raw, 9, y, 3, mirrored)
     for i, y in ((2, 7), (3, 6)):
         raw['teamOur']['roles'][i].update(pos=point(8, y, mirrored).dump(), backpack=['WallFixer'] * 5)
-    if (round_no - 1) % 130 < 70:
-        raw['teamOur']['roles'] = [r for r in raw['teamOur']['roles']
-                                  if not (r['roleType'] == 'wall' and r['pos'] == point(5, 9, mirrored).dump())]
-        raw['teamOur']['roles'][2]['backpack'].append('stone')
-        raw['teamOur']['roles'][2]['backpack'].append('WallUpgradeVoucher1')
     return raw
 
 
@@ -61,7 +56,7 @@ class FocusedUpgradesTests(unittest.TestCase):
                 self.assertEqual([(w.unit_id,w.level) for w in s.upgrade_candidates()],[(tower['id'],level)])
                 tower.update(level=level+1,health=500+500*(level+1))
             s,_=setup(raw)
-            cells={(x,y) for x,y in WALLS if x != 9}
+            cells={(x,y) for x,y in OPERATING_WALLS if x != 9}
             self.assertEqual({w.pos for w in s.upgrade_candidates()},{point(x,y,mirrored) for x,y in cells})
             for x,y in cells:set_wall(raw,x,y,2,mirrored)
             s,_=setup(raw)
@@ -117,7 +112,7 @@ class FocusedUpgradesTests(unittest.TestCase):
 
     def test_final_purchase_uses_budget_beyond_five_and_shares_stock(self):
         raw=finished(261);raw['teamOur']['goldNum']=200
-        raw['teamOur']['roles'][2].update(pos={'x':3,'y':7},backpack=['stone','WallUpgradeVoucher1'])
+        raw['teamOur']['roles'][2].update(pos={'x':3,'y':7},backpack=['WallUpgradeVoucher1'])
         raw['teamOur']['roles'][3]['backpack']=[]
         s,plan=setup(raw);s.run()
         self.assertEqual(plan.commands['501'],{'action':'buy','name':'WallFixer','num':10})
@@ -185,7 +180,7 @@ class FocusedUpgradesTests(unittest.TestCase):
     def test_final_restock_respects_capacity_price_and_dusk(self):
         for gold,price,bag,expected in ((100,10,['WallFixer']*85,1),(0,0,['WallFixer']*84,2),(5,10,[],0)):
             raw=finished(261);raw['teamOur']['goldNum']=gold
-            raw['teamOur']['roles'][2].update(pos={'x':3,'y':7},backpack=bag+['stone','WallUpgradeVoucher1'])
+            raw['teamOur']['roles'][2].update(pos={'x':3,'y':7},backpack=bag+['AcientTablet']*2)
             raw['teamOur']['roles'][3]['backpack']=['WallFixer']*100
             raw['weaponShopList'][-1]['price']=price
             s,plan=setup(raw);s.run()
@@ -197,7 +192,7 @@ class FocusedUpgradesTests(unittest.TestCase):
     def test_dead_supplier_reassigned_and_final_duty_starts_before_day_three(self):
         raw=finished(131)
         raw['teamOur']['roles'][2]['health']=0
-        raw['teamOur']['roles'][3].update(pos={'x':3,'y':7},backpack=['stone','WallUpgradeVoucher1'])
+        raw['teamOur']['roles'][3].update(pos={'x':3,'y':7},backpack=['WallUpgradeVoucher1'])
         raw['teamOur']['goldNum']=100
         s,plan=setup(raw);s.memory.repair_supplier_id=501
         # Recreate using the dead supplier memory, as the next request does.

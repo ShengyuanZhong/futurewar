@@ -26,6 +26,8 @@ class ImpDefense:
         self.state['roles'][role.unit_id] = dict(position=role.pos, reason=reason, **extra)
 
     def catch_near(self, role):
+        if self.turn.day != 1:
+            return False  # First-night sight denial must not preempt later economy/tasks.
         if role.kind not in (PIONEER, WORKER) or role.health <= 0 or role.unit_id in self.plan.used:
             return False
         if role.kind == PIONEER and self.turn.day == 1 and not self.pioneer_ready():

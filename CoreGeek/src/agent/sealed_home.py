@@ -1,4 +1,4 @@
-"""Permanent wall construction from outside, with observed evacuation first."""
+"""First-day closed construction from outside, with observed evacuation first."""
 from collections import deque
 from dataclasses import replace
 
@@ -13,7 +13,7 @@ class SealedHome:
         self.turn, self.plan, self.memory = strategy.turn, strategy.plan, strategy.memory
         self.state = self.memory.sealed_home
         self.walls = set(strategy.settings.build_cells(self.turn,'wall'))
-        self.enabled = bool(self.turn.station() and self.walls)
+        self.enabled = bool(self.turn.day == 1 and self.turn.station() and self.walls)
         self.static = set(self.walls) | set(strategy.layout.tower_sites)
         self.static.update(p for u in self.turn.ours+self.turn.enemies if u.health>0
                            and u.kind in TOWER_TYPES+('station','wall') for p in self.turn.footprint(u))

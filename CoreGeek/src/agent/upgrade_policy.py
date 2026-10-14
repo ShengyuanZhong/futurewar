@@ -2,6 +2,11 @@
 from .protocol import TOWER_TYPES
 
 
+def retained_walls(strategy):
+    extra = strategy.settings.opening_only_wall_cells(strategy.turn) if strategy.turn.day > 1 else set()
+    return [w for w in strategy.turn.walls() if w.pos not in extra]
+
+
 def wall_group(strategy, wall) -> int:
     """0=two centre front walls; 1=four front corners/edges; 2=all side/rear walls.
 
@@ -37,7 +42,8 @@ def second_weapon_pending(weapons):
 
 
 def pending_walls(strategy, group, target):
-    pending = [w for w in strategy.turn.walls() if wall_group(strategy, w) == group and w.level < target]
+    pending = [w for w in retained_walls(strategy)
+               if wall_group(strategy, w) == group and w.level < target]
     level = min((w.level for w in pending), default=target)
     return [w for w in pending if w.level == level]
 
@@ -79,7 +85,8 @@ def upgrades_complete(strategy) -> bool:
     sites = strategy.settings.build_cells(turn, 'wall')
     return bool(base and sites and not strategy.missing_walls()
                 and len(turn.weapons()) >= 3 and all(w.level >= 3 for w in turn.weapons())
-                and all(w.level >= wall_target_level(strategy, w) for w in turn.walls()))
+                and all(w.level >= wall_target_level(strategy, w)
+                        for w in retained_walls(strategy)))
 
 
 def purchase_needs(strategy) -> list[tuple[str, int]]:

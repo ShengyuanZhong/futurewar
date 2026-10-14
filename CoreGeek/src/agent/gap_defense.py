@@ -8,6 +8,11 @@ class WallGapDefense:
         self.s = strategy
         self.turn, self.plan, self.memory = strategy.turn, strategy.plan, strategy.memory
         self.state = self.memory.wall_gap_defense
+        if self.turn.day != 1:
+            self.gaps = {}
+            self.worker_id = self.imp_id = self.gap = None
+            self.state.clear()
+            return  # Later breaches use the established daytime rebuilding schedule.
         missing = set(self.s.settings.build_cells(self.turn, 'wall')) - {w.pos for w in self.turn.walls()}
         # Every planned wall is now permanent, including the former entrance.
         # Keep a previously observed hostile gap until it is actually rebuilt.

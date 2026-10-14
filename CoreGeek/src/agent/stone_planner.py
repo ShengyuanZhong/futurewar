@@ -25,6 +25,22 @@ class StonePlanner:
         stone is reserved: every stone may build an ordinary blueprint wall.
         """
         workers = self.turn.workers()
+        if self.turn.day > 1:
+            remaining = len(self.s.construction_walls())
+            targets, capacity = {}, {}
+            for worker in workers:
+                held = worker.backpack.count('stone')
+                targets[worker.unit_id] = min(held, remaining)
+                remaining -= targets[worker.unit_id]
+                capacity[worker.unit_id] = held + max(0, worker.capacity - len(worker.backpack))
+            while remaining:
+                eligible = [uid for uid in targets if targets[uid] < capacity[uid]]
+                if not eligible:
+                    break
+                uid = min(eligible, key=lambda key: (targets[key], key))
+                targets[uid] += 1
+                remaining -= 1
+            return targets  # v1.1.2 breach stock; no opening batches carried into operations.
         raid = getattr(self.s, 'boss_raid', None)
         schedule = getattr(self.s,'wall_schedule',None)
         builders = (schedule.active_builders() if schedule is not None and schedule.enabled else

@@ -11,7 +11,10 @@ class WorkerCoordinator:
         self.turn, self.plan, self.memory = strategy.turn, strategy.plan, strategy.memory
         live = {w.unit_id: w for w in self.turn.workers()}
         self.memory.worker_tasks = {uid: job for uid,job in self.memory.worker_tasks.items()
-                                    if uid in live and job.get('round',0) >= self.turn.round_no-2}
+                                    if uid in live and job.get('round',0) >= self.turn.round_no-2
+                                    and not (self.turn.day > 1 and job.get('kind','').startswith(
+                                        ('boss_', 'raid_scout', 'gap_', 'first_night_',
+                                         'imp_chase', 'imp_return_home', 'construction_exit', 'weapon_access')))}
         for uid,job in self.memory.worker_tasks.items():
             history = job.get('recent_positions', []) if job.get('round') == self.turn.round_no-1 else []
             history = (history + [live[uid].pos])[-4:]

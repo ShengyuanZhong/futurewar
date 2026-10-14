@@ -58,7 +58,9 @@ class WallGuard:
         base = self.turn.station()
         if not base:
             return set()
-        offsets = [Pos(x, y) for y in (1, -2) for x in range(3)] + [Pos(2, 0), Pos(2, -1), Pos(-1, -2)]
+        offsets = [Pos(x, y) for y in (1, -2) for x in range(3)] + [Pos(2, 0), Pos(2, -1)]
+        if self.turn.day == 1:
+            offsets.append(Pos(-1, -2))
         mirrored = self.settings.mirrored_layout(self.turn)
         cells = {Pos(base.pos.x + (1 - p.x if mirrored else p.x), base.pos.y + p.y) for p in offsets}
         excluded = set(self.settings.build_cells(self.turn, "wall")) | set(self.strategy.layout.tower_sites)
@@ -235,7 +237,7 @@ class WallGuard:
             # never an unbounded escape to distant zero-risk map cells.
             return False if urgent_only else s.coordinator.move_to(role,cells,'return_guard',self.home(role),allow_risk=True)
         if "WallFixer" in role.backpack:
-            critical = [w for w in self.turn.walls()
+            critical = [w for w in s.operating_home.retained_walls()
                         if w.health * 100 < s.building_max_health(w) * self.settings.repair_threshold_percent
                         and self.owns_wall(role,w)
                         and w.unit_id not in self.plan.upgrade_targets | s.maintenance_claims]

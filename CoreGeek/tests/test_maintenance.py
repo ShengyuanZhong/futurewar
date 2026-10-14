@@ -8,15 +8,16 @@ from app.config import Settings
 from app.service.memory import GameMemory
 from app.service.turn_service import TurnService
 from tests.fixtures import unit
-from tests.test_u_layout import drawing_request, point, WALLS
+from tests.test_u_layout import drawing_request, point, WALLS, OPERATING_WALLS
 
 
-def fortified(round_no=131, mirrored=False, weapon_level=1, wall_level=1):
+def fortified(round_no=131, mirrored=False, weapon_level=1, wall_level=1, closed=None):
     raw = drawing_request(mirrored, built=True, round_no=round_no)
     raw['teamOur']['goldNum'] = 1000
     for tower in raw['teamOur']['roles'][-3:]:
         tower.update(level=weapon_level, health=500 + 500 * weapon_level)
-    for uid, (x, y) in enumerate(sorted(WALLS), 701):
+    walls = WALLS if (round_no <= 130 if closed is None else closed) else OPERATING_WALLS
+    for uid, (x, y) in enumerate(sorted(walls), 701):
         p = point(x, y, mirrored)
         raw['teamOur']['roles'].append(unit(uid, 'wall', p.x, p.y,
                                           level=wall_level, health=500 + 500 * wall_level))
@@ -98,9 +99,9 @@ class MaintenanceTests(unittest.TestCase):
                          + ['WeaponUpgradeVoucher1']
                          + ['WallUpgradeVoucher1'] * 4 + ['WallUpgradeVoucher2'] * 4
                          + ['WeaponUpgradeVoucher2', 'WeaponUpgradeVoucher1', 'WeaponUpgradeVoucher2']
-                         + ['WallUpgradeVoucher1'] * 10)
+                         + ['WallUpgradeVoucher1'] * 6)
         self.assertEqual(wall_uses[1][:6], [9] * 6)
-        self.assertCountEqual(wall_uses[1][6:], [8] * 2 + [7] * 2 + [6] * 2 + [5] + [4] * 3)
+        self.assertCountEqual(wall_uses[1][6:], [8] * 2 + [7] * 2 + [6] * 2)
         self.assertEqual(wall_uses[2], [9] * 6)
 
     def purchase(self, raw):

@@ -1,6 +1,8 @@
 # CoreGeek 参赛 Agent
 
-当前程序版本为 v1.2.24：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后其余11块侧后墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回到可达邻墙维修区，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
+当前程序版本为 v1.2.25：先集中升满一台火箭，再将正中两墙升3级、第二台火箭升2级、正面其余四墙升3级；接着所有火箭升满，最后上下两翼六墙升2级。基地不升级。全部达标后两名工人白天继续采矿、售矿、批量买包，黄昏回到可达邻墙维修区，夜间均值守。详细阶段、参数和函数见[建筑维护](docs/MAINTENANCE.md)。沿用昼夜统一经济流程，夜间可继续采购、配送和使用升级券；沿用工人独立任务、协作让行、城墙掩护和按日递增备货；详见[工人协作](docs/WORKER_COORDINATION.md)。复赛已接入imp移动和destroy，其它变更继续参照[复赛规则接入索引](docs/ROUND_OF_32_RULES.md)。
+
+v1.2.25明确[首日结束后的运营恢复](docs/OPERATING_RESUME_V1225.md)：近期侦察、三任务、工人购券/BOSS集火和占墙补位只在第一天生效。R131起默认恢复v1.1.2的12墙U形，由一名可达工人逐块拆掉首日新增5墙，另一人继续运营；仅真实墙消失才推进。第二天起用内侧维修通道、原升级顺序与正常返程预算，完成升级后仍白天采矿售矿买包、晚上双工人维修；不升级基地。源码、函数、参数和边界见开发文档，结果见[验证报告](../reports/VALIDATION-v1.2.25.md)。
 
 此目录可作为参赛程序目录提交。沿用示例的 `main3.py`、`src/agent/protocol.py`、`grid.py`、`brain.py`；HTTP 处理与跨回合协作放在 `app`。新增代码无第三方运行依赖。
 
@@ -219,7 +221,8 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 | [src/agent/boss_raid.py](src/agent/boss_raid.py) | `departure_budget(role)/departure_due(role)` | 真实赴店、腾包、批购、逐张use及两轮余量，opening=0仅保留兼容字段；返回字段见[购物截止](docs/BUYER_DEADLINE_V1213.md) |
 | [src/agent/boss_raid.py](src/agent/boss_raid.py) | `buyer_role/dispatch_ready/worker_dispatch_ready/worker_mission_active` | 稳定采购工，真实施工条件与购物截止分别批准，使命持续锁定 |
 | [src/agent/day_gate.py](src/agent/day_gate.py) | `DayGate.worker(role)/day_ready()` | 已退休兼容对象：worker始终False，无门石、拆墙或临时封门动作 |
-| [src/agent/sealed_home.py](src/agent/sealed_home.py) | `builder_posts/safe_wall/evacuate/repair_cells` | 未来完整墙体外部分类、真实工人撤出、同轮施工安全及可达维修站位 |
+| [src/agent/operating_home.py](src/agent/operating_home.py) | `worker/retained_walls/diagnostic` | 第二天起拆除默认首日新增5墙，真实观测确认恢复12墙U形，内侧运营接续 |
+| [src/agent/sealed_home.py](src/agent/sealed_home.py) | `builder_posts/safe_wall/evacuate/repair_cells` | 仅首日完整墙体外部分类、真实撤出、同轮施工安全与外侧维修；后续恢复内侧维修 |
 | 同上 | `needs_operator/pioneer_yield/wait_for_operator` | 白天实际持券工人请求操炮位交互，先锋真实让位后再用券；夜里不让炮手退出 |
 | [src/agent/wall_schedule.py](src/agent/wall_schedule.py) | `destinations/prepare/posts/straight_steps/cost/targets/remaining/assigned_missing/construction_ready/release/reclaim` | 个人弧顺序逐墙、法线/角点站位与外侧轴向步；实际完工后交接采购/侦察，见[直墙施工](docs/STRAIGHT_WALL_BUILD_V1220.md) |
 | [src/agent/stone_planner.py](src/agent/stone_planner.py) | `targets/needs_material/can_build_now/options/assignments/diagnostic/mine` | 实际墙材缺口、个人筹石份额与两矿分配；can_build_now与build_wall共用实际首墙站位，读取Turn.mine_remaining |
@@ -270,3 +273,5 @@ wheel 包含 `agent` 与 `app` 两个包；比赛启动仍推荐源码目录的 
 0.4.2接入用户提供的`print_log.py`格式：每个新回合记录`[TASK-DEBUG]`，完整打印phaseTask、llmResp、lastCmdResult、本轮prompt和executeCmd。stderr为默认输出，具体映射见[任务日志](docs/TASK_LOGGING.md)。
 
 当前验证仅覆盖第一天，见[首日验证报告](../reports/VALIDATION-v1.2.24.md)。v1.2.9的全量回归为历史证据；本轮未运行新官方对局。
+
+后续运营验证：`python CoreGeek/tools/validate_operations.py --output reports/validation-v1.2.25-operations.json`；跨日HTTP流程：`python CoreGeek/tools/smoke_operating_flow.py --output reports/http-operating-v1.2.25.json`（从仓库根目录执行）。首日回归与本地运营证据见[v1.2.25验证报告](../reports/VALIDATION-v1.2.25.md)。

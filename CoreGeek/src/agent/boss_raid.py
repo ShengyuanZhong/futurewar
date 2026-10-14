@@ -17,10 +17,11 @@ class BossRaid:
         self.turn, self.plan, self.memory = strategy.turn, strategy.plan, strategy.memory
         self.state = self.memory.boss_raid
         self.prior_history = bool(self.state)
-        self.buyer_id = self.select_buyer()
+        self.buyer_id = self.select_buyer() if self.turn.day == 1 else self.state.get('buyer_id')
         self.trip = {}
         self.spawn_cache = {}
-        self.observe()
+        if self.turn.day == 1:
+            self.observe()
 
     def select_buyer(self):
         """Keep one non-scout worker's identity and inventory for the whole raid."""

@@ -166,8 +166,8 @@ class WorkerScheduleTests(unittest.TestCase):
         else:
             self.fail('guard never delivered wall voucher')
 
-    def test_guard_finishes_safe_shop_stop_before_dusk_then_returns(self):
-        raw = fortified(319)
+    def test_guard_finishes_safe_shop_stop_at_dusk_then_returns(self):
+        raw = fortified(331)
         raw['teamOur']['roles'][2]['pos'] = {'x': 3, 'y': 7}
         open_day_gate(raw)
         memory = GameMemory(opening_complete=True)
@@ -176,7 +176,7 @@ class WorkerScheduleTests(unittest.TestCase):
         apply_commands(self,raw,s.turn,plan)
         memory.record(s.turn, plan)
         returning = False
-        for number in range(320,332):
+        for number in range(332,344):
             raw['roundNo'] = number
             s,plan = strategy(raw,memory);s.run()
             command = plan.commands.get('501',{})

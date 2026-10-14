@@ -23,6 +23,13 @@ def base_surrounding_offsets(kind: str, mirrored: bool = False) -> tuple[Pos, ..
     return tuple(Pos(1 - p.x, p.y) if mirrored else p for p in cells)
 
 
+def operating_wall_offsets(mirrored: bool = False) -> tuple[Pos, ...]:
+    """v1.1.2's twelve-wall U, used from day two with the rear repair lane open."""
+    cells = [Pos(x, y) for y in (2, -3) for x in range(4)]
+    cells += [Pos(3, y) for y in range(-2, 2)]
+    return tuple(Pos(1 - p.x, p.y) if mirrored else p for p in cells)
+
+
 @dataclass(frozen=True)
 class Settings:
     layouts: dict = field(default_factory=dict)
@@ -95,13 +102,26 @@ class Settings:
         if layout.get("verified") is True:
             offsets = tuple(Pos.load(p) for p in layout["walls" if kind == "wall" else "weapons"])
         elif self.allow_base_surroundings:
-            offsets = base_surrounding_offsets(kind, self.mirrored_layout(turn))
+            offsets = (operating_wall_offsets(self.mirrored_layout(turn))
+                       if kind == 'wall' and turn.day > 1 else
+                       base_surrounding_offsets(kind, self.mirrored_layout(turn)))
         else:
             return ()
         base = set(station_footprint(station.pos))
         cells = (Pos(station.pos.x + p.x, station.pos.y + p.y) for p in offsets)
         ring = 2 if kind == 'wall' else 1
         return tuple(p for p in cells if turn.land(p) and min(distance(p,b) for b in base) == ring)
+
+    def opening_only_wall_cells(self, turn) -> set[Pos]:
+        """Only automatic opening closures may be removed; custom layouts stay explicit."""
+        station = turn.station()
+        if (not station or not self.allow_base_surroundings
+                or self.layouts.get(turn.team_type, {}).get('verified') is True):
+            return set()
+        mirrored = self.mirrored_layout(turn)
+        extra = set(base_surrounding_offsets('wall', mirrored)) - set(operating_wall_offsets(mirrored))
+        return {Pos(station.pos.x + p.x, station.pos.y + p.y) for p in extra
+                if turn.land(Pos(station.pos.x + p.x, station.pos.y + p.y))}
 
     def mirrored_layout(self, turn) -> bool:
         """Choose by actual base centre versus map centre, independent of team label."""
